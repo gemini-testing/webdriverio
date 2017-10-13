@@ -135,9 +135,9 @@ var RequestHandler = function () {
             }
 
             newOptions.json = true;
-            newOptions.followAllRedirects = true;
+            newOptions.followAllRedirects = false;
 
-            newOptions.agent = agent;
+            // newOptions.agent = agent
             newOptions.headers = {
                 'Connection': 'keep-alive',
                 'Accept': 'application/json',
