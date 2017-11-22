@@ -16,7 +16,7 @@ exports.default = back;
 function back() {
     if (this.desiredCapabilities.browserName === 'safari') {
         /*!
-         * helper for safaridriver which doesn not support forward
+         * helper for safaridriver which doesn't not support forward
          * Reason: "Yikes! Safari history navigation does not work. We can go forward or back,
          * but once we do, we can no longer communicate with the page"
          */

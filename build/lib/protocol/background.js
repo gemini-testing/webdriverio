@@ -15,9 +15,9 @@ exports.default = background;
  *
  * @param {Number} seconds  number of seconds after the app gets send to background
  *
- * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/appium-bindings.md#background-app
+ * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/other/appium-bindings.md#background-app
  * @type mobile
- * @for android
+ * @for android, ios
  *
  */
 
@@ -27,6 +27,6 @@ function background() {
     return this.requestHandler.create({
         path: '/session/:sessionId/appium/app/background',
         method: 'POST'
-    }, { seconds: seconds });
+    }, { seconds });
 }
 module.exports = exports['default'];

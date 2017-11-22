@@ -45,6 +45,7 @@ var _ = require('../');
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var WATCH_NOTIFICATION = '\nWDIO is now in watch mode and is waiting for a change...';
+var MERGE_OPTIONS = { clone: false };
 
 var Runner = function () {
     function Runner() {
@@ -114,7 +115,7 @@ var Runner = function () {
                                     cid: m.cid,
                                     specs: m.specs,
                                     capabilities: this.caps,
-                                    config: config
+                                    config
                                 });
 
                                 /**
@@ -150,10 +151,23 @@ var Runner = function () {
                                         event: 'runner:result',
                                         cid: m.cid,
                                         specs: _this.specs,
-                                        requestData: payload.requestData,
-                                        requestOptions: payload.requestOptions,
                                         body: payload.body // ToDo figure out if this slows down the execution time
-                                    };
+
+
+                                        /**
+                                         * multiremote doesn't send request data and options
+                                         */
+                                    };if (!global.browser.isMultiremote) {
+                                        var _payload$requestOptio = payload.requestOptions,
+                                            uri = _payload$requestOptio.uri,
+                                            method = _payload$requestOptio.method,
+                                            headers = _payload$requestOptio.headers,
+                                            timeout = _payload$requestOptio.timeout;
+
+                                        result.requestOptions = { uri, method, headers, timeout };
+                                        result.requestData = payload.requestData;
+                                    }
+
                                     process.send(_this.addTestDetails(result));
 
                                     /**
@@ -184,7 +198,7 @@ var Runner = function () {
                                         event: 'runner:log',
                                         cid: m.cid,
                                         specs: _this.specs,
-                                        data: data
+                                        data
                                     };
                                     process.send(_this.addTestDetails(details));
                                 });
@@ -466,8 +480,8 @@ var Runner = function () {
                     event: 'runner:beforecommand',
                     cid: _this3.cid,
                     specs: _this3.specs,
-                    command: command,
-                    args: args
+                    command,
+                    args
                 };
                 process.send(_this3.addTestDetails(payload));
             });
@@ -476,10 +490,10 @@ var Runner = function () {
                     event: 'runner:aftercommand',
                     cid: _this3.cid,
                     specs: _this3.specs,
-                    command: command,
-                    args: args,
-                    result: result,
-                    err: err
+                    command,
+                    args,
+                    result,
+                    err
                 };
                 process.send(_this3.addTestDetails(payload));
             });
@@ -512,15 +526,15 @@ var Runner = function () {
                 throw new Error('You haven\'t defined a valid framework. ' + 'Please checkout http://webdriver.io/guide/testrunner/frameworks.html');
             }
 
-            var frameworkLibrary = 'wdio-' + config.framework.toLowerCase() + '-framework';
+            var frameworkLibrary = `wdio-${config.framework.toLowerCase()}-framework`;
             try {
                 return require(frameworkLibrary).adapterFactory;
             } catch (e) {
-                if (!e.message.match('Cannot find module \'' + frameworkLibrary + '\'')) {
-                    throw new Error('Couldn\'t initialise framework "' + frameworkLibrary + '".\n' + e.stack);
+                if (!e.message.match(`Cannot find module '${frameworkLibrary}'`)) {
+                    throw new Error(`Couldn't initialise framework "${frameworkLibrary}".\n${e.stack}`);
                 }
 
-                throw new Error('Couldn\'t load "' + frameworkLibrary + '" framework. You need to install ' + ('it with `$ npm install ' + frameworkLibrary + '`!\n' + e.stack));
+                throw new Error(`Couldn't load "${frameworkLibrary}" framework. You need to install ` + `it with \`$ npm install ${frameworkLibrary}\`!\n${e.stack}`);
             }
         }
     }, {
@@ -542,7 +556,7 @@ var Runner = function () {
                 for (var _iterator = (0, _getIterator3.default)((0, _keys2.default)(capabilities)), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
                     var browserName = _step.value;
 
-                    options[browserName] = (0, _deepmerge2.default)(config, capabilities[browserName]);
+                    options[browserName] = (0, _deepmerge2.default)(config, capabilities[browserName], MERGE_OPTIONS);
                 }
             } catch (err) {
                 _didIteratorError = true;
@@ -613,15 +627,15 @@ var Runner = function () {
                     try {
                         plugin = require(pluginName);
                     } catch (e) {
-                        if (!e.message.match('Cannot find module \'' + pluginName + '\'')) {
-                            throw new Error('Couldn\'t initialise service "' + pluginName + '".\n' + e.stack);
+                        if (!e.message.match(`Cannot find module '${pluginName}'`)) {
+                            throw new Error(`Couldn't initialise service "${pluginName}".\n${e.stack}`);
                         }
 
-                        throw new Error('Couldn\'t find plugin "' + pluginName + '". You need to install it ' + ('with `$ npm install ' + pluginName + '`!\n' + e.stack));
+                        throw new Error(`Couldn't find plugin "${pluginName}". You need to install it ` + `with \`$ npm install ${pluginName}\`!\n${e.stack}`);
                     }
 
                     if (typeof plugin.init !== 'function') {
-                        throw new Error('The plugin "' + pluginName + '" is not WebdriverIO compliant!');
+                        throw new Error(`The plugin "${pluginName}" is not WebdriverIO compliant!`);
                     }
 
                     plugin.init(global.browser, config.plugins[pluginName]);
@@ -672,13 +686,13 @@ var Runner = function () {
                     }
 
                     try {
-                        service = require('wdio-' + serviceName + '-service');
+                        service = require(`wdio-${serviceName}-service`);
                     } catch (e) {
-                        if (!e.message.match('Cannot find module \'' + serviceName + '\'')) {
-                            throw new Error('Couldn\'t initialise service "' + serviceName + '".\n' + e.stack);
+                        if (!e.message.match(`Cannot find module '${serviceName}'`)) {
+                            throw new Error(`Couldn't initialise service "${serviceName}".\n${e.stack}`);
                         }
 
-                        throw new Error('Couldn\'t find service "' + serviceName + '". You need to install it ' + ('with `$ npm install wdio-' + serviceName + '-service`!'));
+                        throw new Error(`Couldn't find service "${serviceName}". You need to install it ` + `with \`$ npm install wdio-${serviceName}-service\`!`);
                     }
 
                     this.configParser.addService(service);
@@ -707,7 +721,7 @@ var Runner = function () {
         key: 'runHook',
         value: function runHook(hookName, config, caps, specs) {
             var catchFn = function catchFn(e) {
-                return console.error('Error in ' + hookName + ': ' + e.stack);
+                return console.error(`Error in ${hookName}: ${e.stack}`);
             };
 
             return _promise2.default.all(config[hookName].map(function (hook) {

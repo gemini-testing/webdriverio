@@ -44,6 +44,6 @@ function touchPerform(actions) {
     return this.requestHandler.create({
         path: '/session/:sessionId/touch/perform',
         method: 'POST'
-    }, { actions: actions });
+    }, { actions });
 }
 module.exports = exports['default'];

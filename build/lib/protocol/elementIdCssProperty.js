@@ -12,7 +12,7 @@ function elementIdCssProperty(id, cssPropertyName) {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with elementIdCssProperty protocol command');
     }
 
-    return this.requestHandler.create('/session/:sessionId/element/' + id + '/css/' + cssPropertyName);
+    return this.requestHandler.create(`/session/:sessionId/element/${id}/css/${cssPropertyName}`);
 } /**
    *
    * Query the value of an element's computed CSS property. The CSS property to query

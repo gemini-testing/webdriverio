@@ -12,7 +12,7 @@ function elementIdScreenshot(id) {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with elementIdScreenshot protocol command');
     }
 
-    return this.requestHandler.create('/session/:sessionId/element/' + id + '/screenshot');
+    return this.requestHandler.create(`/session/:sessionId/element/${id}/screenshot`);
 } /**
    *
    * The Take Element Screenshot command takes a screenshot of the visible region encompassed

@@ -28,7 +28,7 @@ var moveToObject = function moveToObject(selector, xoffset, yoffset) {
 
             return _this.elementIdSize(res.value.ELEMENT).then(function (size) {
                 return _this.elementIdLocation(res.value.ELEMENT).then(function (location) {
-                    return { size: size, location: location };
+                    return { size, location };
                 });
             });
         }).then(function (res) {

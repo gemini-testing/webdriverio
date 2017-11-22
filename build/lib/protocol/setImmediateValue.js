@@ -13,9 +13,9 @@ function setImmediateValue(id, value) {
     }
 
     return this.requestHandler.create({
-        path: '/session/:sessionId/appium/element/' + id + '/value',
+        path: `/session/:sessionId/appium/element/${id}/value`,
         method: 'POST'
-    }, { value: value });
+    }, { value });
 } /**
    *
    * Set immediate value in app.

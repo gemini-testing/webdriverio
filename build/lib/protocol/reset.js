@@ -13,7 +13,7 @@ exports.default = reset;
     browser.reset()
  * </example>
  *
- * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/appium-bindings.md#reset
+ * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/other/appium-bindings.md#reset
  * @type mobile
  * @for android
  *

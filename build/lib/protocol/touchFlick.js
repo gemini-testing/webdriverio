@@ -41,13 +41,14 @@ function touchFlick(id, xoffset, yoffset, speed) {
             yoffset: xoffset
         };
     } else if (!id && typeof xoffset === 'number' && typeof yoffset === 'number') {
-        data = { xoffset: xoffset, yoffset: yoffset };
+        data = { xoffset, yoffset };
     } else if (typeof id === 'string' && typeof xoffset === 'number' && typeof yoffset === 'number' && typeof speed === 'number') {
-        data = { element: id, xoffset: xoffset, yoffset: yoffset, speed: speed };
+        data = { element: id, xoffset, yoffset, speed };
     } else {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with touchFlick command');
     }
-    (0, _deprecationWarning2.default)('touchFlick', this.options);
+
+    (0, _deprecationWarning2.default)('touchFlick', this.options.deprecationWarnings, 'This command is not part of the W3C WebDriver spec and won\'t be supported in ' + 'future versions of the driver. It is recommended to use the touchAction command for this.');
 
     return this.requestHandler.create('/session/:sessionId/touch/flick', data);
 }

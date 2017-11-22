@@ -15,7 +15,7 @@ function pullFolder(path) {
     return this.requestHandler.create({
         path: '/session/:sessionId/appium/device/pull_folder',
         method: 'POST'
-    }, { path: path });
+    }, { path });
 } /**
    *
    * Pulls a folder from the device's file system.

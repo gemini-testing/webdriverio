@@ -67,7 +67,7 @@ var waitForVisible = function waitForVisible(selector, ms, reverse) {
     }
 
     var isReversed = reverse ? '' : 'not';
-    var errorMsg = 'element ("' + (selector || this.lastResult.selector) + '") still ' + isReversed + ' visible after ' + ms + 'ms';
+    var errorMsg = `element ("${selector || this.lastResult.selector}") still ${isReversed} visible after ${ms}ms`;
 
     return this.waitUntil(function () {
         return _this.isVisible(selector).then(function (isVisible) {

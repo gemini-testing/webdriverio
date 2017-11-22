@@ -36,7 +36,7 @@ function imeActivate(engine) {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with imeActivate protocol command');
     }
 
-    (0, _deprecationWarning2.default)('imeActivate', this.options);
-    return this.requestHandler.create('/session/:sessionId/ime/activate', { engine: engine });
+    (0, _deprecationWarning2.default)('imeActivate', this.options.deprecationWarnings, 'This command is not part of the W3C WebDriver spec and won\'t be supported in ' + 'future versions of the driver. There is currently no known replacement for this ' + 'action.');
+    return this.requestHandler.create('/session/:sessionId/ime/activate', { engine });
 }
 module.exports = exports['default'];

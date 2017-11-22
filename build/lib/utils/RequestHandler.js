@@ -32,6 +32,10 @@ var _http = require('http');
 
 var _http2 = _interopRequireDefault(_http);
 
+var _https = require('https');
+
+var _https2 = _interopRequireDefault(_https);
+
 var _request2 = require('request');
 
 var _request3 = _interopRequireDefault(_request2);
@@ -42,6 +46,8 @@ var _deepmerge2 = _interopRequireDefault(_deepmerge);
 
 var _constants = require('../helpers/constants');
 
+var _utilities = require('../helpers/utilities');
+
 var _ErrorHandler = require('./ErrorHandler');
 
 var _package = require('../../package.json');
@@ -50,7 +56,8 @@ var _package2 = _interopRequireDefault(_package);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var agent = new _http2.default.Agent({ keepAlive: true });
+var httpAgent = new _http2.default.Agent({ keepAlive: true });
+var httpsAgent = new _https2.default.Agent({ keepAlive: true });
 
 /**
  * RequestHandler
@@ -137,7 +144,14 @@ var RequestHandler = function () {
             newOptions.json = true;
             newOptions.followAllRedirects = true;
 
-            newOptions.agent = agent;
+            if (this.defaultOptions.protocol === 'http') {
+                newOptions.agent = httpAgent;
+            } else if (this.defaultOptions.protocol === 'https') {
+                newOptions.agent = httpsAgent;
+            } else {
+                throw new _ErrorHandler.RuntimeError('Unsupported protocol, must be http or https: ' + this.defaultOptions.protocol);
+            }
+
             newOptions.headers = {
                 'Connection': 'keep-alive',
                 'Accept': 'application/json',
@@ -253,15 +267,15 @@ var RequestHandler = function () {
             return new _promise2.default(function (resolve, reject) {
                 (0, _request3.default)(fullRequestOptions, function (err, response, body) {
                     /**
-                     * Resolve with a healthy response
+                     * Resolve only if successful response
                      */
-                    if (!err && (!body || body && (body.status === 0 || body.value && !body.status && !(body.value.error || body.value.stackTrace)))) {
-                        return resolve({ body: body, response: response });
+                    if (!err && (0, _utilities.isSuccessfulResponse)(body, response)) {
+                        return resolve({ body, response });
                     }
 
                     if (fullRequestOptions.gridCommand) {
                         if (body.success) {
-                            return resolve({ body: body, response: response });
+                            return resolve({ body, response });
                         }
 
                         return reject(new _ErrorHandler.RuntimeError({
@@ -284,9 +298,8 @@ var RequestHandler = function () {
                     }
 
                     if (body) {
-                        var errorCode = _constants.ERROR_CODES[body.status] || _constants.ERROR_CODES[body.value.error] || _constants.ERROR_CODES[-1];
+                        var errorCode = _constants.ERROR_CODES[body.status] || body.value && _constants.ERROR_CODES[body.value.error] || _constants.ERROR_CODES[-1];
                         var error = {
-                            status: body.status || errorCode.status || -1,
                             type: errorCode ? errorCode.id : 'unknown',
                             message: errorCode ? errorCode.message : 'unknown',
                             orgStatusMessage: body.value ? body.value.message : ''
@@ -312,14 +325,14 @@ var RequestHandler = function () {
 
                         if (err) {
                             return reject(new _ErrorHandler.RuntimeError({
-                                status: status,
+                                status,
                                 type: err.code || type,
                                 orgStatusMessage: err.message,
-                                message: message
+                                message
                             }));
                         }
 
-                        return reject(new _ErrorHandler.RuntimeError({ status: status, type: type, message: message }));
+                        return reject(new _ErrorHandler.RuntimeError({ status, type, message }));
                     }
 
                     _this3.request(fullRequestOptions, totalRetryCount, ++retryCount).then(resolve).catch(reject);

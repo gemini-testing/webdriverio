@@ -10,7 +10,7 @@ exports.default = settings;
  *
  * <example>
     :settings.js
-    it('should update/get settinsg on the device', function () {
+    it('should update/get settings on the device', function () {
         // update setting on the device
         browser.settings({ cyberdelia: 'open' });
 
@@ -39,6 +39,6 @@ function settings(settings) {
     return this.requestHandler.create({
         path: settingsRoute,
         method: 'POST'
-    }, { settings: settings });
+    }, { settings });
 }
 module.exports = exports['default'];

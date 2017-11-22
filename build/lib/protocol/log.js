@@ -47,7 +47,7 @@ function log(type) {
 
     return getLogTypes.call(this).then(function (types) {
         if (types.value.indexOf(type) === -1) {
-            throw new _ErrorHandler.ProtocolError('this log type ("' + type + '") is not available for this browser/device');
+            throw new _ErrorHandler.ProtocolError(`this log type ("${type}") is not available for this browser/device`);
         }
 
         return _this.requestHandler.create('/session/:sessionId/log', {

@@ -220,13 +220,13 @@ var ReporterStats = function (_RunnableStats6) {
                         test.runningBrowser += '\nrunning';
 
                         if (caps.browserName) {
-                            test.runningBrowser += ' ' + caps.browserName;
+                            test.runningBrowser += ` ${caps.browserName}`;
                         }
                         if (caps.version) {
-                            test.runningBrowser += ' (v' + caps.version + ')';
+                            test.runningBrowser += ` (v${caps.version})`;
                         }
                         if (caps.platform) {
-                            test.runningBrowser += ' on ' + caps.platform;
+                            test.runningBrowser += ` on ${caps.platform}`;
                         }
 
                         var host = _this7.runners[pid].config.host;
@@ -262,7 +262,7 @@ var ReporterStats = function (_RunnableStats6) {
     }, {
         key: 'getRunnerStats',
         value: function getRunnerStats(runner) {
-            if (!this.runners[runner.cid]) throw Error('Unrecognised runner [' + runner.cid + ']');
+            if (!this.runners[runner.cid]) throw Error(`Unrecognised runner [${runner.cid}]`);
             return this.runners[runner.cid];
         }
     }, {
@@ -285,7 +285,7 @@ var ReporterStats = function (_RunnableStats6) {
         value: function getSpecStats(runner) {
             var runnerStats = this.getRunnerStats(runner);
             var specHash = this.getSpecHash(runner);
-            if (!runnerStats.specs[specHash]) throw Error('Unrecognised spec [' + specHash + '] for runner [' + runner.cid + ']');
+            if (!runnerStats.specs[specHash]) throw Error(`Unrecognised spec [${specHash}] for runner [${runner.cid}]`);
             return runnerStats.specs[specHash];
         }
     }, {
@@ -359,7 +359,7 @@ var ReporterStats = function (_RunnableStats6) {
                 uid = ReporterStats.getIdentifier(runner);
             }
 
-            if (!suiteStats.hooks[uid]) throw Error('Unrecognised hook [' + runner.title + '] for suite [' + runner.parent + ']');
+            if (!suiteStats.hooks[uid]) throw Error(`Unrecognised hook [${runner.title}] for suite [${runner.parent}]`);
             return suiteStats.hooks[uid];
         }
     }, {
@@ -378,7 +378,7 @@ var ReporterStats = function (_RunnableStats6) {
                 uid = ReporterStats.getIdentifier(runner);
             }
 
-            if (!suiteStats.tests[uid]) throw Error('Unrecognised test [' + runner.title + '] for suite [' + runner.parent + ']');
+            if (!suiteStats.tests[uid]) throw Error(`Unrecognised test [${runner.title}] for suite [${runner.parent}]`);
             return suiteStats.tests[uid];
         }
     }, {
@@ -391,20 +391,20 @@ var ReporterStats = function (_RunnableStats6) {
 
             if (type === 'screenshot') {
                 storedRunner.data = null;
-            } else if (type === 'result' && runner.requestOptions && runner.requestOptions.uri.path.includes('screenshot')) {
+            } else if (type === 'result' && runner.requestOptions && runner.requestOptions.uri.path.indexOf('screenshot') !== -1) {
                 storedRunner.body = null;
-            } else if (type === 'aftercommand' && knownScreenshotCommands.includes(runner.command)) {
+            } else if (type === 'aftercommand' && knownScreenshotCommands.indexOf(runner.command) !== -1) {
                 storedRunner.result = null;
             }
             if (ReporterStats.getIdentifier(runner) && runner.parent) {
                 this.getTestStats(runner).output.push({
-                    type: type,
+                    type,
                     payload: storedRunner
                 });
             } else {
                 // Log commands, results and screenshots executed outside of a test
                 this.getSpecStats(runner).output.push({
-                    type: type,
+                    type,
                     payload: storedRunner
                 });
             }
@@ -435,7 +435,7 @@ var ReporterStats = function (_RunnableStats6) {
              */
             var message = 'Ensure the done() callback is being called in this test.';
             if (runner.err && runner.err.message && runner.err.message.indexOf(message) > -1) {
-                var replacement = 'The execution in the test "' + runner.parent + ' ' + runner.title + '" took ' + 'too long. Try to reduce the run time or increase your timeout for ' + 'test specs (http://webdriver.io/guide/testrunner/timeouts.html).';
+                var replacement = `The execution in the test "${runner.parent} ${runner.title}" took ` + 'too long. Try to reduce the run time or increase your timeout for ' + 'test specs (http://webdriver.io/guide/testrunner/timeouts.html).';
                 runner.err.message = runner.err.message.replace(message, replacement);
                 runner.err.stack = runner.err.stack.replace(message, replacement);
             }

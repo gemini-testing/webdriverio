@@ -4,10 +4,6 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _defineProperty2 = require('babel-runtime/helpers/defineProperty');
-
-var _defineProperty3 = _interopRequireDefault(_defineProperty2);
-
 var _assign = require('babel-runtime/core-js/object/assign');
 
 var _assign2 = _interopRequireDefault(_assign);
@@ -74,7 +70,7 @@ var elements = function elements(selector) {
 
             var elem = lastPromise.value.value.ELEMENT;
             relative = true;
-            requestPath = '/session/:sessionId/element/' + elem + '/elements';
+            requestPath = `/session/:sessionId/element/${elem}/elements`;
         }
     }
 
@@ -92,9 +88,10 @@ var elements = function elements(selector) {
          */
         result.value = result.value.map(function (elem) {
             var elemValue = elem.ELEMENT || elem[_constants.W3C_ELEMENT_ID];
-            return (0, _defineProperty3.default)({
-                ELEMENT: elemValue
-            }, _constants.W3C_ELEMENT_ID, elemValue);
+            return {
+                ELEMENT: elemValue,
+                [_constants.W3C_ELEMENT_ID]: elemValue
+            };
         });
 
         return result;

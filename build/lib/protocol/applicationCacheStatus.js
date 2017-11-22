@@ -1,7 +1,7 @@
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
-  value: true
+    value: true
 });
 exports.default = applicationCacheStatus;
 
@@ -12,8 +12,8 @@ var _deprecationWarning2 = _interopRequireDefault(_deprecationWarning);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function applicationCacheStatus() {
-  (0, _deprecationWarning2.default)('applicationCacheStatus', this.options);
-  return this.requestHandler.create('/session/:sessionId/application_cache/status');
+    (0, _deprecationWarning2.default)('applicationCacheStatus', this.options.deprecationWarnings, 'This command is not part of the W3C WebDriver spec and won\'t be supported in ' + 'future versions of the driver.');
+    return this.requestHandler.create('/session/:sessionId/application_cache/status');
 } /**
    *
    * Get the status of the html5 application cache.

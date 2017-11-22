@@ -13,7 +13,7 @@ function elementIdClear(id) {
     }
 
     return this.requestHandler.create({
-        path: '/session/:sessionId/element/' + id + '/clear',
+        path: `/session/:sessionId/element/${id}/clear`,
         method: 'POST'
     });
 } /**

@@ -6,6 +6,39 @@ Object.defineProperty(exports, "__esModule", {
 
 var _ErrorHandler = require('../utils/ErrorHandler');
 
+var _utilities = require('../helpers/utilities');
+
+/**
+ *
+ * Protocol binding to get or change the size of the browser.
+ *
+ * <example>
+    :windowHandleSize.js
+    it('should get or set window position', function () {
+        // change the size of a specified window
+        client.windowHandleSize('{dc30381e-e2f3-9444-8bf3-12cc44e8372a}', {width: 800, height: 600});
+        // or set the current window size
+        browser.windowHandleSize({width: 800, height: 600});
+
+        // get the size of a specified window
+        var size = browser.windowHandleSize('{dc30381e-e2f3-9444-8bf3-12cc44e8372a}');
+        // or of the current window
+        size = browser.windowHandleSize();
+
+        console.log(size); // outputs: {width: 800, height: 600}
+    });
+ * </example>
+ *
+ * @param {String=} windowHandle the window to receive/change the size
+ * @param {Object=} dimension    the new size of the window
+ *
+ * @return {Object} the size of the window (`{width: number, height: number}`)
+ *
+ * @see  https://w3c.github.io/webdriver/webdriver-spec.html#dfn-set-window-size
+ * @type protocol
+ *
+ */
+
 var windowHandleSize = function windowHandleSize() {
     var _this = this;
 
@@ -24,7 +57,7 @@ var windowHandleSize = function windowHandleSize() {
      * protocol options
      */
     var requestOptions = {
-        path: '/session/:sessionId/window/' + windowHandle + '/size',
+        path: `/session/:sessionId/window/${windowHandle}/size`,
         method: 'GET'
 
         /*!
@@ -47,43 +80,18 @@ var windowHandleSize = function windowHandleSize() {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with windowHandleSize protocol command');
     }
 
-    return this.requestHandler.create(requestOptions, data).catch(function () {
+    return this.requestHandler.create(requestOptions, data).catch(function (err) {
         /**
          * use W3C path if old path failed
          */
-        requestOptions.path = '/session/:sessionId/window/rect';
-        return _this.requestHandler.create(requestOptions, data);
+        if ((0, _utilities.isUnknownCommand)(err)) {
+            requestOptions.path = '/session/:sessionId/window/rect';
+            return _this.requestHandler.create(requestOptions, data);
+        }
+
+        throw err;
     });
-}; /**
-    *
-    * Protocol binding to get or change the size of the browser.
-    *
-    * <example>
-       :windowHandleSize.js
-       it('should get or set window position', function () {
-           // change the size of a specified window
-           client.windowHandleSize('{dc30381e-e2f3-9444-8bf3-12cc44e8372a}', {width: 800, height: 600});
-           // or set the current window size
-           browser.windowHandleSize({width: 800, height: 600});
-   
-           // get the size of a specified window
-           var size = browser.windowHandleSize('{dc30381e-e2f3-9444-8bf3-12cc44e8372a}');
-           // or of the current window
-           size = browser.windowHandleSize();
-   
-           console.log(size); // outputs: {width: 800, height: 600}
-       });
-    * </example>
-    *
-    * @param {String=} windowHandle the window to receive/change the size
-    * @param {Object=} dimension    the new size of the window
-    *
-    * @return {Object} the size of the window (`{width: number, height: number}`)
-    *
-    * @see  https://w3c.github.io/webdriver/webdriver-spec.html#dfn-set-window-size
-    * @type protocol
-    *
-    */
+};
 
 exports.default = windowHandleSize;
 module.exports = exports['default'];

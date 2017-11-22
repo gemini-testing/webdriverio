@@ -20,7 +20,7 @@ function gridTestSession(sessionId) {
     }
 
     return this.requestHandler.create({
-        path: '/testsession?session=' + sessionId,
+        path: `/testsession?session=${sessionId}`,
         method: 'GET',
         requiresSession: false,
         gridCommand: true

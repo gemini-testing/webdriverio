@@ -15,7 +15,7 @@ function installApp(appPath) {
     return this.requestHandler.create({
         path: '/session/:sessionId/appium/device/install_app',
         method: 'POST'
-    }, { appPath: appPath });
+    }, { appPath });
 } /**
    *
    * Install an app on device.
@@ -29,7 +29,7 @@ function installApp(appPath) {
    *
    * @param {String} path  path to Android application
    *
-   * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/appium-bindings.md#install-app
+   * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/other/appium-bindings.md#install-app
    * @type mobile
    * @for android
    *

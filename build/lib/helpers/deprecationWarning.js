@@ -4,8 +4,11 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 exports.default = deprecate;
-function deprecate(commandName, options) {
-    if (!options.deprecationWarnings) return;
-    console.warn('WARNING: the "' + commandName + '" command will be deprecated soon. Please use a ' + 'different command in order to avoid failures in your test after updating WebdriverIO.');
+function deprecate(commandName, deprecationWarnings, note) {
+    if (!deprecationWarnings) {
+        return;
+    }
+
+    console.warn(`WARNING: the "${commandName}" command will be deprecated soon. If you have further ` + 'questions, reach out in the WebdriverIO Gitter support channel (https://gitter.im/webdriverio/webdriverio).\n' + `Note: ${note}\n\n` + '(You can disable this warning by setting `"deprecationWarnings": false` in ' + 'your WebdriverIO config)');
 }
 module.exports = exports['default'];

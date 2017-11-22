@@ -1,7 +1,7 @@
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
-  value: true
+    value: true
 });
 exports.default = timeoutsImplicitWait;
 
@@ -35,14 +35,14 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
  */
 
 function timeoutsImplicitWait(ms) {
-  /*!
-   * parameter check
-   */
-  if (typeof ms !== 'number') {
-    throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with timeoutsImplicitWait protocol command');
-  }
+    /*!
+     * parameter check
+     */
+    if (typeof ms !== 'number') {
+        throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with timeoutsImplicitWait protocol command');
+    }
 
-  (0, _deprecationWarning2.default)('timeoutsImplicitWait', this.options);
-  return this.requestHandler.create('/session/:sessionId/timeouts/implicit_wait', { ms: ms });
+    (0, _deprecationWarning2.default)('timeoutsImplicitWait', this.options.deprecationWarnings, 'This command is not part of the W3C WebDriver spec and won\'t be supported in ' + 'future versions of the driver. It is recommended to use the timeout command for this.');
+    return this.requestHandler.create('/session/:sessionId/timeouts/implicit_wait', { ms });
 }
 module.exports = exports['default'];

@@ -16,7 +16,7 @@ function gridProxyDetails(proxyId) {
     }
 
     return this.requestHandler.create({
-        path: '/proxy?id=' + proxyId,
+        path: `/proxy?id=${proxyId}`,
         method: 'GET',
         requiresSession: false,
         gridCommand: true

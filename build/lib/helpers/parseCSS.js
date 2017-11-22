@@ -51,7 +51,7 @@ var parse = function parse(cssPropertyValue, cssProperty) {
         var value = cssPropertyValue.value.split(/,/).map(_sanitize2.default.css);
 
         parsedValue.value = _sanitize2.default.css(font[0].value || font[0].string);
-        parsedValue.parsed = { value: value, type: 'font', string: string };
+        parsedValue.parsed = { value, type: 'font', string };
     } else {
         /**
          * parse other css properties

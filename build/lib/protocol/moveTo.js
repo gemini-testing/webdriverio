@@ -44,7 +44,7 @@ function moveTo(element, xoffset, yoffset) {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with moveTo command');
     }
 
-    (0, _deprecationWarning2.default)('moveTo', this.options, this.options);
+    (0, _deprecationWarning2.default)('moveTo', this.options.deprecationWarnings, 'This command is not part of the W3C WebDriver spec and won\'t be supported in ' + 'future versions of the driver. It is recommended to use the actions command to ' + 'emulate pointer events.');
 
     /**
      * simulate event in safari

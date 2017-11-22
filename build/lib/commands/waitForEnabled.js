@@ -67,7 +67,7 @@ var waitForEnabled = function waitForEnabled(selector, ms, reverse) {
     }
 
     var isReversed = reverse ? '' : 'not';
-    var errorMsg = 'element ("' + (selector || this.lastResult.selector) + '") still ' + isReversed + ' enabled after ' + ms + 'ms';
+    var errorMsg = `element ("${selector || this.lastResult.selector}") still ${isReversed} enabled after ${ms}ms`;
 
     return this.waitUntil(function () {
         return _this.isEnabled(selector).then(function (isEnabled) {

@@ -73,7 +73,7 @@ function elementIdValue(id, value) {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with elementIdValue protocol command');
     }
 
-    return this.requestHandler.create('/session/:sessionId/element/' + id + '/value', {
+    return this.requestHandler.create(`/session/:sessionId/element/${id}/value`, {
         value: key, // json wire conform way: `['f', 'o', 'o']`
         text: key.join('') // webdriver conform way: `foo`
     });

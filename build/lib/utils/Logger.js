@@ -59,6 +59,14 @@ var Logger = function () {
          * error : error only
          * verbose : command + data + result
          */
+
+        /**
+         * logLevel verification
+         */
+        if (!(_constants.LOG_LEVELS.indexOf(options.logLevel) !== -1)) {
+            throw new Error(`logLevel "${options.logLevel}" is not valid.`);
+        }
+
         this.logLevel = options.logLevel;
 
         this.setupWriteStream(options);
@@ -99,11 +107,11 @@ var Logger = function () {
         // register event handler to log error events
         eventHandler.on('error', function (data) {
             if (data.err && data.err.code === 'ECONNREFUSED') {
-                _this.error('Couldn\'t find a running selenium server instance on ' + data.requestOptions.uri);
+                _this.error(`Couldn't find a running selenium server instance on ${data.requestOptions.uri}`);
             } else if (data.err && data.err.code === 'ENOTFOUND') {
-                _this.error('Couldn\'t resolve hostname ' + data.requestOptions.uri);
+                _this.error(`Couldn't resolve hostname ${data.requestOptions.uri}`);
             } else if (data.err && data.err.code === 'NOSESSIONID') {
-                _this.error('Couldn\'t get a session ID - ' + data.err.message);
+                _this.error(`Couldn't get a session ID - ${data.err.message}`);
             } else if (_this.logLevel === 'error' || _this.logLevel === 'verbose') {
                 if (data.body && _constants.ERROR_CODES[data.body.status]) {
                     _this.error(_constants.ERROR_CODES[data.body.status].id + '\t' + _constants.ERROR_CODES[data.body.status].message + '\n\t\t\t' + data.body.value.message);
@@ -189,7 +197,7 @@ var Logger = function () {
 
             var currentDate = new Date();
             var dateString = currentDate.toString().match(/\d\d:\d\d:\d\d/)[0];
-            var preamble = _constants.COLORS.dkgray + '[' + dateString + '] ' + _constants.COLORS.reset;
+            var preamble = `${_constants.COLORS.dkgray}[${dateString}] ${_constants.COLORS.reset}`;
 
             if (!content) {
                 this.write(preamble, message);
@@ -208,7 +216,7 @@ var Logger = function () {
         key: 'command',
         value: function command(method, path) {
             if (method && path) {
-                this.log(_constants.COLORS.violet + 'COMMAND\t' + _constants.COLORS.reset + method, path);
+                this.log(`${_constants.COLORS.violet}COMMAND\t${_constants.COLORS.reset}${method}`, path);
             }
         }
 
@@ -220,9 +228,9 @@ var Logger = function () {
         key: 'debug',
         value: function debug() {
             this.write('');
-            this.log(_constants.COLORS.yellow + 'DEBUG\t' + _constants.COLORS.reset + 'Queue has stopped!');
-            this.log(_constants.COLORS.yellow + 'DEBUG\t' + _constants.COLORS.reset + 'You can now go into the browser or use the command line as REPL');
-            this.log(_constants.COLORS.yellow + 'DEBUG\t' + _constants.COLORS.dkgray + '(To exit, press ^C again or type .exit)' + _constants.COLORS.reset + '\n');
+            this.log(`${_constants.COLORS.yellow}DEBUG\t${_constants.COLORS.reset}Queue has stopped!`);
+            this.log(`${_constants.COLORS.yellow}DEBUG\t${_constants.COLORS.reset}You can now go into the browser or use the command line as REPL`);
+            this.log(`${_constants.COLORS.yellow}DEBUG\t${_constants.COLORS.dkgray}(To exit, press ^C again or type .exit)${_constants.COLORS.reset}\n`);
         }
 
         /**
@@ -235,7 +243,7 @@ var Logger = function () {
         value: function data(_data) {
             _data = (0, _stringify2.default)(_sanitize2.default.limit(_data));
             if (_data && (this.logLevel === 'data' || this.logLevel === 'verbose')) {
-                this.log(_constants.COLORS.brown + 'DATA\t\t' + _constants.COLORS.reset + _data);
+                this.log(`${_constants.COLORS.brown}DATA\t\t${_constants.COLORS.reset}${_data}`);
             }
         }
 
@@ -247,7 +255,7 @@ var Logger = function () {
     }, {
         key: 'info',
         value: function info(msg) {
-            this.log(_constants.COLORS.blue + 'INFO\t' + _constants.COLORS.reset + msg);
+            this.log(`${_constants.COLORS.blue}INFO\t${_constants.COLORS.reset}${msg}`);
         }
 
         /**
@@ -259,7 +267,7 @@ var Logger = function () {
         key: 'result',
         value: function result(_result) {
             _result = _sanitize2.default.limit((0, _stringify2.default)(_result));
-            this.log(_constants.COLORS.teal + 'RESULT\t\t' + _constants.COLORS.reset + _result);
+            this.log(`${_constants.COLORS.teal}RESULT\t\t${_constants.COLORS.reset}${_result}`);
         }
 
         /**

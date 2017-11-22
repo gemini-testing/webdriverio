@@ -12,7 +12,7 @@ function elementIdSelected(id) {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with elementIdSelected protocol command');
     }
 
-    return this.requestHandler.create('/session/:sessionId/element/' + id + '/selected');
+    return this.requestHandler.create(`/session/:sessionId/element/${id}/selected`);
 } /**
    *
    * Determine if an OPTION element, or an INPUT element of type checkbox or

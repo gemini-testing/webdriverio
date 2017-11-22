@@ -13,7 +13,7 @@ function elementIdRect(id) {
     }
 
     return this.requestHandler.create({
-        path: '/session/:sessionId/element/' + id + '/rect',
+        path: `/session/:sessionId/element/${id}/rect`,
         method: 'GET'
     });
 } /**

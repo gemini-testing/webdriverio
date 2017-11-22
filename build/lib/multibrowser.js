@@ -49,7 +49,7 @@ var Multibrowser = function () {
         key: 'addInstance',
         value: function addInstance(browserName, client) {
             if (this.instances[browserName]) {
-                throw new Error('webdriver instance "' + browserName + '" is already defined');
+                throw new Error(`webdriver instance "${browserName}" is already defined`);
             }
             this.instances[browserName] = client;
         }
@@ -247,7 +247,7 @@ function multiremoteModifier(client) {
         var instance = multibrowser.instances[browserName];
 
         if (!instance) {
-            throw new Error('browser name "' + browserName + '" was not defined');
+            throw new Error(`browser name "${browserName}" was not defined`);
         }
 
         instance.isMultibrowser = false;

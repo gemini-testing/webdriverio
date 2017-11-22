@@ -76,7 +76,7 @@ if (argv.help) {
 }
 
 if (argv.version) {
-    console.log('v' + VERSION);
+    console.log(`v${VERSION}`);
     process.exit(0);
 }
 
@@ -96,7 +96,11 @@ if (!configFile) {
 var configMode = false;
 if (argv._[0] === 'config') {
     configMode = true;
-    console.log('\n=========================\nWDIO Configuration Helper\n=========================\n');
+    console.log(`
+=========================
+WDIO Configuration Helper
+=========================
+`);
     _inquirer2.default.prompt([{
         type: 'list',
         name: 'backend',
@@ -198,7 +202,7 @@ if (argv._[0] === 'config') {
         choices: SUPPORTED_REPORTER,
         filter: function filter(reporters) {
             return reporters.map(function (reporter) {
-                return 'wdio-' + reporter.split(/-/)[0].trim() + '-reporter';
+                return `wdio-${reporter.split(/-/)[0].trim()}-reporter`;
             });
         }
     }, {
@@ -216,7 +220,7 @@ if (argv._[0] === 'config') {
         choices: SUPPORTED_SERVICES,
         filter: function filter(services) {
             return services.map(function (service) {
-                return 'wdio-' + service.split(/- /)[0].trim() + '-service';
+                return `wdio-${service.split(/- /)[0].trim()}-service`;
             });
         }
     }, {
@@ -262,7 +266,7 @@ if (argv._[0] === 'config') {
     }]).then(function (answers) {
         var packagesToInstall = [];
         if (answers.installFramework) {
-            packagesToInstall.push('wdio-' + answers.framework + '-framework');
+            packagesToInstall.push(`wdio-${answers.framework}-framework`);
         }
         if (answers.installReporter) {
             packagesToInstall = packagesToInstall.concat(answers.reporters);
@@ -294,7 +298,12 @@ function renderConfigurationFile(answers) {
         answers: answers
     });
     _fs2.default.writeFileSync(_path2.default.join(process.cwd(), 'wdio.conf.js'), renderedTpl);
-    console.log('\nConfiguration file was created successfully!\nTo run your tests, execute:\n\n$ wdio wdio.conf.js\n');
+    console.log(`
+Configuration file was created successfully!
+To run your tests, execute:
+
+$ wdio wdio.conf.js
+`);
 }
 
 /**

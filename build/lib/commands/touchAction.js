@@ -51,7 +51,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
         // simple touch action using selector and x y variables
         // tap location is 30px right and 20px down relative from the center of the element
         browser.touchAction({
-            actions: 'tap', x: 30, y:20, selector: '//UIAApplication[1]/UIAElement[2]'
+            action: 'tap', x: 30, y:20, selector: '//UIAApplication[1]/UIAElement[2]'
         })
 
         // multi action on an element (drag&drop)
@@ -118,14 +118,14 @@ function touchAction(selector, actions) {
         actions = formatArgs(selector, actions);
         return _promise2.default.all(getSelectors.call(this, actions, true)).then(function (jsonElements) {
             actions = replaceSelectorsById(actions, jsonElements);
-            return _this.performMultiAction({ actions: actions });
+            return _this.performMultiAction({ actions });
         });
     }
 
     actions = formatArgs(selector, actions);
     return _promise2.default.all(getSelectors.call(this, actions)).then(function (jsonElements) {
         actions = replaceSelectorsById(actions, jsonElements);
-        return _this.performTouchAction({ actions: actions });
+        return _this.performTouchAction({ actions });
     });
 }
 
@@ -172,13 +172,13 @@ var formatArgs = function formatArgs(selector, actions) {
 
         if (typeof action === 'string') {
             if (!hasValidActionOptions(action, formattedAction.options)) {
-                throw new Error('Touch action "' + action + '" doesn\'t have proper options. Make sure certain actions like ' + (POS_ACTIONS.join(', ') + ' have position options like "selector", "x" or "y".'));
+                throw new Error(`Touch action "${action}" doesn't have proper options. Make sure certain actions like ` + `${POS_ACTIONS.join(', ')} have position options like "selector", "x" or "y".`);
             }
 
             formattedAction.action = action;
 
             /**
-             * remove options property if empyt
+             * remove options property if empty
              */
             if ((0, _keys2.default)(formattedAction.options).length === 0) {
                 delete formattedAction.options;
@@ -201,7 +201,7 @@ var formatArgs = function formatArgs(selector, actions) {
         }
 
         /**
-         * remove options property if empyt
+         * remove options property if empty
          */
         if ((0, _keys2.default)(formattedAction.options).length === 0) {
             delete formattedAction.options;
@@ -212,18 +212,18 @@ var formatArgs = function formatArgs(selector, actions) {
          * make sure action has proper options before sending command to Appium
          */
         if (formattedAction.action === 'release' && formattedAction.options) {
-            throw new Error('action "release" doesn\'t accept any options ' + ('("' + (0, _keys2.default)(formattedAction.options).join('", "') + '" found)'));
+            throw new Error('action "release" doesn\'t accept any options ' + `("${(0, _keys2.default)(formattedAction.options).join('", "')}" found)`);
         } else if (formattedAction.action === 'wait' && ((0, _keys2.default)(formattedAction.options).indexOf('x') > -1 || (0, _keys2.default)(formattedAction.options).indexOf('y') > -1)) {
             throw new Error('action "wait" doesn\'t accept x, y options');
         } else if (POS_ACTIONS.indexOf(formattedAction.action) > -1) {
             for (var option in formattedAction.options) {
                 if (ACCEPTED_OPTIONS.indexOf(option) === -1) {
-                    throw new Error('action "' + formattedAction.action + '" doesn\'t accept "' + option + '" as option');
+                    throw new Error(`action "${formattedAction.action}" doesn't accept "${option}" as option`);
                 }
             }
 
             if ((0, _keys2.default)(formattedAction.options || {}).length === 0) {
-                throw new Error('Touch actions like "' + formattedAction.action + '" need at least some kind of ' + 'position information like "selector", "x" or "y" options, you\'ve none given.');
+                throw new Error(`Touch actions like "${formattedAction.action}" need at least some kind of ` + 'position information like "selector", "x" or "y" options, you\'ve none given.');
             }
         }
 

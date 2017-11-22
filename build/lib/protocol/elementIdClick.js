@@ -13,7 +13,7 @@ function elementIdClick(id) {
     }
 
     return this.requestHandler.create({
-        path: '/session/:sessionId/element/' + id + '/click',
+        path: `/session/:sessionId/element/${id}/click`,
         method: 'POST'
     });
 } /**

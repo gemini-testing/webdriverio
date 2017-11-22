@@ -12,7 +12,7 @@ function startActivity(appPackage, appActivity, appWaitPackage, appWaitActivity)
         throw new _ErrorHandler.ProtocolError('startActivity command requires two parameter (appPackage, appActivity) from type string');
     }
 
-    var data = { appPackage: appPackage, appActivity: appActivity };
+    var data = { appPackage, appActivity };
 
     if (typeof appWaitPackage === 'string') {
         data.appWaitPackage = appWaitPackage;

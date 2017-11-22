@@ -35,7 +35,7 @@ function session() {
      */
     if (doWhat === 'GET') {
         return this.requestHandler.create({
-            path: '/session/' + sessionId,
+            path: `/session/${sessionId}`,
             method: 'GET',
             requiresSession: false
         });

@@ -19,7 +19,7 @@ exports.default = launch;
     });
  * </example>
  *
- * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/appium-bindings.md#launch
+ * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/other/appium-bindings.md#launch
  * @type mobile
  * @for ios, android
  *

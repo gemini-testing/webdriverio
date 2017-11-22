@@ -22,7 +22,7 @@ function performTouchAction(action) {
    *
    * @param {Object} touchAttr contains attributes of touch gesture (e.g. `element`, `x` and `y`)
    *
-   * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/appium-bindings.md#touchaction--multitouchaction
+   * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/other/appium-bindings.md#touchaction--multitouchaction
    * @type mobile
    * @for android, ios
    *

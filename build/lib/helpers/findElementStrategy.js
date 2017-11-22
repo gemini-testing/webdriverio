@@ -44,7 +44,7 @@ var findStrategy = function findStrategy() {
     // check value type
     // use id strategy if value starts with # and doesnt contain any other CSS selector-relevant character
     // regex to match ids from http://stackoverflow.com/questions/18938390/regex-to-match-ids-in-a-css-file
-    if (value.search(/^#-?[_a-zA-Z0-9.:/-]+[_a-zA-Z0-9-]*$/) > -1) {
+    if (value.search(/^#-?[_a-zA-Z]+[_a-zA-Z0-9-]*$/) > -1) {
         using = 'id';
         value = value.slice(1);
 
@@ -52,12 +52,12 @@ var findStrategy = function findStrategy() {
     } else if (value.indexOf('/') === 0 || value.indexOf('(') === 0 || value.indexOf('../') === 0 || value.indexOf('./') === 0 || value.indexOf('*/') === 0) {
         using = 'xpath';
 
-        // use link text startegy if value startes with =
+        // use link text strategy if value startes with =
     } else if (value.indexOf('=') === 0) {
         using = 'link text';
         value = value.slice(1);
 
-        // use partial link text startegy if value startes with *=
+        // use partial link text strategy if value startes with *=
     } else if (value.indexOf('*=') === 0) {
         using = 'partial link text';
         value = value.slice(2);
@@ -101,7 +101,7 @@ var findStrategy = function findStrategy() {
         var tag = query.shift();
 
         using = 'xpath';
-        value = '' + xpathPrefix + (tag.length ? tag : '*') + '[normalize-space() = "' + query.join('=') + '"]';
+        value = `${xpathPrefix}${tag.length ? tag : '*'}[normalize-space() = "${query.join('=')}"]`;
 
         // any element containing given text
     } else if (value.search(/^[a-z0-9]*\*=(.)+$/) >= 0) {
@@ -109,9 +109,9 @@ var findStrategy = function findStrategy() {
         var _tag = _query.shift();
 
         using = 'xpath';
-        value = '' + xpathPrefix + (_tag.length ? _tag : '*') + '[contains(., "' + _query.join('*=') + '")]';
+        value = `${xpathPrefix}${_tag.length ? _tag : '*'}[contains(., "${_query.join('*=')}")]`;
 
-        // any element with certian class or id + given content
+        // any element with certain class or id + given content
     } else if (value.search(/^[a-z0-9]*(\.|#)-?[_a-zA-Z]+[_a-zA-Z0-9-]*=(.)+$/) >= 0) {
         var _query2 = value.split(/=/);
         var _tag2 = _query2.shift();
@@ -121,9 +121,9 @@ var findStrategy = function findStrategy() {
 
         _tag2 = _tag2.substr(0, _tag2.search(/(\.|#)/));
         using = 'xpath';
-        value = '' + xpathPrefix + (_tag2.length ? _tag2 : '*') + '[contains(@' + classOrId + ', "' + classOrIdName + '") and normalize-space() = "' + _query2.join('=') + '"]';
+        value = `${xpathPrefix}${_tag2.length ? _tag2 : '*'}[contains(@${classOrId}, "${classOrIdName}") and normalize-space() = "${_query2.join('=')}"]`;
 
-        // any element with certian class or id + has certain content
+        // any element with certain class or id + has certain content
     } else if (value.search(/^[a-z0-9]*(\.|#)-?[_a-zA-Z]+[_a-zA-Z0-9-]*\*=(.)+$/) >= 0) {
         var _query3 = value.split(/\*=/);
         var _tag3 = _query3.shift();
@@ -134,7 +134,7 @@ var findStrategy = function findStrategy() {
         _tag3 = _tag3.substr(0, _tag3.search(/(\.|#)/));
         using = 'xpath';
         value = xpathPrefix + (_tag3.length ? _tag3 : '*') + '[contains(@' + _classOrId + ', "' + _classOrIdName + '") and contains(., "' + _query3.join('*=') + '")]';
-        value = '' + xpathPrefix + (_tag3.length ? _tag3 : '*') + '[contains(@' + _classOrId + ', "' + _classOrIdName + '") and contains(., "' + _query3.join('*=') + '")]';
+        value = `${xpathPrefix}${_tag3.length ? _tag3 : '*'}[contains(@${_classOrId}, "${_classOrIdName}") and contains(., "${_query3.join('*=')}")]`;
 
         // allow to move up to the parent or select current element
     } else if (value === '..' || value === '.') {

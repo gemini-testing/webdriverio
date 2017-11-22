@@ -12,7 +12,7 @@ function elementIdDisplayed(id) {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with elementIdDisplayed protocol command');
     }
 
-    return this.requestHandler.create('/session/:sessionId/element/' + id + '/displayed');
+    return this.requestHandler.create(`/session/:sessionId/element/${id}/displayed`);
 } /**
    *
    * Determine if an element is currently displayed.

@@ -47,7 +47,7 @@ var ErrorHandler = function (_Error) {
             _this.message = _constants.ERROR_CODES[msg].message;
 
             if (msg === 7 && details) {
-                _this.message = _this.message.slice(0, -1) + ' ("' + details + '").';
+                _this.message = `${_this.message.slice(0, -1)} ("${details}").`;
             }
         } else if (arguments.length > 1) {
             _this.details = details;
@@ -58,51 +58,58 @@ var ErrorHandler = function (_Error) {
             _this.message = type;
         }
 
-        if (typeof _this.message === 'object') {
-            var seleniumStack = _this.message;
+        /**
+         * don't modify error if no response is available
+         */
+        if (typeof _this.message !== 'object') {
+            Error.captureStackTrace(_this, ErrorHandler);
+            return (0, _possibleConstructorReturn3.default)(_this);
+        }
 
-            if (seleniumStack.screenshot) {
-                _this.screenshot = seleniumStack.screenshot;
-                delete seleniumStack.screenshot;
+        var seleniumStack = _this.message;
+
+        if (seleniumStack.screenshot) {
+            _this.screenshot = seleniumStack.screenshot;
+            delete seleniumStack.screenshot;
+        }
+
+        if (seleniumStack.message && seleniumStack.type) {
+            if (typeof seleniumStack.orgStatusMessage === 'string' && seleniumStack.orgStatusMessage.match(/"errorMessage":"NoSuchElement"/)) {
+                seleniumStack.type = 'NoSuchElement';
+                seleniumStack.status = 7;
+                seleniumStack.message = _constants.ERROR_CODES['7'].message;
+                console.log('EHH waht ', seleniumStack.message);
             }
 
-            if (seleniumStack.message && seleniumStack.type && seleniumStack.status) {
-                if (typeof seleniumStack.orgStatusMessage === 'string' && seleniumStack.orgStatusMessage.match(/"errorMessage":"NoSuchElement"/)) {
-                    seleniumStack.type = 'NoSuchElement';
-                    seleniumStack.status = 7;
-                    seleniumStack.message = _constants.ERROR_CODES['7'].message;
-                }
+            _this.message = seleniumStack.message + ' (' + seleniumStack.type + ':' + seleniumStack.status + ')';
+        }
 
-                _this.message = seleniumStack.message + ' (' + seleniumStack.type + ':' + seleniumStack.status + ')';
+        if (typeof seleniumStack.orgStatusMessage === 'string') {
+            var reqPos = seleniumStack.orgStatusMessage.indexOf(',"request"');
+            var problem = '';
+
+            if (reqPos > 0) {
+                problem = JSON.parse(seleniumStack.orgStatusMessage.slice(0, reqPos) + '}').errorMessage;
+            } else {
+                problem = seleniumStack.orgStatusMessage;
             }
 
-            if (typeof seleniumStack.orgStatusMessage === 'string') {
-                var reqPos = seleniumStack.orgStatusMessage.indexOf(',"request"');
-                var problem = '';
-
-                if (reqPos > 0) {
-                    problem = JSON.parse(seleniumStack.orgStatusMessage.slice(0, reqPos) + '}').errorMessage;
-                } else {
-                    problem = seleniumStack.orgStatusMessage;
-                }
-
-                if (problem.indexOf('No enum constant org.openqa.selenium.Platform') > -1) {
-                    problem = 'The Selenium backend you\'ve chosen doesn\'t support the desired platform (' + problem.slice(46) + ')';
-                }
-
-                // truncate errorMessage
-                if (problem.indexOf('(Session info:') > -1) {
-                    problem = problem.slice(0, problem.indexOf('(Session info:')).trim();
-                }
-
-                // make assumption based on experience on certain error messages
-                if (problem.indexOf('unknown error: path is not absolute') !== -1) {
-                    problem = 'You are trying to set a value to an input field with type="file", use the `uploadFile` command instead (Selenium error: ' + problem + ')';
-                }
-
-                _this.message = problem;
-                _this.seleniumStack = seleniumStack;
+            if (problem.indexOf('No enum constant org.openqa.selenium.Platform') > -1) {
+                problem = 'The Selenium backend you\'ve chosen doesn\'t support the desired platform (' + problem.slice(46) + ')';
             }
+
+            // truncate errorMessage
+            if (problem.indexOf('(Session info:') > -1) {
+                problem = problem.slice(0, problem.indexOf('(Session info:')).trim();
+            }
+
+            // make assumption based on experience on certain error messages
+            if (problem.indexOf('unknown error: path is not absolute') !== -1) {
+                problem = 'You are trying to set a value to an input field with type="file", use the `uploadFile` command instead (Selenium error: ' + problem + ')';
+            }
+
+            _this.message = problem;
+            _this.seleniumStack = seleniumStack;
         }
 
         Error.captureStackTrace(_this, ErrorHandler);

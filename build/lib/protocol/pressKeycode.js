@@ -27,6 +27,6 @@ function pressKeycode(keycode, metastate) {
     return this.requestHandler.create({
         path: '/session/:sessionId/appium/device/press_keycode',
         method: 'POST'
-    }, { keycode: keycode, metastate: metastate });
+    }, { keycode, metastate });
 }
 module.exports = exports['default'];

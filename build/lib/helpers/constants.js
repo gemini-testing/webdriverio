@@ -4,6 +4,11 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 /**
+ * logLevel
+ */
+var LOG_LEVELS = ['silent', 'command', 'result', 'data', 'error', 'verbose'];
+
+/**
  * logger colors
  */
 var COLORS = {
@@ -223,6 +228,7 @@ var UnsupportedOperation = { id: 'UnsupportedOperation', status: 500, message: '
    */
 };var W3C_ELEMENT_ID = 'element-6066-11e4-a52e-4f735466cecf';
 
+exports.LOG_LEVELS = LOG_LEVELS;
 exports.COLORS = COLORS;
 exports.ERROR_CODES = ERROR_CODES;
 exports.UNICODE_CHARACTERS = UNICODE_CHARACTERS;

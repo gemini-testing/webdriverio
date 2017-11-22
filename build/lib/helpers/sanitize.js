@@ -74,7 +74,7 @@ var args = function args(_args) {
         if (typeof arg === 'function' || typeof arg === 'string' && arg.indexOf('return (function') === 0) {
             return '<Function>';
         } else if (typeof arg === 'string') {
-            return '"' + arg + '"';
+            return `"${arg}"`;
         } else if (Array.isArray(arg)) {
             return arg.join(', ');
         }
@@ -105,11 +105,11 @@ var limit = function limit(val) {
     switch (Object.prototype.toString.call(val)) {
         case '[object String]':
             if (val.length > 100 && _validator2.default.isBase64(val)) {
-                return '[base64] ' + val.length + ' bytes';
+                return `[base64] ${val.length} bytes`;
             }
 
             if (val.length > STRINGLIMIT) {
-                return val.substr(0, STRINGTRUNCATE) + (' ... (' + (val.length - STRINGTRUNCATE) + ' more bytes)');
+                return val.substr(0, STRINGTRUNCATE) + ` ... (${val.length - STRINGTRUNCATE} more bytes)`;
             }
 
             return val;
@@ -117,7 +117,7 @@ var limit = function limit(val) {
             var length = val.length;
             if (length > ARRLENGTH) {
                 val = val.slice(0, ARRLENGTH);
-                val.push('(' + (length - ARRLENGTH) + ' more items)');
+                val.push(`(${length - ARRLENGTH} more items)`);
             }
             return val.map(limit);
         case '[object Object]':
@@ -140,9 +140,9 @@ var limit = function limit(val) {
 };
 
 exports.default = {
-    css: css,
-    args: args,
-    caps: caps,
-    limit: limit
+    css,
+    args,
+    caps,
+    limit
 };
 module.exports = exports['default'];

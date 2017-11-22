@@ -49,7 +49,7 @@ var windowHandlePosition = function windowHandlePosition(windowHandle, position)
         windowHandle = 'current';
     }
 
-    requestOptions.path = '/session/:sessionId/window/' + windowHandle + '/position';
+    requestOptions.path = `/session/:sessionId/window/${windowHandle}/position`;
 
     /**
      * check if arguments provide proper position parameter

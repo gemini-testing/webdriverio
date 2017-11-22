@@ -16,7 +16,7 @@ function pushFile(path, base64Data) {
         path: '/session/:sessionId/appium/device/push_file',
         method: 'POST'
     }, {
-        path: path,
+        path,
         data: base64Data
     });
 } /**
@@ -31,7 +31,7 @@ function pushFile(path, base64Data) {
    *
    * @param {String} path  local path to file
    *
-   * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/appium-bindings.md#push-file
+   * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/other/appium-bindings.md#push-file
    * @type mobile
    * @for ios, android
    *

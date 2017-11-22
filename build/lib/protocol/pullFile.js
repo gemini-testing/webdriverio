@@ -15,7 +15,7 @@ function pullFile(path) {
     return this.requestHandler.create({
         path: '/session/:sessionId/appium/device/pull_file',
         method: 'POST'
-    }, { path: path });
+    }, { path });
 } /**
    *
    * Pulls a file from the device.
@@ -27,7 +27,7 @@ function pullFile(path) {
    *
    * @param {String} path  device path to file
    *
-   * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/appium-bindings.md#pull-file
+   * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/other/appium-bindings.md#pull-file
    * @type mobile
    * @for ios, android
    *

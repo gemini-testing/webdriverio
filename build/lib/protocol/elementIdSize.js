@@ -7,39 +7,14 @@ exports.default = elementIdSize;
 
 var _ErrorHandler = require('../utils/ErrorHandler');
 
-var _deprecationWarning = require('../helpers/deprecationWarning');
-
-var _deprecationWarning2 = _interopRequireDefault(_deprecationWarning);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-/**
- *
- * Determine an element's size in pixels. The size will be returned as a JSON object
- * with width and height properties.
- *
- * This command is deprecated and will be removed soon. Make sure you don't use it in your
- * automation/test scripts anymore to avoid errors. Please use the
- * [`elementIdRect`](http://webdriver.io/api/protocol/elementIdRect.html) command instead.
- *
- * @param {String} ID ID of a WebElement JSON object to route the command to
- * @return {Object} The width and height of the element, in pixels (`{width:number, height:number}`)
- *
- * @see  https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#sessionsessionidelementidsize
- * @type protocol
- * @deprecated
- *
- */
-
 function elementIdSize(id) {
     var _this = this;
 
     if (typeof id !== 'string' && typeof id !== 'number') {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with elementIdSize protocol command');
     }
-    (0, _deprecationWarning2.default)('elementIdSize', this.options);
 
-    return this.requestHandler.create('/session/:sessionId/element/' + id + '/size').catch(function (err) {
+    return this.requestHandler.create(`/session/:sessionId/element/${id}/size`).catch(function (err) {
         /**
          * jsonwire command not supported try webdriver endpoint
          */
@@ -49,12 +24,29 @@ function elementIdSize(id) {
                     width = _result$value.width,
                     height = _result$value.height;
 
-                result.value = { width: width, height: height };
+                result.value = { width, height };
                 return result;
             });
         }
 
         throw err;
     });
-}
+} /**
+   *
+   * Determine an element's size in pixels. The size will be returned as a JSON object
+   * with width and height properties.
+   *
+   * This command is deprecated and will be removed soon. Make sure you don't use it in your
+   * automation/test scripts anymore to avoid errors. Please use the
+   * [`elementIdRect`](http://webdriver.io/api/protocol/elementIdRect.html) command instead.
+   *
+   * @param {String} ID ID of a WebElement JSON object to route the command to
+   * @return {Object} The width and height of the element, in pixels (`{width:number, height:number}`)
+   *
+   * @see  https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#sessionsessionidelementidsize
+   * @type protocol
+   * @deprecated
+   *
+   */
+
 module.exports = exports['default'];

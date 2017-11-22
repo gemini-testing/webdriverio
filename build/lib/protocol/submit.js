@@ -34,9 +34,10 @@ function submit(id) {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with submit protocol command');
     }
 
-    (0, _deprecationWarning2.default)('submit', this.options);
+    (0, _deprecationWarning2.default)('submit', this.options.deprecationWarnings, 'This command is not part of the W3C WebDriver spec and won\'t be supported in ' + 'future versions of the driver. It is recommended to call the click command on the ' + 'submit button or use the actions command to emulate a key press action.');
+
     return this.requestHandler.create({
-        path: '/session/:sessionId/element/' + id + '/submit',
+        path: `/session/:sessionId/element/${id}/submit`,
         method: 'POST'
     });
 }

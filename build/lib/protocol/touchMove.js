@@ -34,8 +34,9 @@ function touchMove(x, y) {
     if (typeof x !== 'number' || typeof y !== 'number') {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with touchMove command');
     }
-    (0, _deprecationWarning2.default)('touchMove', this.options);
 
-    return this.requestHandler.create('/session/:sessionId/touch/move', { x: x, y: y });
+    (0, _deprecationWarning2.default)('touchMove', this.options.deprecationWarnings, 'This command is not part of the W3C WebDriver spec and won\'t be supported in ' + 'future versions of the driver. It is recommended to use the touchAction command for this.');
+
+    return this.requestHandler.create('/session/:sessionId/touch/move', { x, y });
 }
 module.exports = exports['default'];

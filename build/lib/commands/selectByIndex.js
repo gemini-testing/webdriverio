@@ -27,10 +27,10 @@ var selectByIndex = function selectByIndex(selector, index) {
         return _this.elementIdElements(element.value.ELEMENT, '<option>');
     }).then(function (elements) {
         if (elements.value.length === 0) {
-            throw new _ErrorHandler.CommandError('select element (' + selector + ') doesn\'t contain any option element');
+            throw new _ErrorHandler.CommandError(`select element (${selector}) doesn't contain any option element`);
         }
         if (elements.value.length - 1 < index) {
-            throw new _ErrorHandler.CommandError('option with index "' + index + '" not found. Select element (' + selector + ') only contains ' + elements.value.length + ' option elements');
+            throw new _ErrorHandler.CommandError(`option with index "${index}" not found. Select element (${selector}) only contains ${elements.value.length} option elements`);
         }
 
         return _this.elementIdClick(elements.value[index].ELEMENT);

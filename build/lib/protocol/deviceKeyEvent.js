@@ -10,7 +10,7 @@ exports.default = deviceKeyEvent;
  *
  * @param {Number} keyValue  device specifc key value
  *
- * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/appium-bindings.md#key-event
+ * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/other/appium-bindings.md#key-event
  * @type mobile
  * @for android
  *

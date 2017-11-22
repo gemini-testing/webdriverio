@@ -15,7 +15,7 @@ function isAppInstalled(bundleId) {
     return this.unify(this.requestHandler.create({
         path: '/session/:sessionId/appium/device/app_installed',
         method: 'POST'
-    }, { bundleId: bundleId }));
+    }, { bundleId }));
 } /**
    *
    * Check if an app is installed.
@@ -30,7 +30,7 @@ function isAppInstalled(bundleId) {
    *
    * @param {String} bundleId  ID of bundled app
    *
-   * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/appium-bindings.md#is-installed
+   * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/other/appium-bindings.md#is-installed
    * @type mobile
    * @for android
    *

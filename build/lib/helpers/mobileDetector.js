@@ -18,7 +18,7 @@ var mobileDetector = function mobileDetector(caps) {
 
     var isAndroid = Boolean(caps.platformName && caps.platformName.match(/Android/i) || caps.browserName && caps.browserName.match(/Android/i));
 
-    return { isMobile: isMobile, isIOS: isIOS, isAndroid: isAndroid };
+    return { isMobile, isIOS, isAndroid };
 };
 
 exports.default = mobileDetector;

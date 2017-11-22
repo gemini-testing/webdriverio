@@ -34,7 +34,8 @@ function touchClick(id) {
     if (typeof id !== 'string' && typeof id !== 'number') {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with elementIdCssProperty protocol command');
     }
-    (0, _deprecationWarning2.default)('touchClick', this.options);
+
+    (0, _deprecationWarning2.default)('touchClick', this.options.deprecationWarnings, 'This command is not part of the W3C WebDriver spec and won\'t be supported in ' + 'future versions of the driver. It is recommended to use the touchAction command for this.');
 
     return this.requestHandler.create('/session/:sessionId/touch/click', {
         element: id.toString()

@@ -31,6 +31,6 @@ function touchMultiPerform(actions) {
     return this.requestHandler.create({
         path: '/session/:sessionId/touch/multi/perform',
         method: 'POST'
-    }, { actions: actions });
+    }, { actions });
 }
 module.exports = exports['default'];

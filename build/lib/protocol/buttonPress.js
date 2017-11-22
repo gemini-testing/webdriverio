@@ -31,7 +31,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
  */
 
 function buttonPress(button) {
-    (0, _deprecationWarning2.default)('buttonPress', this.options);
+    (0, _deprecationWarning2.default)('buttonPress', this.options.deprecationWarnings, 'This command is not part of the W3C WebDriver spec and won\'t be supported in ' + 'future versions of the driver. It is recommended to use the action command as ' + 'a replacement for this.');
+
     return _handleMouseButtonProtocol2.default.call(this, '/session/:sessionId/click', button);
 }
 module.exports = exports['default'];

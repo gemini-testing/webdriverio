@@ -35,7 +35,7 @@ function getFn(fn) {
         return fn.toString();
     }
 
-    return 'function(){' + fn + '}';
+    return `function(){${fn}}`;
 }
 
 /**
@@ -58,7 +58,7 @@ function getArgs() {
         strArgs.push((0, _stringify2.default)(arg));
     });
 
-    return '[' + strArgs.join(',') + ']';
+    return `[${strArgs.join(',')}]`;
 }
 
 /**
@@ -103,7 +103,7 @@ var createSelectorScript = function createSelectorScript(fn, selectors, args) {
     strArgs.push((0, _stringify2.default)(foundSel));
     strArgs.push(getArgs(args, this.inMultibrowserMode));
 
-    return ('return (' + executeClientSide + ')(' + strArgs.join(',') + ', arguments[arguments.length - 1]);').replace(/( {4}|\t)+/g, ' ');
+    return `return (${executeClientSide})(${strArgs.join(',')}, arguments[arguments.length - 1]);`.replace(/( {4}|\t)+/g, ' ');
 };
 
 /**

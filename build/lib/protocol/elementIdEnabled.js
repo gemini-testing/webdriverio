@@ -12,7 +12,7 @@ function elementIdEnabled(id) {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with elementIdEnabled protocol command');
     }
 
-    return this.requestHandler.create('/session/:sessionId/element/' + id + '/enabled');
+    return this.requestHandler.create(`/session/:sessionId/element/${id}/enabled`);
 } /**
    *
    * Determine if an element is currently enabled.

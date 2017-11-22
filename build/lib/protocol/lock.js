@@ -21,7 +21,7 @@ exports.default = lock;
  *
  * @param {Number} seconds  wait in seconds until lock screen
  *
- * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/appium-bindings.md#lock
+ * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/other/appium-bindings.md#lock
  * @type mobile
  * @for android
  *
@@ -33,6 +33,6 @@ function lock() {
     return this.requestHandler.create({
         path: '/session/:sessionId/appium/device/lock',
         method: 'POST'
-    }, { seconds: seconds });
+    }, { seconds });
 }
 module.exports = exports['default'];

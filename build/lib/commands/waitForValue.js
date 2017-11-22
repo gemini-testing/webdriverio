@@ -67,7 +67,7 @@ var waitForValue = function waitForValue(selector, ms, reverse) {
     }
 
     var isReversed = reverse ? 'with' : 'without';
-    var errorMsg = 'element ("' + (selector || this.lastResult.selector) + '") still ' + isReversed + ' a value after ' + ms + 'ms';
+    var errorMsg = `element ("${selector || this.lastResult.selector}") still ${isReversed} a value after ${ms}ms`;
 
     return this.waitUntil(function () {
         return _this.getValue(selector).then(function (value) {

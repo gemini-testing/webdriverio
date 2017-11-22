@@ -4,11 +4,11 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _promise = require('babel-runtime/core-js/promise');
-
-var _promise2 = _interopRequireDefault(_promise);
-
 exports.default = function (condition, timeout, timeoutMsg, interval) {
+    if (typeof condition !== 'function') {
+        throw new _ErrorHandler.CommandError('invalid argument');
+    }
+
     /*!
      * ensure that timeout and interval are set properly
      */
@@ -20,16 +20,7 @@ exports.default = function (condition, timeout, timeoutMsg, interval) {
         interval = this.options.waitforInterval;
     }
 
-    var fn = void 0;
-
-    if (typeof condition === 'function') {
-        fn = condition.bind(this);
-    } else {
-        fn = function fn() {
-            return _promise2.default.resolve(condition);
-        };
-    }
-
+    var fn = condition.bind(this);
     var isSync = this.options.sync;
     var timer = new _Timer2.default(interval, timeout, fn, true, isSync);
 
@@ -42,7 +33,7 @@ exports.default = function (condition, timeout, timeoutMsg, interval) {
             throw new _ErrorHandler.WaitUntilTimeoutError(e.message);
         }
 
-        throw new _ErrorHandler.WaitUntilTimeoutError('Promise was rejected with the following reason: ' + e.message);
+        throw new _ErrorHandler.WaitUntilTimeoutError(`Promise was rejected with the following reason: ${e.message}`);
     });
 };
 
@@ -57,9 +48,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 module.exports = exports['default']; /**
                                       *
                                       * This wait command is your universal weapon if you want to wait on something. It expects a condition
-                                      * and waits until that condition is fulfilled with a truthy value. A condition can be either a promise
-                                      * or a command result. The commands within the condition are getting executed synchronously like in
-                                      * your test.
+                                      * and waits until that condition is fulfilled with a truthy value. If you use the WDIO testrunner the
+                                      * commands within the condition are getting executed synchronously like in your test.
                                       *
                                       * A common example is to wait until a certain element contains a certain text (see example).
                                       *
@@ -82,10 +72,10 @@ module.exports = exports['default']; /**
                                       *
                                       *
                                       * @alias browser.waitUntil
-                                      * @param {Function|Promise} condition  condition to wait on
-                                      * @param {Number=}          timeout    timeout in ms (default: 500)
-                                      * @param {String=}          timeoutMsg error message to throw when waitUntil times out
-                                      * @param {Number=}          interval   interval between condition checks (default: 500)
+                                      * @param {Function} condition  condition to wait on
+                                      * @param {Number=}  timeout    timeout in ms (default: 500)
+                                      * @param {String=}  timeoutMsg error message to throw when waitUntil times out
+                                      * @param {Number=}  interval   interval between condition checks (default: 500)
                                       * @uses utility/pause
                                       * @type utility
                                       *

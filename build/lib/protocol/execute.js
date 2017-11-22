@@ -25,18 +25,18 @@ function execute() {
 
     /*!
      * instances started as multibrowserinstance can't getting called with
-     * a function paramter, therefor we need to check if it starts with "function () {"
+     * a function parameter, therefor we need to check if it starts with "function () {"
      */
     if (typeof script === 'function' || this.inMultibrowserMode && script.indexOf('function (') === 0) {
-        script = 'return (' + script + ').apply(null, arguments)';
+        script = `return (${script}).apply(null, arguments)`;
     }
 
-    return this.requestHandler.create('/session/:sessionId/execute', { script: script, args: args }).catch(function (err) {
+    return this.requestHandler.create('/session/:sessionId/execute', { script, args }).catch(function (err) {
         /**
          * jsonwire command not supported try webdriver endpoint
          */
         if (err.message.match(/did not match a known command/)) {
-            return _this.requestHandler.create('/session/:sessionId/execute/sync', { script: script, args: args });
+            return _this.requestHandler.create('/session/:sessionId/execute/sync', { script, args });
         }
 
         throw err;

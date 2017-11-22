@@ -12,7 +12,7 @@ function elementIdAttribute(id, attributeName) {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with elementIdAttribute protocol command');
     }
 
-    return this.requestHandler.create('/session/:sessionId/element/' + id + '/attribute/' + attributeName);
+    return this.requestHandler.create(`/session/:sessionId/element/${id}/attribute/${attributeName}`);
 } /**
    *
    * Get the value of an element's attribute.

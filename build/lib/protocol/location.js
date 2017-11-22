@@ -18,7 +18,7 @@ function location(l) {
         location = l;
     }
 
-    (0, _deprecationWarning2.default)('location', this.options);
+    (0, _deprecationWarning2.default)('location', this.options.deprecationWarnings, 'This command is not part of the W3C WebDriver spec and won\'t be supported in ' + 'future versions of the driver. There is currently no known replacement for this ' + 'action.');
 
     /**
      * get geo location
@@ -31,7 +31,7 @@ function location(l) {
      * set geo location
      * @type {[type]}
      */
-    return this.requestHandler.create('/session/:sessionId/location', { location: location });
+    return this.requestHandler.create('/session/:sessionId/location', { location });
 } /**
    *
    * Protocol bindings for all geolocation operations.

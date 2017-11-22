@@ -38,7 +38,7 @@ function elementIdLocationInView(id) {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with elementIdLocationInView protocol command');
     }
 
-    (0, _deprecationWarning2.default)('elementIdLocationInView', this.options);
-    return this.requestHandler.create('/session/:sessionId/element/' + id + '/location_in_view');
+    (0, _deprecationWarning2.default)('elementIdLocationInView', this.options.deprecationWarnings, 'This command is not part of the W3C WebDriver spec and won\'t be supported in ' + 'future versions of the driver. There is currently no known replacement for this ' + 'action. You can use the execute command to get a custom position of an element ' + 'using JavaScript.');
+    return this.requestHandler.create(`/session/:sessionId/element/${id}/location_in_view`);
 }
 module.exports = exports['default'];

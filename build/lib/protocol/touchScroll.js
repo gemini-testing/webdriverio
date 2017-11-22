@@ -38,14 +38,14 @@ function touchScroll(id, xoffset, yoffset) {
      * start scrolling at a particular screen location
      */
     if (arguments.length === 3 && id && typeof xoffset === 'number' && typeof yoffset === 'number') {
-        data = { element: id, xoffset: xoffset, yoffset: yoffset
+        data = { element: id, xoffset, yoffset
 
             /*!
              * if you don't care where the scroll starts on the screen
              */
         };
     } else if (arguments.length === 3 && !id && typeof xoffset === 'number' && typeof yoffset === 'number') {
-        data = { xoffset: xoffset, yoffset: yoffset
+        data = { xoffset, yoffset
 
             /*!
              * if you don't care where the scroll starts on the screen
@@ -59,7 +59,8 @@ function touchScroll(id, xoffset, yoffset) {
     } else {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with touchScroll command');
     }
-    (0, _deprecationWarning2.default)('touchScroll', this.options);
+
+    (0, _deprecationWarning2.default)('touchScroll', this.options.deprecationWarnings, 'This command is not part of the W3C WebDriver spec and won\'t be supported in ' + 'future versions of the driver. It is recommended to use the touchAction command for this.');
 
     return this.requestHandler.create('/session/:sessionId/touch/scroll', data);
 }

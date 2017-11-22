@@ -48,7 +48,7 @@ var reload = function reload() {
             return hook(oldSessionId, newSessionId);
         }));
     }).catch(function (e) {
-        console.log("Error in onReload hook: \"" + e.stack + "\"");
+        console.log(`Error in onReload hook: "${e.stack}"`);
     });
 };
 

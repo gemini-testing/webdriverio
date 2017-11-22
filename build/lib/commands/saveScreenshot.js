@@ -50,7 +50,7 @@ function saveScreenshot(filename) {
     var _this = this;
 
     return this.screenshot().then(function (res) {
-        _this.emit('screenshot', { data: res.value, filename: filename });
+        _this.emit('screenshot', { data: res.value, filename });
 
         var screenshot = new _safeBuffer.Buffer(res.value, 'base64');
 

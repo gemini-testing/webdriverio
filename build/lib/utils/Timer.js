@@ -113,7 +113,7 @@ var Timer = function () {
             if (typeof result.then !== 'function') {
                 this.stop();
                 this.stopMain();
-                return this._reject('Expected a promise as return value but got "' + result + '"');
+                return this._reject(`Expected a promise as return value but got "${result}"`);
             }
 
             result.then(function (res) {

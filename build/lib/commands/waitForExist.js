@@ -61,7 +61,7 @@ var waitForExist = function waitForExist(selector, ms, reverse) {
     }
 
     var isReversed = reverse ? '' : 'not';
-    var errorMsg = 'element ("' + (selector || this.lastResult.selector) + '") still ' + isReversed + ' existing after ' + ms + 'ms';
+    var errorMsg = `element ("${selector || this.lastResult.selector}") still ${isReversed} existing after ${ms}ms`;
 
     return this.waitUntil(function () {
         return _this.isExisting(selector).then(function (isExisting) {

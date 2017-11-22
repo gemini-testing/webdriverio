@@ -30,8 +30,8 @@ var selectByAttribute = function selectByAttribute(selector, attribute, value) {
         /**
          * find option elem using xpath
          */
-        var normalized = '[normalize-space(@' + attribute.trim() + ') = "' + value.trim() + '"]';
-        return _this.elementIdElement(res.value.ELEMENT, './option' + normalized + '|./optgroup/option' + normalized);
+        var normalized = `[normalize-space(@${attribute.trim()}) = "${value.trim()}"]`;
+        return _this.elementIdElement(res.value.ELEMENT, `./option${normalized}|./optgroup/option${normalized}`);
     }).then(function (res) {
         /**
          * check if element was found and throw error if not

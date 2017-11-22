@@ -28,6 +28,6 @@ exports.default = touchId;
 function touchId() {
     var match = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
 
-    return this.requestHandler.create('session/:session_id/appium/simulator/touch_id', { match: match });
+    return this.requestHandler.create('/session/:sessionId/appium/simulator/touch_id', { match });
 }
 module.exports = exports['default'];

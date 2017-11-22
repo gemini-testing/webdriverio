@@ -22,7 +22,7 @@ exports.default = hideDeviceKeyboard;
  *
  * @param {String} strategy  desired strategy to close keyboard ('tapOutside' or 'pressKey')
  *
- * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/appium-bindings.md#hide-keyboard-ios-only
+ * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/other/appium-bindings.md#hide-keyboard-ios-only
  * @type mobile
  * @for ios, android
  *
@@ -32,7 +32,7 @@ function hideDeviceKeyboard() {
     var strategy = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'tapOutside';
     var key = arguments[1];
 
-    var args = { strategy: strategy };
+    var args = { strategy };
 
     if (key) {
         args.key = key;

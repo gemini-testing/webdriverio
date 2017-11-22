@@ -12,7 +12,7 @@ function elementIdText(id) {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with elementIdText protocol command');
     }
 
-    return this.requestHandler.create('/session/:sessionId/element/' + id + '/text');
+    return this.requestHandler.create(`/session/:sessionId/element/${id}/text`);
 } /**
    *
    * Returns the visible text for the element.

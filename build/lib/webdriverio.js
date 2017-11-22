@@ -92,6 +92,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var INTERNAL_EVENTS = ['init', 'command', 'error', 'result', 'end', 'screenshot'];
 var PROMISE_FUNCTIONS = ['then', 'catch', 'finally'];
+var MERGE_OPTIONS = { clone: false };
 
 var EventEmitter = _events2.default.EventEmitter;
 
@@ -122,12 +123,12 @@ var WebdriverIO = function WebdriverIO(args, modifier) {
         onError: [],
         connectionRetryTimeout: 90000,
         connectionRetryCount: 3
-    }, typeof args !== 'string' ? args : {});
+    }, typeof args !== 'string' ? args : {}, MERGE_OPTIONS);
 
     /**
      * define Selenium backend given on user options
      */
-    options = (0, _deepmerge2.default)((0, _detectSeleniumBackend2.default)(args), options);
+    options = (0, _deepmerge2.default)((0, _detectSeleniumBackend2.default)(args), options, MERGE_OPTIONS);
 
     /**
      * only set globals we wouldn't get otherwise
@@ -161,7 +162,7 @@ var WebdriverIO = function WebdriverIO(args, modifier) {
         locationContextEnabled: true,
         handlesAlerts: true,
         rotatable: true
-    }, options.desiredCapabilities || {});
+    }, options.desiredCapabilities || {}, MERGE_OPTIONS);
 
     var _mobileDetector = (0, _mobileDetector3.default)(desiredCapabilities),
         isMobile = _mobileDetector.isMobile,
@@ -204,7 +205,7 @@ var WebdriverIO = function WebdriverIO(args, modifier) {
                 });
 
                 /**
-                 * if no handler was triggered trough actual error
+                 * if no handler was triggered then throw actual error
                  */
                 if (handlerResponses.length === 0) {
                     return callErrorHandlerAndReject.call(context, _result, onRejected);
@@ -318,7 +319,7 @@ var WebdriverIO = function WebdriverIO(args, modifier) {
 
             if (typeof options.screenshotPath === 'string') {
                 var filename = saveScreenshotSync(screenshot, failDate);
-                client.emit('screenshot', { data: screenshot, filename: filename });
+                client.emit('screenshot', { data: screenshot, filename });
             }
         });
     }
@@ -345,11 +346,11 @@ var WebdriverIO = function WebdriverIO(args, modifier) {
 
         var capId = _sanitize2.default.caps(desiredCapabilities);
         var timestamp = date.toJSON().replace(/:/g, '-');
-        var filename = 'ERROR_' + capId + '_' + timestamp + '.png';
+        var filename = `ERROR_${capId}_${timestamp}.png`;
         var filePath = _path2.default.join(screenshotPath, filename);
 
         _fs2.default.writeFileSync(filePath, new _safeBuffer.Buffer(screenshot, 'base64'));
-        logger.log('\tSaved screenshot: ' + filename);
+        logger.log(`\tSaved screenshot: ${filename}`);
 
         return filename;
     }
@@ -429,13 +430,13 @@ var WebdriverIO = function WebdriverIO(args, modifier) {
                  * store command into command list so `getHistory` can return it
                  */
                 var timestamp = Date.now();
-                commandList.push({ name: name, args: args, timestamp: timestamp });
+                commandList.push({ name, args, timestamp });
 
                 /**
                  * allow user to leave out selector argument if they have already queried an element before
                  */
                 var lastResult = val || _this2.lastResult;
-                if ((0, _hasElementResultHelper2.default)(lastResult) && args.length < func.length && func.toString().indexOf('function ' + name + '(selector') === 0) {
+                if ((0, _hasElementResultHelper2.default)(lastResult) && args.length < func.length && func.toString().indexOf(`function ${name}(selector`) === 0) {
                     var isWaitFor = name.match(/^waitFor/);
                     var isWaitForWithSelector = isWaitFor && typeof args[0] === 'string';
 
@@ -454,7 +455,7 @@ var WebdriverIO = function WebdriverIO(args, modifier) {
                          * add selector parameter if no existing
                          */
                         if (message.match(/using the given search parameters\.$/)) {
-                            message = message.slice(0, -1) + ' ("' + lastResult.selector + '").';
+                            message = `${message.slice(0, -1)} ("${lastResult.selector}").`;
                         }
 
                         var error = new Error(message);
@@ -616,10 +617,10 @@ var WebdriverIO = function WebdriverIO(args, modifier) {
 
                 switch (typeof client[namespace]) {
                     case 'function':
-                        throw new _ErrorHandler.RuntimeError('Command namespace "' + namespace + '" is used internally, and can\'t be overwritten!');
+                        throw new _ErrorHandler.RuntimeError(`Command namespace "${namespace}" is used internally, and can't be overwritten!`);
                     case 'object':
                         if (client[namespace][fnName] && !forceOverwrite) {
-                            throw new _ErrorHandler.RuntimeError('Command "' + fnName + '" is already defined!');
+                            throw new _ErrorHandler.RuntimeError(`Command "${fnName}" is already defined!`);
                         }
                         break;
                 }
@@ -627,7 +628,7 @@ var WebdriverIO = function WebdriverIO(args, modifier) {
             }
 
             if (client[fnName] && !forceOverwrite) {
-                throw new _ErrorHandler.RuntimeError('Command "' + fnName + '" is already defined!');
+                throw new _ErrorHandler.RuntimeError(`Command "${fnName}" is already defined!`);
             }
             return unit.lift(fnName, fn);
         };

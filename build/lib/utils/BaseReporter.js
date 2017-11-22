@@ -75,7 +75,7 @@ var COLORS = {
 
 var SYMBOLS_WIN = {
     ok: '\u221A',
-    err: '\xD7',
+    err: '\u00D7',
     dot: '.',
     error: 'F'
 };
@@ -181,7 +181,7 @@ var BaseReporter = function (_events$EventEmitter) {
             console.log(fmt);
 
             if (runner.error.stack) {
-                fmt = _this.color('error stack', runner.error.stack.replace('Error: ' + runner.error.message + '\n', ''));
+                fmt = _this.color('error stack', runner.error.stack.replace(`Error: ${runner.error.message}\n`, ''));
             } else {
                 fmt = _this.color('error stack', '    no stack available');
             }
@@ -216,7 +216,7 @@ var BaseReporter = function (_events$EventEmitter) {
         key: 'color',
         value: function color(type, str) {
             if (!_supportsColor2.default) return String(str);
-            return '\x1B[' + COLORS[type] + 'm' + str + '\x1B[0m';
+            return `\u001b[${COLORS[type]}m${str}\u001b[0m`;
         }
     }, {
         key: 'limit',
@@ -383,22 +383,22 @@ var Cursor = function () {
     (0, _createClass3.default)(Cursor, [{
         key: 'hide',
         value: function hide() {
-            ISATTY && process.stdout.write('\x1B[?25l');
+            ISATTY && process.stdout.write('\u001b[?25l');
         }
     }, {
         key: 'show',
         value: function show() {
-            ISATTY && process.stdout.write('\x1B[?25h');
+            ISATTY && process.stdout.write('\u001b[?25h');
         }
     }, {
         key: 'deleteLine',
         value: function deleteLine() {
-            ISATTY && process.stdout.write('\x1B[2K');
+            ISATTY && process.stdout.write('\u001b[2K');
         }
     }, {
         key: 'beginningOfLine',
         value: function beginningOfLine() {
-            ISATTY && process.stdout.write('\x1B[0G');
+            ISATTY && process.stdout.write('\u001b[0G');
         }
     }, {
         key: 'CR',

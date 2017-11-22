@@ -12,7 +12,8 @@ var _deprecationWarning2 = _interopRequireDefault(_deprecationWarning);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function sessions() {
-    (0, _deprecationWarning2.default)('sessions', this.options);
+    (0, _deprecationWarning2.default)('sessions', this.options.deprecationWarnings, 'This command is not part of the W3C WebDriver spec and won\'t be supported in ' + 'future versions of the driver. There is currently no known replacement for this ' + 'command.');
+
     return this.requestHandler.create({
         path: '/sessions',
         method: 'GET',

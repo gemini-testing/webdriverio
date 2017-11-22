@@ -12,7 +12,7 @@ function elementIdName(id) {
         throw new _ErrorHandler.ProtocolError('number or type of arguments don\'t agree with elementIdName protocol command');
     }
 
-    return this.requestHandler.create('/session/:sessionId/element/' + id + '/name');
+    return this.requestHandler.create(`/session/:sessionId/element/${id}/name`);
 } /**
    *
    * Query for an element's tag name.

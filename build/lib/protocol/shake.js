@@ -13,7 +13,7 @@ exports.default = shake;
     browser.shake()
  * </example>
  *
- * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/appium-bindings.md#shake
+ * @see  https://github.com/appium/appium/blob/master/docs/en/writing-running-appium/other/appium-bindings.md#shake
  * @type mobile
  * @for ios
  *

@@ -70,7 +70,7 @@ var waitForSelected = function waitForSelected(selector, ms, reverse) {
     }
 
     var isReversed = reverse ? '' : 'not';
-    var errorMsg = 'element ("' + (selector || this.lastResult.selector) + '") still ' + isReversed + ' selected after ' + ms + 'ms';
+    var errorMsg = `element ("${selector || this.lastResult.selector}") still ${isReversed} selected after ${ms}ms`;
 
     return this.waitUntil(function () {
         return _this.isSelected(selector).then(function (isSelected) {

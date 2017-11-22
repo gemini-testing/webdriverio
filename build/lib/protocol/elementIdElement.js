@@ -3,11 +3,6 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-
-var _defineProperty2 = require('babel-runtime/helpers/defineProperty');
-
-var _defineProperty3 = _interopRequireDefault(_defineProperty2);
-
 exports.default = elementIdElement;
 
 var _ErrorHandler = require('../utils/ErrorHandler');
@@ -28,7 +23,7 @@ function elementIdElement(id, selector) {
     }
 
     var found = (0, _findElementStrategy2.default)(selector, true);
-    return this.requestHandler.create('/session/:sessionId/element/' + id + '/element', {
+    return this.requestHandler.create(`/session/:sessionId/element/${id}/element`, {
         using: found.using,
         value: found.value
     }).then(function (result) {
@@ -40,9 +35,10 @@ function elementIdElement(id, selector) {
          * are supported.
          */
         var elemValue = result.value.ELEMENT || result.value[_constants.W3C_ELEMENT_ID];
-        result.value = (0, _defineProperty3.default)({
-            ELEMENT: elemValue
-        }, _constants.W3C_ELEMENT_ID, elemValue);
+        result.value = {
+            ELEMENT: elemValue,
+            [_constants.W3C_ELEMENT_ID]: elemValue
+        };
 
         return result;
     }, function (e) {
