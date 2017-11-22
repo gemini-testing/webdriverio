@@ -2,8 +2,19 @@ import { isSuccessfulResponse, isUnknownCommand } from '../../../lib/helpers/uti
 
 describe('utilities', () => {
     describe('isSuccessfulResponse', () => {
+        it('should pass if response status is "No content"', () => {
+            expect(isSuccessfulResponse({}, {statusCode: 204})).to.be.equal(true)
+        })
+
         it('should fail when there is no error', () => {
             expect(isSuccessfulResponse()).to.be.equal(false)
+        })
+
+        it('should pass if status is 0', () => {
+            expect(isSuccessfulResponse({
+                status: 0,
+                value: {error: 'some-string'}
+            })).to.be.equal(true)
         })
 
         it('should fail when status is not 0', () => {
