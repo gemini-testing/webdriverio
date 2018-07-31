@@ -1,5 +1,5 @@
 {
-  "name": "webdriverio",
+  "name": "@gemini-testing/webdriverio",
   "description": "A Node.js bindings implementation for the W3C WebDriver protocol",
   "version": "4.14.1",
   "homepage": "http://webdriver.io",
