@@ -7,7 +7,5 @@ test/site/www/components/
 test/site.zip
 coverage
 .idea
-build
 
-/*.js
 !index.js
