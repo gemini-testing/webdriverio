@@ -73,7 +73,6 @@
     "json-stringify-safe": "~5.0.1",
     "mkdirp": "~0.5.1",
     "npm-install-package": "~2.1.0",
-    "optimist": "~0.6.1",
     "q": "~1.5.0",
     "request": "^2.83.0",
     "rgb2hex": "^0.1.9",
