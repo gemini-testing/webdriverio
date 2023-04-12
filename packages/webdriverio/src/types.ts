@@ -1,5 +1,5 @@
 import type { EventEmitter } from 'events'
-import type { AttachOptions as DevToolsAttachOptions } from 'devtools'
+import type { AttachOptions as DevToolsAttachOptions } from '@gemini-testing/devtools'
 import type { SessionFlags, AttachOptions as WebDriverAttachOptions } from 'webdriver'
 import type { Options, Capabilities, FunctionProperties, ThenArg } from '@wdio/types'
 import type { ElementReference, ProtocolCommandsAsync, ProtocolCommands, RectReturn } from '@wdio/protocols'

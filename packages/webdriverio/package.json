@@ -67,7 +67,7 @@
     "aria-query": "^5.0.0",
     "css-shorthand-properties": "^1.1.1",
     "css-value": "^0.0.1",
-    "devtools": "7.28.0",
+    "@gemini-testing/devtools": "7.28.1",
     "devtools-protocol": "^0.0.1081726",
     "fs-extra": "^11.1.0",
     "grapheme-splitter": "^1.0.2",
