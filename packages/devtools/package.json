@@ -1,5 +1,5 @@
 {
-  "name": "devtools",
+  "name": "@gemini-testing/devtools",
   "version": "7.28.0",
   "description": "A Chrome DevTools protocol binding that maps WebDriver commands into Chrome DevTools commands using Puppeteer",
   "author": "Christian Bromann <mail@bromann.dev>",
