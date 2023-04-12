@@ -1,4 +1,4 @@
-import DevTools from 'devtools'
+import DevTools from '@gemini-testing/devtools'
 import { expectType } from 'tsd'
 
 async function bar () {
