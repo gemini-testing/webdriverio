@@ -207,7 +207,11 @@ function connectBrowser (connectionUrl: string, capabilities: ExtendedCapabiliti
 }
 
 export default async function launch (capabilities: ExtendedCapabilities) {
-    Puppeteer.unregisterCustomQueryHandler('shadow')
+    try {
+        Puppeteer.unregisterCustomQueryHandler('shadow')
+    } catch {
+        // ignore
+    }
     Puppeteer.registerCustomQueryHandler('shadow', QueryHandler as any)
     const browserName = capabilities.browserName?.toLowerCase()
 
