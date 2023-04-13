@@ -55,7 +55,7 @@ export const remote = async function (params: RemoteOptions, remoteModifier?: Fu
     }
 
     const prototype = getPrototype('browser')
-    const ProtocolDriver = (await import(automationProtocol)).default
+    const ProtocolDriver = (await import(`@gemini-testing/${automationProtocol}`)).default
 
     params = Object.assign({}, detectBackend(params), params)
     await updateCapabilities(params, automationProtocol)
@@ -99,7 +99,7 @@ export const attach = async function (attachOptions: AttachOptions): Promise<Web
     if (params.options?.automationProtocol) {
         automationProtocol = params.options?.automationProtocol
     }
-    const ProtocolDriver = (await import(automationProtocol)).default
+    const ProtocolDriver = (await import(`@gemini-testing/${automationProtocol}`)).default
     return ProtocolDriver.attachToSession(params, undefined, prototype, wrapCommand) as WebdriverIO.Browser
 }
 

@@ -40,7 +40,7 @@ export const WDIO_DEFAULTS: Options.Definition<Options.WebdriverIO & Options.Tes
             }
 
             try {
-                require.resolve(param)
+                require.resolve(param === './protocol-stub' ? param : `@gemini-testing/${param}`)
             } catch (err: any) {
                 /* istanbul ignore next */
                 throw new Error(

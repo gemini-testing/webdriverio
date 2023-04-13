@@ -1,5 +1,5 @@
 {
-  "name": "webdriver",
+  "name": "@gemini-testing/webdriver",
   "version": "7.27.0",
   "description": "A Node.js bindings implementation for the W3C WebDriver and Mobile JSONWire Protocol",
   "author": "Christian Bromann <mail@bromann.dev>",
