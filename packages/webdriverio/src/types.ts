@@ -1,6 +1,6 @@
 import type { EventEmitter } from 'events'
 import type { AttachOptions as DevToolsAttachOptions } from '@gemini-testing/devtools'
-import type { SessionFlags, AttachOptions as WebDriverAttachOptions } from 'webdriver'
+import type { SessionFlags, AttachOptions as WebDriverAttachOptions } from '@gemini-testing/webdriver'
 import type { Options, Capabilities, FunctionProperties, ThenArg } from '@wdio/types'
 import type { ElementReference, ProtocolCommandsAsync, ProtocolCommands, RectReturn } from '@wdio/protocols'
 import type { Browser as PuppeteerBrowser } from 'puppeteer-core/lib/cjs/puppeteer/api/Browser'

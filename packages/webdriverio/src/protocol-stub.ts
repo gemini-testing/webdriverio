@@ -1,6 +1,6 @@
 import { capabilitiesEnvironmentDetector } from '@wdio/utils'
 import type { Capabilities, Options } from '@wdio/types'
-import type { AttachOptions } from 'webdriver'
+import type { AttachOptions } from '@gemini-testing/webdriver'
 
 /**
  * these commands can be used outside test scope and may be used accidentally by user before browser session is started

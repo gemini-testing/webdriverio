@@ -1,11 +1,11 @@
 import logger from '@wdio/logger'
 
-import WebDriver from 'webdriver'
-import { DEFAULTS } from 'webdriver'
+import WebDriver from '@gemini-testing/webdriver'
+import { DEFAULTS } from '@gemini-testing/webdriver'
 import { validateConfig } from '@wdio/config'
 import { wrapCommand, runFnInFiberContext } from '@wdio/utils'
 import { Options, Capabilities } from '@wdio/types'
-import type * as WebDriverTypes from 'webdriver'
+import type * as WebDriverTypes from '@gemini-testing/webdriver'
 
 import MultiRemote from './multiremote'
 import type ElementCommands from './commands/element'
