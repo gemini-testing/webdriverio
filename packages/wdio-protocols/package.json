@@ -1,5 +1,5 @@
 {
-  "name": "@wdio/protocols",
+  "name": "@testplane/protocols",
   "version": "9.4.4",
   "description": "Utility package providing information about automation protocols",
   "author": "Christian Bromann <mail@bromann.dev>",
