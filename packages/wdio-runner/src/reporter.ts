@@ -1,6 +1,6 @@
 import path from 'node:path'
 import logger from '@wdio/logger'
-import { initializePlugin } from '@wdio/utils'
+import { initializePlugin } from '@testplane/utils'
 import type { Options, Capabilities, Reporters } from '@testplane/types'
 
 const log = logger('@wdio/runner')
