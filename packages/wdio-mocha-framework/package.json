@@ -39,7 +39,7 @@
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.11.28",
     "@wdio/logger": "workspace:9.4.4",
-    "@wdio/types": "workspace:9.5.0",
+    "@testplane/types": "workspace:9.5.0",
     "@wdio/utils": "workspace:9.5.0",
     "mocha": "^10.3.0"
   },

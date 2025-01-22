@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { describe, expect, it, vi, test, afterEach } from 'vitest'
-import type { Options, Capabilities } from '@wdio/types'
+import type { Options, Capabilities } from '@testplane/types'
 
 import BaseReporter from '../src/reporter.js'
 
