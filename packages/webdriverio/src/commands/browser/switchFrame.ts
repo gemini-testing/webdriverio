@@ -1,5 +1,5 @@
 import logger from '@wdio/logger'
-import { ELEMENT_KEY, type local, type remote } from 'webdriver'
+import { ELEMENT_KEY, type local, type remote } from '@testplane/webdriver'
 import type { ElementReference } from '@testplane/protocols'
 
 import { getContextManager } from '../../session/context.js'

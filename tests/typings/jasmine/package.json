@@ -26,7 +26,7 @@
     "@wdio/sumologic-reporter": "workspace:*",
     "@wdio/testingbot-service": "workspace:*",
     "expect-webdriverio": "^5.0.1",
-    "webdriver": "workspace:*",
+    "@testplane/webdriver": "workspace:*",
     "webdriverio": "workspace:*"
   }
 }
