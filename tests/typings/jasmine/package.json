@@ -27,6 +27,6 @@
     "@wdio/testingbot-service": "workspace:*",
     "expect-webdriverio": "^5.0.1",
     "@testplane/webdriver": "workspace:*",
-    "webdriverio": "workspace:*"
+    "@testplane/webdriverio": "workspace:*"
   }
 }

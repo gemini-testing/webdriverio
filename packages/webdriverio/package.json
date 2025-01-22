@@ -1,5 +1,5 @@
 {
-  "name": "webdriverio",
+  "name": "@testplane/webdriverio",
   "description": "Next-gen browser and mobile automation test framework for Node.js",
   "version": "9.5.7",
   "homepage": "https://webdriver.io",

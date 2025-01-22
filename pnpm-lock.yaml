@@ -240,6 +240,9 @@ importers:
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../packages/webdriver
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../packages/webdriverio
       '@types/mocha':
         specifier: ^10.0.6
         version: 10.0.10
@@ -332,19 +335,19 @@ importers:
 
   examples/appium:
     dependencies:
-      webdriverio:
+      '@testplane/webdriverio':
         specifier: workspace:*
         version: link:../../packages/webdriverio
 
   examples/bidi:
     dependencies:
-      webdriverio:
+      '@testplane/webdriverio':
         specifier: workspace:*
         version: link:../../packages/webdriverio
 
   examples/cloudservices:
     dependencies:
-      webdriverio:
+      '@testplane/webdriverio':
         specifier: workspace:*
         version: link:../../packages/webdriverio
 
@@ -365,7 +368,7 @@ importers:
 
   examples/standalone:
     dependencies:
-      webdriverio:
+      '@testplane/webdriverio':
         specifier: workspace:*
         version: link:../../packages/webdriverio
 
@@ -377,6 +380,9 @@ importers:
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../packages/webdriver
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../../packages/webdriverio
       '@wdio/browser-runner':
         specifier: workspace:*
         version: link:../../packages/wdio-browser-runner
@@ -416,9 +422,6 @@ importers:
       '@wdio/spec-reporter':
         specifier: workspace:*
         version: link:../../packages/wdio-spec-reporter
-      webdriverio:
-        specifier: workspace:*
-        version: link:../../packages/webdriverio
 
   examples/wdio/vite-vue-example:
     dependencies:
@@ -579,6 +582,9 @@ importers:
       '@testplane/utils':
         specifier: workspace:*
         version: link:../wdio-utils
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../webdriverio
       '@wdio/config':
         specifier: workspace:*
         version: link:../wdio-config
@@ -597,9 +603,6 @@ importers:
       tree-kill:
         specifier: ^1.2.2
         version: 1.2.2
-      webdriverio:
-        specifier: workspace:*
-        version: link:../webdriverio
 
   packages/wdio-browser-runner:
     dependencies:
@@ -618,6 +621,9 @@ importers:
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../webdriver
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../webdriverio
       '@vitest/spy':
         specifier: ^2.0.4
         version: 2.1.8
@@ -644,7 +650,7 @@ importers:
         version: 30.0.0-alpha.6
       expect-webdriverio:
         specifier: ^5.0.1
-        version: 5.0.5(@wdio/globals@packages+wdio-globals)(@wdio/logger@packages+wdio-logger)(webdriverio@packages+webdriverio)
+        version: 5.0.5(@wdio/globals@packages+wdio-globals)(@wdio/logger@packages+wdio-logger)(webdriverio@9.6.0)
       get-port:
         specifier: ^7.1.0
         version: 7.1.0
@@ -740,6 +746,9 @@ importers:
       '@testplane/types':
         specifier: workspace:*
         version: link:../wdio-types
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../webdriverio
       '@types/gitconfiglocal':
         specifier: ^2.0.1
         version: 2.0.3
@@ -773,9 +782,6 @@ importers:
       uuid:
         specifier: ^10.0.0
         version: 10.0.0
-      webdriverio:
-        specifier: workspace:*
-        version: link:../webdriverio
       winston-transport:
         specifier: ^4.5.0
         version: 4.9.0
@@ -804,6 +810,9 @@ importers:
       '@testplane/utils':
         specifier: workspace:*
         version: link:../wdio-utils
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../webdriverio
       '@types/node':
         specifier: ^20.1.1
         version: 20.17.14
@@ -861,9 +870,6 @@ importers:
       tsx:
         specifier: ^4.7.2
         version: 4.19.2
-      webdriverio:
-        specifier: workspace:*
-        version: link:../webdriverio
       yargs:
         specifier: ^17.7.2
         version: 17.7.2
@@ -1006,6 +1012,9 @@ importers:
       webdriverio:
         specifier: workspace:*
         version: link:../webdriverio
+      expect-webdriverio:
+        specifier: ^5.0.1
+        version: 5.0.5(@wdio/globals@9.6.0)(@wdio/logger@packages+wdio-logger)(webdriverio@9.6.0)
 
   packages/wdio-jasmine-framework:
     dependencies:
@@ -1071,6 +1080,9 @@ importers:
       '@testplane/types':
         specifier: workspace:*
         version: link:../wdio-types
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../webdriverio
       '@tracerbench/trace-event':
         specifier: ^8.0.0
         version: 8.0.0
@@ -1101,9 +1113,6 @@ importers:
       puppeteer-core:
         specifier: 23.11.1
         version: 23.11.1
-      webdriverio:
-        specifier: workspace:*
-        version: link:../webdriverio
     devDependencies:
       '@types/babel__core':
         specifier: ^7.1.19
@@ -1244,6 +1253,9 @@ importers:
       '@testplane/webdriver':
         specifier: workspace:9.5.4
         version: link:../webdriver
+      '@testplane/webdriverio':
+        specifier: workspace:9.5.7
+        version: link:../webdriverio
       '@types/node':
         specifier: ^20.11.28
         version: 20.17.14
@@ -1277,15 +1289,15 @@ importers:
       '@testplane/utils':
         specifier: workspace:*
         version: link:../wdio-utils
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../webdriverio
       '@wdio/logger':
         specifier: workspace:*
         version: link:../wdio-logger
       saucelabs:
         specifier: 8.0.0
         version: 8.0.0
-      webdriverio:
-        specifier: workspace:*
-        version: link:../webdriverio
     devDependencies:
       '@types/ip':
         specifier: ^1.1.0
@@ -1302,15 +1314,15 @@ importers:
       '@testplane/types':
         specifier: workspace:*
         version: link:../wdio-types
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../webdriverio
       '@wdio/logger':
         specifier: workspace:*
         version: link:../wdio-logger
       polka:
         specifier: ^0.5.2
         version: 0.5.2
-      webdriverio:
-        specifier: workspace:*
-        version: link:../webdriverio
     devDependencies:
       '@wdio/globals':
         specifier: workspace:*
@@ -1404,15 +1416,15 @@ importers:
       '@testplane/types':
         specifier: workspace:*
         version: link:../wdio-types
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../webdriverio
       '@wdio/logger':
         specifier: workspace:*
         version: link:../wdio-logger
       testingbot-tunnel-launcher:
         specifier: ^1.1.7
         version: 1.1.14
-      webdriverio:
-        specifier: workspace:*
-        version: link:../webdriverio
     devDependencies:
       '@types/node':
         specifier: ^20.1.0
@@ -1477,6 +1489,9 @@ importers:
       '@testplane/types':
         specifier: workspace:*
         version: link:../wdio-types
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../webdriverio
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0
@@ -1486,9 +1501,6 @@ importers:
       uuid:
         specifier: ^10.0.0
         version: 10.0.0
-      webdriverio:
-        specifier: workspace:*
-        version: link:../webdriverio
     devDependencies:
       '@wdio/globals':
         specifier: workspace:*
@@ -1647,6 +1659,9 @@ importers:
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../packages/webdriver
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../packages/webdriverio
       '@wdio/allure-reporter':
         specifier: workspace:*
         version: link:../packages/wdio-allure-reporter
@@ -1739,16 +1754,16 @@ importers:
         version: link:../packages/devtools
       expect-webdriverio:
         specifier: ^5.0.1
-        version: 5.0.5(@wdio/globals@packages+wdio-globals)(@wdio/logger@packages+wdio-logger)(webdriverio@packages+webdriverio)
-      webdriverio:
-        specifier: workspace:*
-        version: link:../packages/webdriverio
+        version: 5.0.5(@wdio/globals@packages+wdio-globals)(@wdio/logger@packages+wdio-logger)(webdriverio@9.6.0)
 
   tests/interop:
     dependencies:
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../packages/webdriver
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../../packages/webdriverio
       '@wdio/allure-reporter':
         specifier: workspace:*
         version: link:../../packages/wdio-allure-reporter
@@ -1773,9 +1788,6 @@ importers:
       npm-run-all2:
         specifier: ^6.2.3
         version: 6.2.6
-      webdriverio:
-        specifier: workspace:*
-        version: link:../../packages/webdriverio
 
   tests/mocha/cjs: {}
 
@@ -1793,6 +1805,9 @@ importers:
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../../packages/webdriver
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../../../packages/webdriverio
       '@wdio/allure-reporter':
         specifier: workspace:*
         version: link:../../../packages/wdio-allure-reporter
@@ -1841,9 +1856,6 @@ importers:
       '@wdio/testingbot-service':
         specifier: workspace:*
         version: link:../../../packages/wdio-testingbot-service
-      webdriverio:
-        specifier: workspace:*
-        version: link:../../../packages/webdriverio
 
   tests/typings/jasmine:
     dependencies:
@@ -1859,6 +1871,9 @@ importers:
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../../packages/webdriver
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../../../packages/webdriverio
       '@types/jasmine':
         specifier: ^5.1.4
         version: 5.1.5
@@ -1912,10 +1927,7 @@ importers:
         version: link:../../../packages/wdio-testingbot-service
       expect-webdriverio:
         specifier: ^5.0.1
-        version: 5.0.5(@wdio/globals@packages+wdio-globals)(@wdio/logger@packages+wdio-logger)(webdriverio@packages+webdriverio)
-      webdriverio:
-        specifier: workspace:*
-        version: link:../../../packages/webdriverio
+        version: 5.0.5(@wdio/globals@packages+wdio-globals)(@wdio/logger@packages+wdio-logger)(webdriverio@9.6.0)
 
   tests/typings/mocha:
     dependencies:
@@ -1931,6 +1943,9 @@ importers:
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../../packages/webdriver
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../../../packages/webdriverio
       '@wdio/allure-reporter':
         specifier: workspace:*
         version: link:../../../packages/wdio-allure-reporter
@@ -1979,9 +1994,6 @@ importers:
       '@wdio/testingbot-service':
         specifier: workspace:*
         version: link:../../../packages/wdio-testingbot-service
-      webdriverio:
-        specifier: workspace:*
-        version: link:../../../packages/webdriverio
 
   tests/typings/webdriver:
     dependencies:
@@ -1997,6 +2009,9 @@ importers:
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../../packages/webdriver
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../../../packages/webdriverio
       '@wdio/allure-reporter':
         specifier: workspace:*
         version: link:../../../packages/wdio-allure-reporter
@@ -2045,9 +2060,6 @@ importers:
       '@wdio/testingbot-service':
         specifier: workspace:*
         version: link:../../../packages/wdio-testingbot-service
-      webdriverio:
-        specifier: workspace:*
-        version: link:../../../packages/webdriverio
 
   tests/typings/webdriverio:
     dependencies:
@@ -2063,6 +2075,9 @@ importers:
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../../packages/webdriver
+      '@testplane/webdriverio':
+        specifier: workspace:*
+        version: link:../../../packages/webdriverio
       '@wdio/allure-reporter':
         specifier: workspace:*
         version: link:../../../packages/wdio-allure-reporter
@@ -2111,9 +2126,6 @@ importers:
       '@wdio/testingbot-service':
         specifier: workspace:*
         version: link:../../../packages/wdio-testingbot-service
-      webdriverio:
-        specifier: workspace:*
-        version: link:../../../packages/webdriverio
 
   website:
     dependencies:

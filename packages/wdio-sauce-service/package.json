@@ -36,7 +36,7 @@
     "@testplane/types": "workspace:*",
     "@testplane/utils": "workspace:*",
     "saucelabs": "8.0.0",
-    "webdriverio": "workspace:*"
+    "@testplane/webdriverio": "workspace:*"
   },
   "devDependencies": {
     "@types/ip": "^1.1.0",
