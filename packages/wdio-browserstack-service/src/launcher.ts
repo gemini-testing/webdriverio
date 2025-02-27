@@ -6,14 +6,14 @@ import path from 'node:path'
 import { promisify, format } from 'node:util'
 import { performance, PerformanceObserver } from 'node:perf_hooks'
 import os from 'node:os'
-import { SevereServiceError } from 'webdriverio'
+import { SevereServiceError } from '@testplane/webdriverio'
 
 import * as BrowserstackLocalLauncher from 'browserstack-local'
 
 import { getProductMap } from './testHub/utils.js'
 import TestOpsConfig from './testOps/testOpsConfig.js'
 
-import type { Capabilities, Services, Options } from '@wdio/types'
+import type { Capabilities, Services, Options } from '@testplane/types'
 import PerformanceTester from './performance-tester.js'
 
 import { startPercy, stopPercy, getBestPlatformForPercySnapshot } from './Percy/PercyHelper.js'

@@ -1,5 +1,5 @@
 {
-  "name": "webdriverio",
+  "name": "@testplane/webdriverio",
   "description": "Next-gen browser and mobile automation test framework for Node.js",
   "version": "9.5.7",
   "homepage": "https://webdriver.io",
@@ -14,7 +14,7 @@
     "url": "https://github.com/webdriverio/webdriverio/issues"
   },
   "engines": {
-    "node": ">=18.20.0"
+    "node": ">=18.0.0"
   },
   "tags": [
     "webdriver",
@@ -36,6 +36,7 @@
     "mocha",
     "nodeUnit",
     "buster",
+    "devtools",
     "puppeteer",
     "vows",
     "jasmine",
@@ -78,10 +79,10 @@
     "@types/sinonjs__fake-timers": "^8.1.5",
     "@wdio/config": "workspace:*",
     "@wdio/logger": "workspace:*",
-    "@wdio/protocols": "workspace:*",
+    "@testplane/protocols": "workspace:*",
     "@wdio/repl": "workspace:*",
-    "@wdio/types": "workspace:*",
-    "@wdio/utils": "workspace:*",
+    "@testplane/types": "workspace:*",
+    "@testplane/utils": "workspace:*",
     "archiver": "^7.0.1",
     "aria-query": "^5.3.0",
     "cheerio": "^1.0.0-rc.12",
@@ -100,12 +101,16 @@
     "rgb2hex": "0.2.5",
     "serialize-error": "^11.0.3",
     "urlpattern-polyfill": "^10.0.0",
-    "webdriver": "workspace:*"
+    "@testplane/webdriver": "workspace:*"
   },
   "peerDependencies": {
+    "devtools": "^8.14.0",
     "puppeteer-core": "^22.3.0"
   },
   "peerDependenciesMeta": {
+    "devtools": {
+      "optional": true
+    },
     "puppeteer-core": {
       "optional": true
     }

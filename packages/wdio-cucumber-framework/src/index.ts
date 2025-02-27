@@ -11,8 +11,8 @@ import isGlob from 'is-glob'
 import { sync as globSync } from 'glob'
 
 import logger from '@wdio/logger'
-import { executeHooksWithArgs, testFnWrapper } from '@wdio/utils'
-import type { Capabilities, Options, Frameworks } from '@wdio/types'
+import { executeHooksWithArgs, testFnWrapper } from '@testplane/utils'
+import type { Capabilities, Options, Frameworks } from '@testplane/types'
 
 import {
     setDefaultTimeout,

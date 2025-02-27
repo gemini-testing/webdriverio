@@ -14,10 +14,10 @@ import readDir from 'recursive-readdir'
 import { $ } from 'execa'
 import { readPackageUp } from 'read-pkg-up'
 import { resolve } from 'import-meta-resolve'
-import { SevereServiceError } from 'webdriverio'
+import { SevereServiceError } from '@testplane/webdriverio'
 import { ConfigParser } from '@wdio/config/node'
-import { CAPABILITY_KEYS } from '@wdio/protocols'
-import type { Capabilities, Options, Services } from '@wdio/types'
+import { CAPABILITY_KEYS } from '@testplane/protocols'
+import type { Capabilities, Options, Services } from '@testplane/types'
 
 import { installPackages, getInstallCommand } from './install.js'
 import {
@@ -634,7 +634,7 @@ export function specifyVersionIfNeeded(packagesToInstall: string[], version: str
     return packagesToInstall.map((p) => {
         if (
             (p.startsWith('@wdio') && p !== '@wdio/visual-service') ||
-            ['webdriver', 'webdriverio'].includes(p)
+            ['devtools', 'webdriver', 'webdriverio'].includes(p)
         ) {
             const tag = major && npmTag === 'latest'
                 ? `^${major}.${minor}.${patch}-${tagName}.${build}`

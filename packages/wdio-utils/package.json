@@ -1,5 +1,5 @@
 {
-  "name": "@wdio/utils",
+  "name": "@testplane/utils",
   "version": "9.5.0",
   "description": "A WDIO helper utility to provide several utility functions used across the project.",
   "author": "Christian Bromann <mail@bromann.dev>",
@@ -19,7 +19,7 @@
   "types": "./build/index.d.ts",
   "typeScriptVersion": "3.8.3",
   "engines": {
-    "node": ">=18.20.0"
+    "node": ">=18.0.0"
   },
   "repository": {
     "type": "git",
@@ -38,7 +38,7 @@
   "dependencies": {
     "@puppeteer/browsers": "^2.2.0",
     "@wdio/logger": "workspace:*",
-    "@wdio/types": "workspace:*",
+    "@testplane/types": "workspace:*",
     "decamelize": "^6.0.0",
     "deepmerge-ts": "^7.0.3",
     "edgedriver": "^6.1.1",

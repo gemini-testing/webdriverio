@@ -3,8 +3,8 @@ import { EventEmitter, on } from 'node:events'
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import logger from '@wdio/logger'
-import type { CommandEndpoint } from '@wdio/protocols'
-import type { Options } from '@wdio/types'
+import type { CommandEndpoint } from '@testplane/protocols'
+import type { Options } from '@testplane/types'
 
 import '../src/browser.js'
 // @ts-expect-error mock feature
@@ -82,6 +82,7 @@ class FakeClient extends EventEmitter {
     isIOS = false
     isSauce = false
     isFirefox = false
+    isDevTools = false
     isBidi = false
     isSeleniumStandalone = false
     isNativeContext = false

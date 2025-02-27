@@ -3,10 +3,10 @@ import path from 'node:path'
 
 import logger from '@wdio/logger'
 import { browser } from '@wdio/globals'
-import { executeHooksWithArgs } from '@wdio/utils'
+import { executeHooksWithArgs } from '@testplane/utils'
 import { matchers } from 'expect-webdriverio'
-import { ELEMENT_KEY } from 'webdriver'
-import { type Workers, type Options, type Services, MESSAGE_TYPES } from '@wdio/types'
+import { ELEMENT_KEY } from '@testplane/webdriver'
+import { type Workers, type Options, type Services, MESSAGE_TYPES } from '@testplane/types'
 
 import { transformExpectArgs } from './utils.js'
 import type BaseReporter from './reporter.js'

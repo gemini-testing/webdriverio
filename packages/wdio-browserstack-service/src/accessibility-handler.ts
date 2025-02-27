@@ -1,6 +1,6 @@
 import util from 'node:util'
 
-import type { Capabilities, Frameworks } from '@wdio/types'
+import type { Capabilities, Frameworks } from '@testplane/types'
 
 import type { ITestCaseHookParameter } from './cucumber-types.js'
 
@@ -358,4 +358,3 @@ const AccessibilityHandler: typeof _AccessibilityHandler = o11yClassErrorHandler
 type AccessibilityHandler = _AccessibilityHandler
 
 export default AccessibilityHandler
-

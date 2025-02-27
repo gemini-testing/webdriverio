@@ -1,10 +1,11 @@
 import path from 'node:path'
 import { describe, test, expect, vi } from 'vitest'
-import type { Capabilities } from '@wdio/types'
+import type { Capabilities } from '@testplane/types'
 
 import { remote, multiremote } from '../src/index.js'
 
 vi.mock('fetch')
+vi.mock('devtools')
 vi.mock('@wdio/logger', () => import(path.join(process.cwd(), '__mocks__', '@wdio/logger')))
 
 const remoteConfig: Capabilities.WebdriverIOConfig = {

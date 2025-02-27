@@ -9,7 +9,7 @@
     "wdio": "./bin/wdio.js"
   },
   "engines": {
-    "node": ">=18.20.0"
+    "node": ">=18.0.0"
   },
   "repository": {
     "type": "git",
@@ -44,9 +44,9 @@
     "@wdio/config": "workspace:*",
     "@wdio/globals": "workspace:*",
     "@wdio/logger": "workspace:*",
-    "@wdio/protocols": "workspace:*",
-    "@wdio/types": "workspace:*",
-    "@wdio/utils": "workspace:*",
+    "@testplane/protocols": "workspace:*",
+    "@testplane/types": "workspace:*",
+    "@testplane/utils": "workspace:*",
     "async-exit-hook": "^2.0.1",
     "chalk": "^5.2.0",
     "chokidar": "^4.0.0",
@@ -61,7 +61,7 @@
     "read-pkg-up": "^10.0.0",
     "recursive-readdir": "^2.2.3",
     "tsx": "^4.7.2",
-    "webdriverio": "workspace:*",
+    "@testplane/webdriverio": "workspace:*",
     "yargs": "^17.7.2"
   },
   "devDependencies": {

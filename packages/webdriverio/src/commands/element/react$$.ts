@@ -2,8 +2,8 @@ import fs from 'node:fs/promises'
 import url from 'node:url'
 
 import { resolve } from 'import-meta-resolve'
-import { getBrowserObject } from '@wdio/utils'
-import type { ElementReference } from '@wdio/protocols'
+import { getBrowserObject } from '@testplane/utils'
+import type { ElementReference } from '@testplane/protocols'
 
 import { enhanceElementsArray } from '../../utils/index.js'
 import { getElements } from '../../utils/getElementObject.js'

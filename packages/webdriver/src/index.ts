@@ -3,9 +3,9 @@ import type { ChildProcess } from 'node:child_process'
 
 import logger from '@wdio/logger'
 
-import { webdriverMonad, sessionEnvironmentDetector, startWebDriver, isBidi } from '@wdio/utils'
+import { webdriverMonad, sessionEnvironmentDetector, startWebDriver, isBidi } from '@testplane/utils'
 import { validateConfig } from '@wdio/config'
-import type { Capabilities, Options } from '@wdio/types'
+import type { Capabilities, Options } from '@testplane/types'
 
 import command from './command.js'
 import { DEFAULTS } from './constants.js'

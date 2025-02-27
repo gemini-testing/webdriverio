@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import logger from '@wdio/logger'
 
-import WebDriver, { DEFAULTS } from 'webdriver'
+import WebDriver, { DEFAULTS } from '@testplane/webdriver'
 import { validateConfig } from '@wdio/config'
-import { enableFileLogging, wrapCommand } from '@wdio/utils'
-import type { Options, Capabilities } from '@wdio/types'
-import type * as WebDriverTypes from 'webdriver'
+import { enableFileLogging, wrapCommand } from '@testplane/utils'
+import type { Options, Capabilities } from '@testplane/types'
+import type * as WebDriverTypes from '@testplane/webdriver'
 
 import MultiRemote from './multiremote.js'
 import SevereServiceErrorImport from './utils/SevereServiceError.js'
@@ -201,4 +201,3 @@ export const multiremote = async function (
     driver.addLocatorStrategy = addLocatorStrategyHandler(driver)
     return driver
 }
-

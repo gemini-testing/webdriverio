@@ -1,8 +1,11 @@
-import type { Automation, Capabilities } from '@wdio/types'
+import type { Automation, Capabilities } from '@testplane/types'
+import logger from '@wdio/logger'
 
 import ProtocolStub from '../protocol-stub.js'
 import detectBackend from './detectBackend.js'
 import { SupportedAutomationProtocols } from '../constants.js'
+
+const log = logger('webdriverio')
 
 interface ProtocolDriver {
     Driver: Automation.Driver<Capabilities.RemoteConfig>
@@ -17,6 +20,7 @@ let webdriverImport: Automation.Driver<Capabilities.RemoteConfig> | undefined
  * @return {Automation.Driver}      automation driver
  */
 export async function getProtocolDriver (options: Capabilities.WebdriverIOConfig): Promise<ProtocolDriver> {
+    const { automationProtocol } = options
     /**
      * We still want to be able to inject a stub driver to avoid loading the actual
      * driver package in two places:
@@ -25,7 +29,7 @@ export async function getProtocolDriver (options: Capabilities.WebdriverIOConfig
      *   whether tests are being executed in the worker before starting a session
      * - when running component tests where we don't need a driver at all
      */
-    if (options.automationProtocol === SupportedAutomationProtocols.stub) {
+    if (automationProtocol === SupportedAutomationProtocols.stub) {
         return { Driver: ProtocolStub, options }
     }
 
@@ -36,6 +40,28 @@ export async function getProtocolDriver (options: Capabilities.WebdriverIOConfig
         Object.assign(options, detectBackend(options))
     }
 
-    const Driver = webdriverImport || (await import(/* @vite-ignore */options.automationProtocol || 'webdriver')).default
+    /**
+     * return `devtools` if explicitly set
+     */
+    if (automationProtocol === SupportedAutomationProtocols.devtools || automationProtocol?.startsWith('/@fs/')) {
+        try {
+            const DevTools = await import(automationProtocol)
+            log.info('Starting session using Chrome DevTools as automation protocol and Puppeteer as driver')
+            return { Driver: DevTools.default, options }
+        } catch (err: unknown) {
+            throw new Error(
+                `Failed to import "${automationProtocol}" as automation protocol driver!\n` +
+                (automationProtocol === SupportedAutomationProtocols.devtools
+                    ? 'Make sure to have it installed as dependency (`npm i devtools`)!\n'
+                    : ''
+                ) +
+                `Error: ${(err as Error).message}`
+            )
+        }
+    }
+
+    const packageName = automationProtocol === 'webdriver' ? `@testplane/${automationProtocol}` : automationProtocol || '@testplane/webdriver'
+    const Driver = webdriverImport || (await import(packageName)).default
+
     return { Driver, options }
 }

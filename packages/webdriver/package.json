@@ -1,5 +1,5 @@
 {
-  "name": "webdriver",
+  "name": "@testplane/webdriver",
   "version": "9.5.4",
   "description": "A Node.js bindings implementation for the W3C WebDriver and Mobile JSONWire Protocol",
   "author": "Christian Bromann <mail@bromann.dev>",
@@ -22,7 +22,7 @@
   "types": "./build/index.d.ts",
   "typeScriptVersion": "3.8.3",
   "engines": {
-    "node": ">=18.20.0"
+    "node": ">=18.0.0"
   },
   "repository": {
     "type": "git",
@@ -36,15 +36,15 @@
     "url": "https://github.com/webdriverio/webdriverio/issues"
   },
   "dependencies": {
+    "@testplane/protocols": "workspace:*",
+    "@testplane/types": "workspace:*",
+    "@testplane/utils": "workspace:*",
     "@types/node": "^20.1.0",
     "@types/ws": "^8.5.3",
     "@wdio/config": "workspace:*",
     "@wdio/logger": "workspace:*",
-    "@wdio/protocols": "workspace:*",
-    "@wdio/types": "workspace:*",
-    "@wdio/utils": "workspace:*",
     "deepmerge-ts": "^7.0.3",
-    "undici": "^6.20.1",
+    "undici": "6.12.0",
     "ws": "^8.8.0"
   }
 }

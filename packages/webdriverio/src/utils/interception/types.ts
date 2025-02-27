@@ -1,5 +1,5 @@
-import type { local } from 'webdriver'
-import type { Cookie } from '@wdio/protocols'
+import type { local } from '@testplane/webdriver'
+import type { Cookie } from '@testplane/protocols'
 
 export type MockFilterOptions = {
     method?: string | ((method: string) => boolean)

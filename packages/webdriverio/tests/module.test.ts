@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, expect, vi, afterEach } from 'vitest'
 import path from 'node:path'
-import WebDriver from 'webdriver'
+import WebDriver from '@testplane/webdriver'
 import logger from '@wdio/logger'
 import { validateConfig } from '@wdio/config'
 
@@ -32,6 +32,29 @@ vi.mock('webdriver', () => {
     return {
         DEFAULTS: {},
         default: class WebDriverMock {
+            static newSession = newSessionMock
+            static attachToSession = attachToSessionMock
+        }
+    }
+})
+
+vi.mock('devtools', () => {
+    const client = { sessionId: 'foobar-123', isDevTools: true }
+    const newSessionMock = vi.fn()
+    newSessionMock.mockReturnValue(new Promise((resolve) => resolve(client)))
+    newSessionMock.mockImplementation((params, cb) => {
+        const result = cb(client, params)
+        // @ts-ignore mock feature
+        if (params.test_multiremote) {
+            result.options = { logLevel: 'error' }
+        }
+        return result
+    })
+    const attachToSessionMock = vi.fn().mockReturnValue(client)
+    return {
+        SUPPORTED_BROWSER: ['chrome'],
+        DEFAULTS: {},
+        default: class DevtoolsMock {
             static newSession = newSessionMock
             static attachToSession = attachToSessionMock
         }
