@@ -13,7 +13,7 @@ import * as BrowserstackLocalLauncher from 'browserstack-local'
 import { getProductMap } from './testHub/utils.js'
 import TestOpsConfig from './testOps/testOpsConfig.js'
 
-import type { Capabilities, Services, Options } from '@testplane/types'
+import type { Capabilities, Services, Options } from '@testplane/wdio-types'
 import PerformanceTester from './performance-tester.js'
 
 import { startPercy, stopPercy, getBestPlatformForPercySnapshot } from './Percy/PercyHelper.js'

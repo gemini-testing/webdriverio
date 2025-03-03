@@ -2,7 +2,7 @@ import os from 'node:os'
 import path from 'node:path'
 import logger from '@wdio/logger'
 import SauceLabs from 'saucelabs'
-import type { Capabilities, Options } from '@testplane/types'
+import type { Capabilities, Options } from '@testplane/wdio-types'
 import { expect, test, vi, beforeEach } from 'vitest'
 
 import SauceServiceLauncher from '../src/launcher.js'

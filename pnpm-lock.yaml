@@ -234,7 +234,7 @@ importers:
       '@testing-library/vue':
         specifier: ^8.0.1
         version: 8.1.0(@vue/compiler-sfc@3.5.13)(vue@3.5.13(typescript@5.7.2))
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../packages/wdio-types
       '@testplane/webdriver':
@@ -368,7 +368,7 @@ importers:
 
   examples/wdio:
     dependencies:
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../../packages/wdio-types
       '@testplane/webdriver':
@@ -476,12 +476,12 @@ importers:
 
   packages/devtools:
     dependencies:
-      '@testplane/types':
-        specifier: workspace:*
-        version: link:../wdio-types
       '@testplane/utils':
         specifier: workspace:*
         version: link:../wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:*
+        version: link:../wdio-types
       '@types/node':
         specifier: ^20.1.0
         version: 20.17.12
@@ -545,7 +545,7 @@ importers:
 
   packages/wdio-allure-reporter:
     dependencies:
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       '@types/node':
@@ -570,12 +570,12 @@ importers:
 
   packages/wdio-appium-service:
     dependencies:
-      '@testplane/types':
-        specifier: workspace:*
-        version: link:../wdio-types
       '@testplane/utils':
         specifier: workspace:*
         version: link:../wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:*
+        version: link:../wdio-types
       '@testplane/webdriverio':
         specifier: workspace:*
         version: link:../webdriverio
@@ -606,12 +606,12 @@ importers:
       '@testplane/protocols':
         specifier: workspace:*
         version: link:../wdio-protocols
-      '@testplane/types':
-        specifier: workspace:*
-        version: link:../wdio-types
       '@testplane/utils':
         specifier: workspace:*
         version: link:../wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:*
+        version: link:../wdio-types
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../webdriver
@@ -731,7 +731,7 @@ importers:
       '@percy/selenium-webdriver':
         specifier: ^2.0.3
         version: 2.1.0
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       '@testplane/webdriverio':
@@ -792,12 +792,12 @@ importers:
       '@testplane/protocols':
         specifier: workspace:*
         version: link:../wdio-protocols
-      '@testplane/types':
-        specifier: workspace:*
-        version: link:../wdio-types
       '@testplane/utils':
         specifier: workspace:*
         version: link:../wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:*
+        version: link:../wdio-types
       '@testplane/webdriverio':
         specifier: workspace:*
         version: link:../webdriverio
@@ -889,7 +889,7 @@ importers:
 
   packages/wdio-concise-reporter:
     dependencies:
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       '@wdio/reporter':
@@ -904,12 +904,12 @@ importers:
 
   packages/wdio-config:
     dependencies:
-      '@testplane/types':
-        specifier: workspace:*
-        version: link:../wdio-types
       '@testplane/utils':
         specifier: workspace:*
         version: link:../wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:*
+        version: link:../wdio-types
       '@wdio/logger':
         specifier: workspace:*
         version: link:../wdio-logger
@@ -938,12 +938,12 @@ importers:
       '@cucumber/messages':
         specifier: 26.0.1
         version: 26.0.1
-      '@testplane/types':
-        specifier: workspace:*
-        version: link:../wdio-types
       '@testplane/utils':
         specifier: workspace:*
         version: link:../wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:*
+        version: link:../wdio-types
       '@types/node':
         specifier: ^20.1.0
         version: 20.17.10
@@ -966,7 +966,7 @@ importers:
 
   packages/wdio-dot-reporter:
     dependencies:
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       '@wdio/reporter':
@@ -985,7 +985,7 @@ importers:
 
   packages/wdio-firefox-profile-service:
     dependencies:
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       firefox-profile:
@@ -1003,12 +1003,12 @@ importers:
 
   packages/wdio-jasmine-framework:
     dependencies:
-      '@testplane/types':
-        specifier: workspace:*
-        version: link:../wdio-types
       '@testplane/utils':
         specifier: workspace:*
         version: link:../wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:*
+        version: link:../wdio-types
       '@types/node':
         specifier: ^20.1.0
         version: 20.17.10
@@ -1031,7 +1031,7 @@ importers:
 
   packages/wdio-json-reporter:
     dependencies:
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       '@wdio/reporter':
@@ -1040,7 +1040,7 @@ importers:
 
   packages/wdio-junit-reporter:
     dependencies:
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       '@wdio/reporter':
@@ -1062,7 +1062,7 @@ importers:
       '@babel/core':
         specifier: ^7.18.0
         version: 7.26.0
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       '@testplane/webdriverio':
@@ -1117,7 +1117,7 @@ importers:
 
   packages/wdio-local-runner:
     dependencies:
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       '@types/node':
@@ -1166,12 +1166,12 @@ importers:
 
   packages/wdio-mocha-framework:
     dependencies:
-      '@testplane/types':
-        specifier: workspace:9.5.0
-        version: link:../wdio-types
       '@testplane/utils':
         specifier: workspace:9.5.0
         version: link:../wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:9.5.0
+        version: link:../wdio-types
       '@types/mocha':
         specifier: ^10.0.6
         version: 10.0.10
@@ -1195,7 +1195,7 @@ importers:
 
   packages/wdio-reporter:
     dependencies:
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       '@types/node':
@@ -1229,12 +1229,12 @@ importers:
 
   packages/wdio-runner:
     dependencies:
-      '@testplane/types':
-        specifier: workspace:9.5.0
-        version: link:../wdio-types
       '@testplane/utils':
         specifier: workspace:9.5.0
         version: link:../wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:9.5.0
+        version: link:../wdio-types
       '@testplane/webdriver':
         specifier: workspace:9.5.4
         version: link:../webdriver
@@ -1262,12 +1262,12 @@ importers:
 
   packages/wdio-sauce-service:
     dependencies:
-      '@testplane/types':
-        specifier: workspace:*
-        version: link:../wdio-types
       '@testplane/utils':
         specifier: workspace:*
         version: link:../wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:*
+        version: link:../wdio-types
       '@testplane/webdriverio':
         specifier: workspace:*
         version: link:../webdriverio
@@ -1290,7 +1290,7 @@ importers:
       '@polka/parse':
         specifier: ^1.0.0-next.0
         version: 1.0.0-next.0
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       '@testplane/webdriverio':
@@ -1327,7 +1327,7 @@ importers:
 
   packages/wdio-spec-reporter:
     dependencies:
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       '@wdio/reporter':
@@ -1345,7 +1345,7 @@ importers:
 
   packages/wdio-static-server-service:
     dependencies:
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       '@wdio/logger':
@@ -1367,7 +1367,7 @@ importers:
 
   packages/wdio-sumologic-reporter:
     dependencies:
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       '@wdio/logger':
@@ -1392,7 +1392,7 @@ importers:
 
   packages/wdio-testingbot-service:
     dependencies:
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       '@testplane/webdriverio':
@@ -1423,7 +1423,7 @@ importers:
       '@puppeteer/browsers':
         specifier: ^2.2.0
         version: 2.6.1
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       '@wdio/logger':
@@ -1465,7 +1465,7 @@ importers:
       '@testplane/protocols':
         specifier: workspace:*
         version: link:../wdio-protocols
-      '@testplane/types':
+      '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../wdio-types
       '@testplane/webdriverio':
@@ -1490,12 +1490,12 @@ importers:
       '@testplane/protocols':
         specifier: workspace:*
         version: link:../wdio-protocols
-      '@testplane/types':
-        specifier: workspace:*
-        version: link:../wdio-types
       '@testplane/utils':
         specifier: workspace:*
         version: link:../wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:*
+        version: link:../wdio-types
       '@types/node':
         specifier: ^20.1.0
         version: 20.17.10
@@ -1523,12 +1523,12 @@ importers:
       '@testplane/protocols':
         specifier: workspace:*
         version: link:../wdio-protocols
-      '@testplane/types':
-        specifier: workspace:*
-        version: link:../wdio-types
       '@testplane/utils':
         specifier: workspace:*
         version: link:../wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:*
+        version: link:../wdio-types
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../webdriver
@@ -1775,12 +1775,12 @@ importers:
       '@testplane/protocols':
         specifier: workspace:*
         version: link:../../../packages/wdio-protocols
-      '@testplane/types':
-        specifier: workspace:*
-        version: link:../../../packages/wdio-types
       '@testplane/utils':
         specifier: workspace:*
         version: link:../../../packages/wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:*
+        version: link:../../../packages/wdio-types
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../../packages/webdriver
@@ -1841,12 +1841,12 @@ importers:
       '@testplane/protocols':
         specifier: workspace:*
         version: link:../../../packages/wdio-protocols
-      '@testplane/types':
-        specifier: workspace:*
-        version: link:../../../packages/wdio-types
       '@testplane/utils':
         specifier: workspace:*
         version: link:../../../packages/wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:*
+        version: link:../../../packages/wdio-types
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../../packages/webdriver
@@ -1913,12 +1913,12 @@ importers:
       '@testplane/protocols':
         specifier: workspace:*
         version: link:../../../packages/wdio-protocols
-      '@testplane/types':
-        specifier: workspace:*
-        version: link:../../../packages/wdio-types
       '@testplane/utils':
         specifier: workspace:*
         version: link:../../../packages/wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:*
+        version: link:../../../packages/wdio-types
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../../packages/webdriver
@@ -1979,12 +1979,12 @@ importers:
       '@testplane/protocols':
         specifier: workspace:*
         version: link:../../../packages/wdio-protocols
-      '@testplane/types':
-        specifier: workspace:*
-        version: link:../../../packages/wdio-types
       '@testplane/utils':
         specifier: workspace:*
         version: link:../../../packages/wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:*
+        version: link:../../../packages/wdio-types
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../../packages/webdriver
@@ -2045,12 +2045,12 @@ importers:
       '@testplane/protocols':
         specifier: workspace:*
         version: link:../../../packages/wdio-protocols
-      '@testplane/types':
-        specifier: workspace:*
-        version: link:../../../packages/wdio-types
       '@testplane/utils':
         specifier: workspace:*
         version: link:../../../packages/wdio-utils
+      '@testplane/wdio-types':
+        specifier: workspace:*
+        version: link:../../../packages/wdio-types
       '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../../packages/webdriver
