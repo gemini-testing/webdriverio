@@ -4,7 +4,7 @@ import url from 'node:url'
 import { resolve } from 'import-meta-resolve'
 import type { ElementReference } from '@testplane/wdio-protocols'
 
-import { getBrowserObject } from '@testplane/utils'
+import { getBrowserObject } from '@testplane/wdio-utils'
 import { getElement } from '../../utils/getElementObject.js'
 import { waitToLoadReact, react$ as react$Script } from '../../scripts/resq.js'
 import type { ReactSelectorOptions } from '../../types.js'

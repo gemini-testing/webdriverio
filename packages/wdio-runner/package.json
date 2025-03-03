@@ -36,7 +36,7 @@
     "@wdio/globals": "workspace:9.5.7",
     "@testplane/wdio-logger": "workspace:*",
     "@testplane/wdio-types": "workspace:*",
-    "@testplane/utils": "workspace:9.5.0",
+    "@testplane/wdio-utils": "workspace:*",
     "deepmerge-ts": "^7.0.3",
     "expect-webdriverio": "^5.0.1",
     "@testplane/webdriver": "workspace:9.5.4",

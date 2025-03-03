@@ -29,7 +29,7 @@ declare global {
     }
 }
 
-const log = logger('@testplane/utils')
+const log = logger('@testplane/wdio-utils')
 const DRIVER_WAIT_TIMEOUT = 10 * 1000 // 10s
 
 export async function startWebDriver (options: Capabilities.RemoteConfig) {
