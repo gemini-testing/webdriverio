@@ -1,4 +1,4 @@
-import logger from '@wdio/logger'
+import logger from '@testplane/wdio-logger'
 import { ELEMENT_KEY, type local, type remote } from '@testplane/webdriver'
 import type { ElementReference } from '@testplane/wdio-protocols'
 

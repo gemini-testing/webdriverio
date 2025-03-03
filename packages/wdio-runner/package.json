@@ -34,7 +34,7 @@
     "@types/node": "^20.11.28",
     "@wdio/config": "workspace:9.5.0",
     "@wdio/globals": "workspace:9.5.7",
-    "@wdio/logger": "workspace:9.4.4",
+    "@testplane/wdio-logger": "workspace:*",
     "@testplane/wdio-types": "workspace:*",
     "@testplane/utils": "workspace:9.5.0",
     "deepmerge-ts": "^7.0.3",

@@ -1,5 +1,5 @@
 import type { Automation, Capabilities } from '@testplane/wdio-types'
-import logger from '@wdio/logger'
+import logger from '@testplane/wdio-logger'
 
 import ProtocolStub from '../protocol-stub.js'
 import detectBackend from './detectBackend.js'

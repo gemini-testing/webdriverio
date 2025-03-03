@@ -1,5 +1,5 @@
 import path from 'node:path'
-import logger from '@wdio/logger'
+import logger from '@testplane/wdio-logger'
 import { initializePlugin } from '@testplane/utils'
 import type { Options, Capabilities, Reporters } from '@testplane/wdio-types'
 

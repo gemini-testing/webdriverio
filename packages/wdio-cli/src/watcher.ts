@@ -1,7 +1,7 @@
 import url from 'node:url'
 
 import chokidar from 'chokidar'
-import logger from '@wdio/logger'
+import logger from '@testplane/wdio-logger'
 import pickBy from 'lodash.pickby'
 import flattenDeep from 'lodash.flattendeep'
 import union from 'lodash.union'

@@ -1,4 +1,4 @@
-import logger from '@wdio/logger'
+import logger from '@testplane/wdio-logger'
 
 import { SessionManager } from './session.js'
 import { getMobileContext, getNativeContext } from '../utils/mobile.js'
