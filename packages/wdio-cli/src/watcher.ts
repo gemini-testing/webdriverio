@@ -1,11 +1,11 @@
 import url from 'node:url'
 
 import chokidar from 'chokidar'
-import logger from '@wdio/logger'
+import logger from '@testplane/wdio-logger'
 import pickBy from 'lodash.pickby'
 import flattenDeep from 'lodash.flattendeep'
 import union from 'lodash.union'
-import type { Capabilities, Workers } from '@testplane/types'
+import type { Capabilities, Workers } from '@testplane/wdio-types'
 
 import Launcher from './launcher.js'
 import type { RunCommandArguments, ValueKeyIteratee } from './types.js'

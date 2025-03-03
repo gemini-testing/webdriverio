@@ -9,8 +9,8 @@
     "types": [
       "node",
       "@testplane/webdriverio",
-      "@testplane/utils",
-      "@testplane/types",
+      "@testplane/wdio-utils",
+      "@testplane/wdio-types",
       "@wdio/globals/types",
       "@wdio/allure-reporter",
       "@wdio/appium-service",

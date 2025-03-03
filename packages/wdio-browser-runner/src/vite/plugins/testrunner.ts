@@ -2,7 +2,7 @@ import url from 'node:url'
 import path from 'node:path'
 import { builtinModules } from 'node:module'
 
-import logger from '@wdio/logger'
+import logger from '@testplane/wdio-logger'
 import { polyfillPath } from 'modern-node-polyfills'
 import { deepmerge } from 'deepmerge-ts'
 
@@ -11,7 +11,7 @@ import {
     WebDriverProtocol, MJsonWProtocol, JsonWProtocol, AppiumProtocol,
     ChromiumProtocol, SauceLabsProtocol, SeleniumProtocol, GeckoProtocol,
     type Protocol
-} from '@testplane/protocols'
+} from '@testplane/wdio-protocols'
 
 import { SESSIONS } from '../../constants.js'
 import { getTemplate, getErrorTemplate, normalizeId } from '../utils.js'
@@ -41,7 +41,7 @@ const resolvedVirtualModuleId = '\0' + virtualModuleId
 const MODULES_TO_MOCK = [
     'import-meta-resolve', 'puppeteer-core', 'archiver', 'glob', 'devtools', 'ws', 'decamelize',
     'geckodriver', 'safaridriver', 'edgedriver', '@puppeteer/browsers', 'locate-app', 'wait-port',
-    'lodash.isequal', '@wdio/repl', 'jszip'
+    'lodash.isequal', '@testplane/wdio-repl', 'jszip'
 ]
 
 const POLYFILLS = [

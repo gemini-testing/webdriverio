@@ -32,15 +32,15 @@
   "typeScriptVersion": "3.8.3",
   "dependencies": {
     "@types/node": "^20.11.28",
-    "@wdio/config": "workspace:9.5.0",
+    "@testplane/wdio-config": "workspace:*",
     "@wdio/globals": "workspace:9.5.7",
-    "@wdio/logger": "workspace:9.4.4",
-    "@testplane/types": "workspace:9.5.0",
-    "@testplane/utils": "workspace:9.5.0",
+    "@testplane/wdio-logger": "workspace:*",
+    "@testplane/wdio-types": "workspace:*",
+    "@testplane/wdio-utils": "workspace:*",
     "deepmerge-ts": "^7.0.3",
     "expect-webdriverio": "^5.0.1",
-    "@testplane/webdriver": "workspace:9.5.4",
-    "@testplane/webdriverio": "workspace:9.5.7"
+    "@testplane/wdio-webdriver": "workspace:*",
+    "@testplane/webdriverio": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

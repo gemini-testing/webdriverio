@@ -1,5 +1,5 @@
-import type { Automation, Capabilities } from '@testplane/types'
-import logger from '@wdio/logger'
+import type { Automation, Capabilities } from '@testplane/wdio-types'
+import logger from '@testplane/wdio-logger'
 
 import ProtocolStub from '../protocol-stub.js'
 import detectBackend from './detectBackend.js'
@@ -60,7 +60,7 @@ export async function getProtocolDriver (options: Capabilities.WebdriverIOConfig
         }
     }
 
-    const packageName = automationProtocol === 'webdriver' ? `@testplane/${automationProtocol}` : automationProtocol || '@testplane/webdriver'
+    const packageName = automationProtocol === 'webdriver' ? `@testplane/${automationProtocol}` : automationProtocol || '@testplane/wdio-webdriver'
     const Driver = webdriverImport || (await import(packageName)).default
 
     return { Driver, options }

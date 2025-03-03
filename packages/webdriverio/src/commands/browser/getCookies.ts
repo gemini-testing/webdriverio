@@ -1,6 +1,6 @@
-import logger from '@wdio/logger'
-import type { Cookie } from '@testplane/protocols'
-import type { remote } from '@testplane/webdriver'
+import logger from '@testplane/wdio-logger'
+import type { Cookie } from '@testplane/wdio-protocols'
+import type { remote } from '@testplane/wdio-webdriver'
 
 const log = logger('webdriverio')
 

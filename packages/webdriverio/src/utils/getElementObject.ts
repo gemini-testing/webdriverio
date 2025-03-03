@@ -1,8 +1,8 @@
-import { webdriverMonad, wrapCommand } from '@testplane/utils'
+import { webdriverMonad, wrapCommand } from '@testplane/wdio-utils'
 import clone from 'lodash.clonedeep'
-import { ELEMENT_KEY } from '@testplane/webdriver'
-import { getBrowserObject } from '@testplane/utils'
-import type { ElementReference } from '@testplane/protocols'
+import { ELEMENT_KEY } from '@testplane/wdio-webdriver'
+import { getBrowserObject } from '@testplane/wdio-utils'
+import type { ElementReference } from '@testplane/wdio-protocols'
 
 import { getPrototype as getWDIOPrototype, getElementFromResponse } from './index.js'
 import { elementErrorHandler } from '../middlewares.js'

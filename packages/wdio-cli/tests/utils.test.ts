@@ -9,7 +9,7 @@ import inquirer from 'inquirer'
 import readDir from 'recursive-readdir'
 import { readPackageUp } from 'read-pkg-up'
 import { SevereServiceError } from '@testplane/webdriverio'
-import { ConfigParser } from '@wdio/config/node'
+import { ConfigParser } from '@testplane/wdio-config/node'
 
 import {
     runLauncherHook,
@@ -50,7 +50,7 @@ vi.mock('recursive-readdir', () => ({
         '/foo/bar/example.e2e.js'
     ] as any)
 }))
-vi.mock('@wdio/logger', () => import(path.join(process.cwd(), '__mocks__', '@wdio/logger')))
+vi.mock('@testplane/wdio-logger', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-logger')))
 vi.mock('child_process', () => {
     const m = {
         execSyncRes: 'APPIUM_MISSING',
@@ -79,7 +79,7 @@ vi.mock('node:fs/promises', () => ({
     }
 }))
 
-vi.mock('@wdio/config/node', () => ({
+vi.mock('@testplane/wdio-config/node', () => ({
     ConfigParser: class ConfigParserMock {
         initialize() { }
         getCapabilities() { }

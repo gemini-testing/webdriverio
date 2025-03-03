@@ -5,7 +5,7 @@ import path from 'node:path'
 import cp from 'node:child_process'
 
 import decamelize from 'decamelize'
-import logger from '@wdio/logger'
+import logger from '@testplane/wdio-logger'
 import {
     install, canDownload, resolveBuildId, detectBrowserPlatform, Browser, ChromeReleaseChannel,
     computeExecutablePath, type InstallOptions
@@ -14,7 +14,7 @@ import { download as downloadGeckodriver } from 'geckodriver'
 import { download as downloadEdgedriver } from 'edgedriver'
 import { locateChrome, locateFirefox, locateApp } from 'locate-app'
 import type { EdgedriverParameters } from 'edgedriver'
-import type { Options } from '@testplane/types'
+import type { Options } from '@testplane/wdio-types'
 
 const log = logger('webdriver')
 const EXCLUDED_PARAMS = ['version', 'help']

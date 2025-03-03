@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import type { Capabilities, Options } from '@testplane/types'
+import type { Capabilities, Options } from '@testplane/wdio-types'
 
 import '../src/browser.js'
 
@@ -10,8 +10,8 @@ import {
 } from '../src/utils.js'
 import type { Client, RemoteConfig } from '../src/types.js'
 
-vi.mock('@wdio/logger', () => import(path.join(process.cwd(), '__mocks__', '@wdio/logger')))
-vi.mock('@testplane/utils')
+vi.mock('@testplane/wdio-logger', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-logger')))
+vi.mock('@testplane/wdio-utils')
 vi.mock('fetch')
 
 describe('utils', () => {

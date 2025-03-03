@@ -1,9 +1,9 @@
-import type { Services, Options, Capabilities } from '@testplane/types'
-import logger from '@wdio/logger'
+import type { Services, Options, Capabilities } from '@testplane/wdio-types'
+import logger from '@testplane/wdio-logger'
 
 import initializePlugin from './initializePlugin.js'
 
-const log = logger('@testplane/utils:initializeServices')
+const log = logger('@testplane/wdio-utils:initializeServices')
 
 type IntialisedService = (
     [Services.ServiceClass | { default: Function }, WebdriverIO.ServiceOption, string] |

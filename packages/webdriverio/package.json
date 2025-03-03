@@ -77,12 +77,12 @@
   "dependencies": {
     "@types/node": "^20.11.30",
     "@types/sinonjs__fake-timers": "^8.1.5",
-    "@wdio/config": "workspace:*",
-    "@wdio/logger": "workspace:*",
-    "@testplane/protocols": "workspace:*",
-    "@wdio/repl": "workspace:*",
-    "@testplane/types": "workspace:*",
-    "@testplane/utils": "workspace:*",
+    "@testplane/wdio-config": "workspace:*",
+    "@testplane/wdio-logger": "workspace:*",
+    "@testplane/wdio-protocols": "workspace:*",
+    "@testplane/wdio-repl": "workspace:*",
+    "@testplane/wdio-types": "workspace:*",
+    "@testplane/wdio-utils": "workspace:*",
     "archiver": "^7.0.1",
     "aria-query": "^5.3.0",
     "cheerio": "^1.0.0-rc.12",
@@ -101,7 +101,7 @@
     "rgb2hex": "0.2.5",
     "serialize-error": "^11.0.3",
     "urlpattern-polyfill": "^10.0.0",
-    "@testplane/webdriver": "workspace:*"
+    "@testplane/wdio-webdriver": "workspace:*"
   },
   "peerDependencies": {
     "devtools": "^8.14.0",

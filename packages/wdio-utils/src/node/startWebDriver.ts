@@ -4,7 +4,7 @@ import cp, { type ChildProcess } from 'node:child_process'
 
 import getPort from 'get-port'
 import waitPort from 'wait-port'
-import logger from '@wdio/logger'
+import logger from '@testplane/wdio-logger'
 import split2 from 'split2'
 import { deepmerge } from 'deepmerge-ts'
 
@@ -13,7 +13,7 @@ import { start as startGeckodriver, type GeckodriverParameters } from 'geckodriv
 import { start as startEdgedriver, findEdgePath, type EdgedriverParameters } from 'edgedriver'
 import type { InstallOptions } from '@puppeteer/browsers'
 
-import type { Capabilities } from '@testplane/types'
+import type { Capabilities } from '@testplane/wdio-types'
 
 import { parseParams, setupPuppeteerBrowser, setupChromedriver, getCacheDir } from './utils.js'
 import { isChrome, isFirefox, isEdge, isSafari, isAppiumCapability } from '../utils.js'
@@ -29,7 +29,7 @@ declare global {
     }
 }
 
-const log = logger('@testplane/utils')
+const log = logger('@testplane/wdio-utils')
 const DRIVER_WAIT_TIMEOUT = 10 * 1000 // 10s
 
 export async function startWebDriver (options: Capabilities.RemoteConfig) {

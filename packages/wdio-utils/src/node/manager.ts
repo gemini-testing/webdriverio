@@ -1,5 +1,5 @@
-import logger from '@wdio/logger'
-import type { Options, Capabilities } from '@testplane/types'
+import logger from '@testplane/wdio-logger'
+import type { Options, Capabilities } from '@testplane/wdio-types'
 
 import {
     getCacheDir, getDriverOptions, setupChromedriver, setupEdgedriver,
@@ -7,7 +7,7 @@ import {
 } from './utils.js'
 import { definesRemoteDriver, isSafari, isEdge, isFirefox, isChrome } from '../utils.js'
 
-const log = logger('@testplane/utils')
+const log = logger('@testplane/wdio-utils')
 const UNDEFINED_BROWSER_VERSION = null
 
 type SetupTaskFunction = (cap: WebdriverIO.Capabilities) => Promise<unknown>

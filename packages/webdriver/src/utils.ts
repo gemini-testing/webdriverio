@@ -1,14 +1,14 @@
 import type { EventEmitter } from 'node:events'
 import { deepmergeCustom } from 'deepmerge-ts'
 
-import logger from '@wdio/logger'
-import type { Protocol } from '@testplane/protocols'
+import logger from '@testplane/wdio-logger'
+import type { Protocol } from '@testplane/wdio-protocols'
 import {
     WebDriverProtocol, MJsonWProtocol, JsonWProtocol, AppiumProtocol, ChromiumProtocol,
     SauceLabsProtocol, SeleniumProtocol, GeckoProtocol, WebDriverBidiProtocol
-} from '@testplane/protocols'
-import { CAPABILITY_KEYS } from '@testplane/protocols'
-import type { Options } from '@testplane/types'
+} from '@testplane/wdio-protocols'
+import { CAPABILITY_KEYS } from '@testplane/wdio-protocols'
+import type { Options } from '@testplane/wdio-types'
 
 import command from './command.js'
 import { environment } from './environment.js'

@@ -28,8 +28,8 @@
   "typeScriptVersion": "3.8.3",
   "dependencies": {
     "@types/uuid": "^10.0.0",
-    "@testplane/protocols": "workspace:*",
-    "@testplane/types": "workspace:*",
+    "@testplane/wdio-protocols": "workspace:*",
+    "@testplane/wdio-types": "workspace:*",
     "nock": "14.0.0-beta.19",
     "uuid": "^10.0.0",
     "@testplane/webdriverio": "workspace:*"

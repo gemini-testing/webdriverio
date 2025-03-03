@@ -1,8 +1,8 @@
 import EventEmitter from 'node:events'
 
-import logger from '@wdio/logger'
-import type { JsonCompatible } from '@testplane/types'
-import { type local } from '@testplane/webdriver'
+import logger from '@testplane/wdio-logger'
+import type { JsonCompatible } from '@testplane/wdio-types'
+import { type local } from '@testplane/wdio-webdriver'
 import { URLPattern } from 'urlpattern-polyfill'
 
 import Timer from '../Timer.js'
