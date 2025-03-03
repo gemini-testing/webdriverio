@@ -1,5 +1,5 @@
 {
-  "name": "@wdio/config",
+  "name": "@testplane/wdio-config",
   "version": "9.5.0",
   "description": "A helper utility to parse and validate WebdriverIO options",
   "author": "Christian Bromann <mail@bromann.dev>",
