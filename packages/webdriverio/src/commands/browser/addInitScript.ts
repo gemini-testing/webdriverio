@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events'
-import type { local, remote } from '@testplane/wdio-webdriver'
+import type { local, remote } from '@testplane/webdriver'
 
 import { deserialize } from '../../utils/bidi/index.js'
 

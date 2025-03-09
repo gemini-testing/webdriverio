@@ -39,8 +39,8 @@
     "@testplane/wdio-utils": "workspace:*",
     "deepmerge-ts": "^7.0.3",
     "expect-webdriverio": "^5.0.1",
-    "@testplane/wdio-webdriver": "workspace:*",
-    "@testplane/webdriverio": "workspace:*"
+    "@testplane/webdriver": "workspace:9.5.4",
+    "@testplane/webdriverio": "workspace:9.5.7"
   },
   "publishConfig": {
     "access": "public"

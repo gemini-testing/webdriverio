@@ -243,7 +243,7 @@ importers:
       '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../packages/wdio-types
-      '@testplane/wdio-webdriver':
+      '@testplane/webdriver':
         specifier: workspace:*
         version: link:../packages/webdriver
       '@testplane/webdriverio':
@@ -377,7 +377,7 @@ importers:
       '@testplane/wdio-types':
         specifier: workspace:*
         version: link:../../packages/wdio-types
-      '@testplane/wdio-webdriver':
+      '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../packages/webdriver
       '@testplane/webdriverio':
@@ -615,7 +615,7 @@ importers:
       '@testplane/wdio-utils':
         specifier: workspace:*
         version: link:../wdio-utils
-      '@testplane/wdio-webdriver':
+      '@testplane/webdriver':
         specifier: workspace:*
         version: link:../webdriver
       '@testplane/webdriverio':
@@ -1241,11 +1241,11 @@ importers:
       '@testplane/wdio-utils':
         specifier: workspace:*
         version: link:../wdio-utils
-      '@testplane/wdio-webdriver':
-        specifier: workspace:*
+      '@testplane/webdriver':
+        specifier: workspace:9.5.4
         version: link:../webdriver
       '@testplane/webdriverio':
-        specifier: workspace:*
+        specifier: workspace:9.5.7
         version: link:../webdriverio
       '@types/node':
         specifier: ^20.11.28
@@ -1423,6 +1423,12 @@ importers:
       '@puppeteer/browsers':
         specifier: ^2.2.0
         version: 2.6.1
+      '@testplane/edgedriver':
+        specifier: ^6.1.4
+        version: 6.1.4
+      '@testplane/geckodriver':
+        specifier: ^5.0.2
+        version: 5.0.2
       '@testplane/wdio-logger':
         specifier: workspace:*
         version: link:../wdio-logger
@@ -1435,12 +1441,6 @@ importers:
       deepmerge-ts:
         specifier: ^7.0.3
         version: 7.1.3
-      edgedriver:
-        specifier: ^6.1.1
-        version: 6.1.1
-      geckodriver:
-        specifier: ^5.0.0
-        version: 5.0.0
       get-port:
         specifier: ^7.0.0
         version: 7.1.0
@@ -1538,7 +1538,7 @@ importers:
       '@testplane/wdio-utils':
         specifier: workspace:*
         version: link:../wdio-utils
-      '@testplane/wdio-webdriver':
+      '@testplane/webdriver':
         specifier: workspace:*
         version: link:../webdriver
       '@types/node':
@@ -1553,9 +1553,6 @@ importers:
       aria-query:
         specifier: ^5.3.0
         version: 5.3.2
-      cheerio:
-        specifier: ^1.0.0-rc.12
-        version: 1.0.0
       css-shorthand-properties:
         specifier: ^1.1.1
         version: 1.1.2
@@ -1644,7 +1641,7 @@ importers:
       '@testplane/wdio-utils':
         specifier: workspace:*
         version: link:../packages/wdio-utils
-      '@testplane/wdio-webdriver':
+      '@testplane/webdriver':
         specifier: workspace:*
         version: link:../packages/webdriver
       '@testplane/webdriverio':
@@ -1737,7 +1734,7 @@ importers:
 
   tests/interop:
     dependencies:
-      '@testplane/wdio-webdriver':
+      '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../packages/webdriver
       '@testplane/webdriverio':
@@ -1781,7 +1778,7 @@ importers:
       '@testplane/wdio-utils':
         specifier: workspace:*
         version: link:../../../packages/wdio-utils
-      '@testplane/wdio-webdriver':
+      '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../../packages/webdriver
       '@testplane/webdriverio':
@@ -1847,7 +1844,7 @@ importers:
       '@testplane/wdio-utils':
         specifier: workspace:*
         version: link:../../../packages/wdio-utils
-      '@testplane/wdio-webdriver':
+      '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../../packages/webdriver
       '@testplane/webdriverio':
@@ -1919,7 +1916,7 @@ importers:
       '@testplane/wdio-utils':
         specifier: workspace:*
         version: link:../../../packages/wdio-utils
-      '@testplane/wdio-webdriver':
+      '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../../packages/webdriver
       '@testplane/webdriverio':
@@ -1985,7 +1982,7 @@ importers:
       '@testplane/wdio-utils':
         specifier: workspace:*
         version: link:../../../packages/wdio-utils
-      '@testplane/wdio-webdriver':
+      '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../../packages/webdriver
       '@testplane/webdriverio':
@@ -2051,7 +2048,7 @@ importers:
       '@testplane/wdio-utils':
         specifier: workspace:*
         version: link:../../../packages/wdio-utils
-      '@testplane/wdio-webdriver':
+      '@testplane/webdriver':
         specifier: workspace:*
         version: link:../../../packages/webdriver
       '@testplane/webdriverio':
@@ -5369,6 +5366,20 @@ packages:
       '@vue/compiler-sfc':
         optional: true
 
+  '@testplane/edgedriver@6.1.4':
+    resolution: {integrity: sha512-4koRBT84dzso/231E3X4KIH7aC7DVTVf1R8XltahPBQDOUMOgwa6WCRztu9jHkALmsUn8BjBVnF8a3hmK4IfzQ==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+
+  '@testplane/geckodriver@5.0.2':
+    resolution: {integrity: sha512-ax6E0jkCa/N3sMXXOQcA6wu+v8B5wtDGwJe9Y7e2TByt7z/srOKh7iTuNfzeIgW9pKubenkivIKG29DMiFC/2w==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+
+  '@testplane/wdio-logger@9.4.4':
+    resolution: {integrity: sha512-SA3GsTW9jEjK7b3XpYbPdStrckcafKlWq459FwONNA7BzdnGx97JzekmtLIQrV0SKUtyKfcuo7TPAfjH+j+k+Q==}
+    engines: {node: '>=18.0.0'}
+
   '@tootallnate/once@1.1.2':
     resolution: {integrity: sha512-RbzJvlNzmRq5c3O09UipeuXno4tA1FE6ikOjxZK0tuxVv3412l64l5t1W5pj4+rJq9vpkm/kwiR07aZXnsKPxw==}
     engines: {node: '>= 6'}
@@ -8295,6 +8306,10 @@ packages:
 
   fast-xml-parser@4.5.1:
     resolution: {integrity: sha512-y655CeyUQ+jj7KBbYMc4FG01V8ZQqjN+gDYGJ50RtfsUB8iG9AmwmwoAgeKLJdmueKKMrH1RJ7yXHTSoczdv5w==}
+    hasBin: true
+
+  fast-xml-parser@5.0.8:
+    resolution: {integrity: sha512-qY8NiI5L8ff00F2giyICiJxSSKHO52tC36LJqx2JtvGyAd5ZfehC/l4iUVVHpmpIa6sM9N5mneSLHQG2INGoHA==}
     hasBin: true
 
   fastq@1.18.0:
@@ -12897,6 +12912,9 @@ packages:
 
   strnum@1.0.5:
     resolution: {integrity: sha512-J8bbNyKKXl5qYcR36TIO8W3mVGVHrmmxsd5PAItGkmyzwJvybiw2IVq5nqd0i4LSNSkB/sx9VHllbfFdr9k1JA==}
+
+  strnum@2.0.5:
+    resolution: {integrity: sha512-YAT3K/sgpCUxhxNMrrdhtod3jckkpYwH6JAuwmUdXZsmzH1wUyzTMrrK2wYCEEqlKwrWDd35NeuUkbBy/1iK+Q==}
 
   strong-log-transformer@2.1.0:
     resolution: {integrity: sha512-B3Hgul+z0L9a236FAUC9iZsL+nVHgoCJnqCbN588DjYxvGXaXaaFbfmQ/JhvKjZwsOukuR72XbHv71Qkug0HxA==}
@@ -18018,7 +18036,7 @@ snapshots:
       '@octokit/request-error': 3.0.3
       '@octokit/types': 9.3.2
       is-plain-object: 5.0.0
-      node-fetch: 2.6.7(encoding@0.1.13)
+      node-fetch: 2.7.0(encoding@0.1.13)
       universal-user-agent: 6.0.1
     transitivePeerDependencies:
       - encoding
@@ -19046,6 +19064,39 @@ snapshots:
       vue: 3.5.13(typescript@5.7.2)
     optionalDependencies:
       '@vue/compiler-sfc': 3.5.13
+
+  '@testplane/edgedriver@6.1.4':
+    dependencies:
+      '@testplane/wdio-logger': 9.4.4
+      '@zip.js/zip.js': 2.7.54
+      decamelize: 6.0.0
+      edge-paths: 3.0.5
+      fast-xml-parser: 5.0.8
+      http-proxy-agent: 7.0.2
+      https-proxy-agent: 7.0.6
+      node-fetch: 3.3.2
+      which: 4.0.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@testplane/geckodriver@5.0.2':
+    dependencies:
+      '@testplane/wdio-logger': 9.4.4
+      '@zip.js/zip.js': 2.7.54
+      decamelize: 6.0.0
+      http-proxy-agent: 7.0.2
+      https-proxy-agent: 7.0.6
+      node-fetch: 3.3.2
+      tar-fs: 3.0.6
+    transitivePeerDependencies:
+      - supports-color
+
+  '@testplane/wdio-logger@9.4.4':
+    dependencies:
+      chalk: 5.4.1
+      loglevel: 1.9.2
+      loglevel-plugin-prefix: 0.8.4
+      strip-ansi: 7.1.0
 
   '@tootallnate/once@1.1.2': {}
 
@@ -22789,6 +22840,10 @@ snapshots:
   fast-xml-parser@4.5.1:
     dependencies:
       strnum: 1.0.5
+
+  fast-xml-parser@5.0.8:
+    dependencies:
+      strnum: 2.0.5
 
   fastq@1.18.0:
     dependencies:
@@ -28489,6 +28544,8 @@ snapshots:
       escape-string-regexp: 1.0.5
 
   strnum@1.0.5: {}
+
+  strnum@2.0.5: {}
 
   strong-log-transformer@2.1.0:
     dependencies:
