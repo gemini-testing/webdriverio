@@ -137,7 +137,7 @@ const progress = function (this: Logger & { name: string }, data: string) {
     }
 }
 
-export default function getLogger (name: string) {
+function getLogger (name: string) {
     /**
      * check if logger was already initiated
      */
@@ -163,6 +163,16 @@ export default function getLogger (name: string) {
     })
     return loggers[name]
 }
+
+// hack from https://github.com/evanw/esbuild/issues/2480
+const safeESModule = <T>(a: T | { default: T }): T => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const b = a as any
+    return b.__esModule || b[Symbol.toStringTag] === 'Module' ? b.default : b
+}
+
+export default safeESModule<typeof getLogger>(getLogger)
+
 /**
  * Wait for writable stream to be flushed.
  * Calling this prevents part of the logs in the very env to be lost.
