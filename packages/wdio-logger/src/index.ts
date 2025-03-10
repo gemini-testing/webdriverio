@@ -2,10 +2,11 @@ import fs from 'node:fs'
 import util from 'node:util'
 
 import log from 'loglevel'
-import type { ColorName } from 'chalk'
 import chalk from 'chalk'
 import prefix from 'loglevel-plugin-prefix'
 import ansiStrip from 'strip-ansi'
+
+type ColorName = 'black' | 'red' | 'green' | 'yellow' | 'blue' | 'cyan' | 'magenta' | 'white' | 'cyanBright'
 
 prefix.reg(log)
 
@@ -136,7 +137,7 @@ const progress = function (this: Logger & { name: string }, data: string) {
     }
 }
 
-export default function getLogger (name: string) {
+function getLogger (name: string) {
     /**
      * check if logger was already initiated
      */
@@ -162,6 +163,16 @@ export default function getLogger (name: string) {
     })
     return loggers[name]
 }
+
+// hack from https://github.com/evanw/esbuild/issues/2480
+const safeESModule = <T>(a: T | { default: T }): T => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const b = a as any
+    return b.__esModule || b[Symbol.toStringTag] === 'Module' ? b.default : b
+}
+
+export default safeESModule<typeof getLogger>(getLogger)
+
 /**
  * Wait for writable stream to be flushed.
  * Calling this prevents part of the logs in the very env to be lost.
@@ -229,4 +240,3 @@ const ERROR_LOG_VALIDATOR = [
     'nor as community package',
     'Please make sure you have it installed'
 ]
-

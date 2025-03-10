@@ -1152,8 +1152,8 @@ importers:
   packages/wdio-logger:
     dependencies:
       chalk:
-        specifier: ^5.1.2
-        version: 5.4.0
+        specifier: ^4.1.2
+        version: 4.1.2
       loglevel:
         specifier: ^1.6.0
         version: 1.9.2
@@ -1161,8 +1161,8 @@ importers:
         specifier: ^0.8.4
         version: 0.8.4
       strip-ansi:
-        specifier: ^7.1.0
-        version: 7.1.0
+        specifier: ^6.0.1
+        version: 6.0.1
 
   packages/wdio-mocha-framework:
     dependencies:
@@ -1242,10 +1242,10 @@ importers:
         specifier: workspace:*
         version: link:../wdio-utils
       '@testplane/webdriver':
-        specifier: workspace:9.5.4
+        specifier: workspace:*
         version: link:../webdriver
       '@testplane/webdriverio':
-        specifier: workspace:9.5.7
+        specifier: workspace:*
         version: link:../webdriverio
       '@types/node':
         specifier: ^20.11.28
@@ -19776,7 +19776,7 @@ snapshots:
       '@wdio/types': 9.4.3
       '@wdio/utils': 9.4.3
       async-exit-hook: 2.0.1
-      chalk: 5.4.0
+      chalk: 5.4.1
       chokidar: 4.0.2
       dotenv: 16.4.7
       ejs: 3.1.10
