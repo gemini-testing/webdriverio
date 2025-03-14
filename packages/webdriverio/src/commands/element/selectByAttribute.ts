@@ -1,4 +1,4 @@
-import { ELEMENT_KEY } from 'webdriver'
+import { ELEMENT_KEY } from '@testplane/webdriver'
 import type { ElementReference } from '@wdio/protocols'
 
 import { getElementFromResponse } from '../../utils/index.js'
