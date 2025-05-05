@@ -124,9 +124,18 @@ export class ContextManager extends SessionManager {
          * update frame context if user switches using 'switchToParentFrame'
          */
         if (event.command === 'switchToParentFrame') {
+            console.log('inside switchToParentFrame')
+            console.log('inside switchToParentFrame, browser caps:', this.#browser.capabilities)
+            console.log('switchToParentFrame, this.#currentContext:', this.#currentContext)
+            console.log('switchToParentFrame, this.#browser.isBidi:', this.#browser.isBidi)
+
             if (!this.#currentContext || !this.#browser.isBidi) {
+                console.log('switchToParentFrame, do nothing')
+
                 return
             }
+
+            console.log('switchToParentFrame, change curr context, this.#browser.browsingContextGetTree:', this.#browser.browsingContextGetTree)
 
             return this.#browser.browsingContextGetTree({}).then(({ contexts }) => {
                 const parentContext = this.findParentContext(this.#currentContext!, contexts)
