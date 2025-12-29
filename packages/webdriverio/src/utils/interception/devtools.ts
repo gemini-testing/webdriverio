@@ -37,6 +37,14 @@ export default class DevtoolsInterception extends Interception {
 
     static handleRequestInterception (client: CDPSession, mocks: Set<Interception>): (event: Event) => Promise<void | ClientResponse> {
         return async (event) => {
+            // Race condition: if mock was already restored on client side
+            // But browser managed to send "Fetch.requestPaused" event before it received "Fetch.disable"
+            // Client-side "mocks" is already cleaned up, but browser is waiting for request instructions
+            // In this case we have to send "Fetch.continueRequest" to browser and do nothing more
+            if (!mocks) {
+                return client.send('Fetch.continueRequest', { requestId: event.requestId }).catch(/* istanbul ignore next */logFetchError)
+            }
+
             // responseHeaders and responseStatusCode are only present in Response stage
             // https://chromedevtools.github.io/devtools-protocol/tot/Fetch/#event-requestPaused
             const isRequest = !event.responseHeaders && !event.responseErrorReason
