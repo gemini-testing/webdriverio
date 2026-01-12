@@ -103,7 +103,7 @@ const configs = packages.map(([packageDir, pkg]) => {
         const baseConfig: BuildOptions = {
             sourceRoot: absWorkingDir,
             tsconfig: path.resolve(absWorkingDir, 'tsconfig.json'),
-            sourcemap: process.env.NODE_ENV !== 'production' ? 'inline' : false,
+            sourcemap: false,
             external: getExternal(pkg),
             target: 'node18',
             bundle: true,
