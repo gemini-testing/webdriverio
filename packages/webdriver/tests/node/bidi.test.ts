@@ -51,6 +51,8 @@ const log = logger('test')
 describe('Bidi Node.js implementation', () => {
     beforeEach(() => {
         clearInstances()
+        vi.useRealTimers()
+        vi.clearAllMocks()
     })
 
     it('listWebsocketCandidateUrls', async () => {
@@ -81,6 +83,23 @@ describe('Bidi Node.js implementation', () => {
         expect(instances[0].terminate).toHaveBeenCalled()
         expect(instances[1].terminate).not.toHaveBeenCalled()
         expect(instances[2].terminate).toHaveBeenCalled()
+
+        expect(ws.wsUrl).toBe('ws://127.0.0.1/bar')
+        expect(log.info).toHaveBeenCalledWith(
+            'Connected to Bidi protocol at ws://127.0.0.1/bar'
+        )
+        expect(log.error).not.toHaveBeenCalled()
+    })
+
+    it('does not log a timeout after a successful connection', async () => {
+        vi.useFakeTimers()
+        const wsPromise = createBidiConnection('ws://foo/bar')
+        await vi.advanceTimersByTimeAsync(0)
+
+        instances[1].once.mock.calls[0][1]() // success callback
+
+        const ws = await wsPromise as any
+        await vi.advanceTimersByTimeAsync(10000)
 
         expect(ws.wsUrl).toBe('ws://127.0.0.1/bar')
         expect(log.info).toHaveBeenCalledWith(

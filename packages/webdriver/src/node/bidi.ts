@@ -76,8 +76,9 @@ export async function connectWebsocket(candidateUrls: string[], options?: WebSoc
         return { promise, index }
     })
 
+    let connectionTimeoutId: ReturnType<typeof setTimeout> | undefined
     const connectionTimeoutPromise = new Promise<undefined>((resolve) => {
-        setTimeout(() => {
+        connectionTimeoutId = setTimeout(() => {
             log.error(`Could not connect to Bidi protocol of any candidate url in time: "${candidateUrls.join('", "')}"`)
             return resolve(undefined)
         }, CONNECTION_TIMEOUT)
@@ -87,6 +88,10 @@ export async function connectWebsocket(candidateUrls: string[], options?: WebSoc
         firstResolved(wsConnectPromises),
         connectionTimeoutPromise,
     ])
+
+    if (connectionTimeoutId) {
+        clearTimeout(connectionTimeoutId)
+    }
 
     const socketsToCleanup = wsInfo ? websockets.filter((_, index) => wsInfo.index !== index) : websockets
     for (const socket of socketsToCleanup) {
