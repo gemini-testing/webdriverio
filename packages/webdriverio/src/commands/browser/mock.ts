@@ -7,7 +7,7 @@ import { getBrowserObject } from '@testplane/wdio-utils'
 import type { MockFilterOptions } from '../../utils/interception/types.js'
 import BidiInterception from '../../utils/interception/bidi.js'
 import { getContextManager } from '../../session/context.js'
-import type { CDPSession } from 'puppeteer-core/lib/esm/puppeteer/common/Connection.js'
+import type { CDPSession, Protocol, Handler } from 'puppeteer-core'
 
 export const SESSION_MOCKS: Record<string, Set<Interception>> = {}
 export const SESSION_BIDI_MOCKS: Record<string, Set<BidiInterception>> = {}
@@ -181,7 +181,7 @@ export async function mock(
             client.on(
                 'Fetch.requestPaused',
                 (NetworkInterception as unknown as typeof DevtoolsNetworkInterception)
-                    .handleRequestInterception(client, SESSION_MOCKS[handle])
+                    .handleRequestInterception(client, SESSION_MOCKS[handle]) as unknown as Handler<Protocol.Fetch.RequestPausedEvent>
             )
         }
 

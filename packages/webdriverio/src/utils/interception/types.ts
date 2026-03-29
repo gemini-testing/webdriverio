@@ -1,7 +1,7 @@
 import type { local } from '@testplane/webdriver'
 import type { Cookie } from '@testplane/wdio-protocols'
 
-import type { CDPSession } from 'puppeteer-core/lib/esm/puppeteer/common/Connection.js'
+import type { CDPSession } from 'puppeteer-core'
 import type { JsonCompatible } from '@testplane/wdio-types'
 
 // export type MockFilterOptions = {
