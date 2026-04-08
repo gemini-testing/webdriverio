@@ -2,7 +2,7 @@ import type { Options as KyOptions } from 'ky'
 import ky from 'ky'
 import logger from '@testplane/wdio-logger'
 import WebDriverRequest from './index.js'
-import type { RequestOptions, RequestLibOptions } from './types.js'
+import type { RequestOptions, RequestLibOptions, RequestLibResponse } from './types.js'
 
 const log = logger('webdriver')
 
@@ -49,7 +49,7 @@ export class WebRequest extends WebDriverRequest {
         return {
             statusCode: res.status,
             body: await res.json(),
-        }
+        } as RequestLibResponse
     }
 
     protected _libPerformanceNow(): number {
