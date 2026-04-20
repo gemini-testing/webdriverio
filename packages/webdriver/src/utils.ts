@@ -306,7 +306,6 @@ export class CustomRequestError extends Error {
     constructor (body: WebDriverResponse, requestOptions: any) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const errorObj = (body.value || body) as any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let errorMessage = errorObj.message || errorObj.class || 'unknown error'
 
         /**

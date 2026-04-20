@@ -75,7 +75,7 @@ export default abstract class WebDriverRequest extends EventEmitter {
         }
 
         this.emit('request', fullRequestOptions)
-        return this._request(fullRequestOptions, options.transformResponse, options.connectionRetryCount, 0)
+        return this._request(fullRequestOptions, options.transformResponse, options.customWdRequestAgent, options.connectionRetryCount, 0)
     }
 
     protected async _createOptions (options: RequestOptions, sessionId?: string, isBrowser: boolean = false): Promise<RequestLibOptions> {
@@ -167,6 +167,7 @@ export default abstract class WebDriverRequest extends EventEmitter {
     private async _request (
         fullRequestOptions: RequestLibOptions,
         transformResponse?: (response: RequestLibResponse, requestOptions: RequestLibOptions) => RequestLibResponse,
+        customWdRequestAgent: Options.CustomWdRequestAgent | null = null,
         totalRetryCount = 0,
         retryCount = 0
     ): Promise<WebDriverResponse> {
@@ -178,8 +179,9 @@ export default abstract class WebDriverRequest extends EventEmitter {
 
         const { url, retry: _, ...requestLibOptions } = fullRequestOptions
         const startTime = this._libPerformanceNow()
-        let response = await this._libRequest(url!, requestLibOptions)
-            .catch((err: RequestLibError) => err)
+        let response = customWdRequestAgent
+            ? await customWdRequestAgent.request(url!, requestLibOptions).catch((err: RequestLibError) => err)
+            : await this._libRequest(url!, requestLibOptions).catch((err: RequestLibError) => err)
         const durationMillisecond = this._libPerformanceNow() - startTime
 
         /**
@@ -204,7 +206,7 @@ export default abstract class WebDriverRequest extends EventEmitter {
             this.emit('performance', { request: fullRequestOptions, durationMillisecond, success: false, error, retryCount })
             log.warn(msg)
             log.info(`Retrying ${retryCount}/${totalRetryCount}`)
-            return this._request(fullRequestOptions, transformResponse, totalRetryCount, retryCount)
+            return this._request(fullRequestOptions, transformResponse, customWdRequestAgent, totalRetryCount, retryCount)
         }
 
         /**

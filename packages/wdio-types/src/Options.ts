@@ -31,9 +31,28 @@ export interface RequestLibOptions {
 }
 
 export interface RequestLibResponse<Body = unknown> {
-    statusCode: number
-    body?: Body
-    rawBody?: Buffer
+    url: string;
+    method: string;
+    statusCode: number;
+    statusMessage: string;
+    req: {
+        method: string;
+        path: string;
+        host: string;
+        res: RequestLibResponse<Body>;
+    },
+    request: {
+        options: RequestLibOptions;
+        requestUrl: URL;
+        response: RequestLibResponse<Body>;
+    };
+    ok: boolean;
+    body?: Body;
+    rawBody?: Buffer;
+}
+
+export interface CustomWdRequestAgent {
+    request: (url: globalThis.URL, options: Omit<RequestLibOptions, 'url' | 'retry'>) => Promise<RequestLibResponse>
 }
 
 export interface ShardOptions {
@@ -180,6 +199,10 @@ export interface WebDriver extends Connection {
      * when attempting to start a session.
      */
     cacheDir?: string
+    /**
+     * Custom webdriver request agent
+     */
+    customWdRequestAgent?: CustomWdRequestAgent
 }
 
 export type SauceRegions = 'us' | 'eu' | 'us-west-1' | 'us-east-4' | 'eu-central-1' | 'staging'

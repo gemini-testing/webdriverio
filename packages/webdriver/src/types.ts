@@ -94,4 +94,6 @@ export interface AttachOptions extends Partial<SessionFlags>, Partial<Options.We
     capabilities?: WebdriverIO.Capabilities
     // original requested capabilities
     requestedCapabilities?: Capabilities.WithRequestedCapabilities['capabilities']
+    // custom agent to make webdriver requests
+    customWdRequestAgent?: Options.CustomWdRequestAgent
 }

@@ -381,6 +381,15 @@ export interface VendorExtensions extends EdgeCapabilities, AppiumCapabilities, 
      * Selenium 4.0 Specific
      */
     'se:cdp'?: string
+
+    /**
+     * Selenoid custom
+     */
+    'se:wsdriver'?: string
+    /**
+     * Selenoid custom
+     */
+    'se:wsdriverVersion'?: string
 }
 
 export type AppiumOptions = RemoveAppiumPrefix<AppiumCapabilities & AppiumXCUITestCapabilities & AppiumAndroidCapabilities>

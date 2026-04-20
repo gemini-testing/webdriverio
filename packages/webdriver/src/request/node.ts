@@ -4,7 +4,7 @@ import https from 'node:https'
 import { performance } from 'node:perf_hooks'
 import type { URL } from 'node:url'
 
-import got, { type OptionsOfTextResponseBody } from 'got'
+import got, { type OptionsOfJSONResponseBody } from 'got'
 import type { Options } from '@testplane/wdio-types'
 
 import WebDriverRequest, { RequestLibError } from './index.js'
@@ -26,7 +26,7 @@ export class NodeJSRequest extends WebDriverRequest {
 
     protected async _libRequest (url: URL, opts: Options.RequestLibOptions) {
         try {
-            return (await got(url, opts as OptionsOfTextResponseBody)) as Options.RequestLibResponse
+            return (await got(url, opts as OptionsOfJSONResponseBody)) as unknown as Options.RequestLibResponse
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             if (!(err instanceof Error)) {

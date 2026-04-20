@@ -147,6 +147,12 @@ export const DEFAULTS: Options.Definition<Required<RemoteConfig>> = {
     cacheDir: {
         type: 'string',
         default: environment.value.variables.WEBDRIVER_CACHE_DIR
+    },
+    /**
+     * Custom webdriver request agent
+     */
+    customWdRequestAgent: {
+        type: 'object',
     }
 }
 
