@@ -216,6 +216,10 @@ export async function url (
             url: path,
             wait
         }).catch((err) => {
+            if (options._noFallbackOnCancel) {
+                throw err
+            }
+
             /**
              * It seems that WebDriver Bidi runs into issue with concurrent navigation.
              * @see https://github.com/w3c/webdriver-bidi/issues/878
@@ -326,4 +330,18 @@ interface UrlCommandOptions {
      * Checkout `browser.addPreloadScript` for a more versatile way to mock the environment.
      */
     onBeforeLoad?: () => unknown
+    /**
+     * @internal
+     *
+     * UNSTABLE / INTERNAL — not part of the public API. May be renamed or removed at any time
+     * without notice and without a major version bump. Do not rely on this in user code.
+     *
+     * Used internally to disable the automatic fallback that re-issues the navigation when the
+     * driver reports a concurrent-navigation error (Chrome: "navigation canceled by concurrent
+     * navigation", Firefox: "failed with error: unknown error"). Intended for callers that
+     * intentionally cancelled the navigation and want the original error to propagate.
+     *
+     * @default false
+     */
+    _noFallbackOnCancel?: boolean
 }
