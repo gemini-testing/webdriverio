@@ -27,6 +27,7 @@ export class RequestLibError extends Error {
     statusCode?: number
     body?: unknown
     code?: string
+    event?: string
 }
 
 export const COMMANDS_WITHOUT_RETRY = [
@@ -218,6 +219,13 @@ export default abstract class WebDriverRequest extends EventEmitter {
              */
             if ((response as RequestLibError).code === 'ETIMEDOUT') {
                 const error = getTimeoutError(response, fullRequestOptions)
+
+                if ((response as RequestLibError).event === 'response') {
+                    log.debug('Request timed out waiting for server response - not retrying')
+                    this.emit('response', { error })
+                    this.emit('performance', { request: fullRequestOptions, durationMillisecond, success: false, error, retryCount })
+                    throw error
+                }
 
                 return retry(error, 'Request timed out! Consider increasing the "connectionRetryTimeout" option.')
             }
