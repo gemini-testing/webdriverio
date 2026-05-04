@@ -287,6 +287,17 @@ export default abstract class WebDriverRequest extends EventEmitter {
             throw error
         }
 
+        /**
+         * W3C `timeout` (e.g. page load timeout) means the driver already enforced the
+         * configured timeout. Retrying would spend more time than was configured, so terminate immediately.
+         */
+        if (error.name === 'timeout') {
+            log.debug('Request timed out on the driver side - terminating request without retry')
+            this.emit('response', { error })
+            this.emit('performance', { request: fullRequestOptions, durationMillisecond, success: false, error, retryCount })
+            throw error
+        }
+
         return retry(error, `Request failed with status ${response.statusCode} due to ${error.message}`)
     }
 }
