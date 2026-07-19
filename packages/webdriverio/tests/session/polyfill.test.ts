@@ -2,7 +2,7 @@
 import path from 'node:path'
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 
-import { PolyfillManager } from '../../src/session/polyfill.js'
+import { PolyfillManager, polyfillFn } from '../../src/session/polyfill.js'
 import {
     // @ts-expect-error mock
     instances,
@@ -55,6 +55,10 @@ describe('PolyfillManager', () => {
         expect(browser.browsingContextGetTree).toBeCalledTimes(0)
         expect(instances[0].name).toBe('PolyfillManager')
         expect(await manager.initialize()).toBe(true)
+    })
+
+    it('should serialize the polyfill with legacy-compatible syntax', () => {
+        expect(polyfillFn.toString()).not.toMatch(/\b(?:const|let)\b|=>|\{\s*value\s*,/)
     })
 
     it('should register all eventhandlers and scripts', async () => {
