@@ -10,6 +10,10 @@ export function getPolyfillManager(browser: WebdriverIO.Browser) {
 
 const log = logger('webdriverio:PolyfillManager')
 
+type WebdriverioPolyfillGlobal = {
+    __name: (target: unknown, fnName: unknown) => unknown
+}
+
 /**
  * A polyfill to set `__name` to the global scope which is needed for WebdriverIO to properly
  * execute custom (preload) scripts. When using `tsx` Esbuild runs some optimizations which
@@ -19,13 +23,12 @@ const log = logger('webdriverio:PolyfillManager')
  * @see https://github.com/evanw/esbuild/issues/2605
  */
 export const polyfillFn = function webdriverioPolyfill () {
-    const __defProp = Object.defineProperty
-    const __name = function (target: unknown, value: unknown) {
-        return __defProp(target, 'name', { value: value, configurable: true })
+    ;(
+        ((typeof globalThis === 'object' && globalThis) ||
+            (typeof window === 'object' && window)) as unknown as WebdriverioPolyfillGlobal
+    ).__name = function (target: unknown, fnName: unknown) {
+        return Object.defineProperty(target, 'name', { value: fnName, configurable: true })
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const __globalThis = (typeof globalThis === 'object' && globalThis) || (typeof window === 'object' && window) as any
-    __globalThis.__name = __name
 }
 
 /**

@@ -69,7 +69,8 @@ export async function startWebDriverSession (params: RemoteConfig): Promise<{ se
          * or user requests a Safari session which does not support Bidi
          */
         typeof w3cCaps.alwaysMatch.browserName === 'string' &&
-        w3cCaps.alwaysMatch.browserName.toLowerCase() !== 'safari'
+        w3cCaps.alwaysMatch.browserName.toLowerCase() !== 'safari' &&
+        w3cCaps.alwaysMatch.browserName.toLowerCase() !== 'internet explorer'
     ) {
         /**
          * opt-into WebDriver Bidi
