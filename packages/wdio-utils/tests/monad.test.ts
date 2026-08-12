@@ -239,13 +239,13 @@ describe('monad', () => {
         }
 
         client.overwriteCommand('someFunc', func, true, undefined, instances)
-        const composedCommand = instances.foo.__propertiesObject__.__elementOverrides__.value.someFunc
         const baseCommand = (x: number, y: number) => {
             calls.push('base')
             return x + y
         }
+        const element = createElement(instances.foo.__propertiesObject__.__elementOverrides__, baseCommand)
 
-        expect(composedCommand(baseCommand, 2, 3)).toBe(28)
+        expect(element.someFunc(2, 3)).toBe(28)
         expect(calls).toEqual(['second', 'first', 'base'])
     })
 
