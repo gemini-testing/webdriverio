@@ -127,6 +127,44 @@ describe('monad', () => {
         expect(calls).toEqual(['second before: 4', 'first before: 5', 'base: 10', 'first after', 'second after'])
     })
 
+    it.each([
+        {
+            name: 'plugin before guard',
+            register: (client: any, plugin: Function, guard: Function) => {
+                client.overwriteCommand('someFunc', plugin, true)
+                client.overwriteCommand('someFunc', guard, true)
+            },
+            expected: ['guard start', 'plugin', 'base', 'guard wait']
+        },
+        {
+            name: 'guard before plugin',
+            register: (client: any, plugin: Function, guard: Function) => {
+                client.overwriteCommand('someFunc', guard, true)
+                client.overwriteCommand('someFunc', plugin, true)
+            },
+            expected: ['plugin', 'guard start', 'base', 'guard wait']
+        }
+    ])('should preserve a navigation guard with $name', async ({ register, expected }) => {
+        const client = webdriverMonad({}, (browser: any) => browser, { ...prototype })(sessionId)
+        const calls: string[] = []
+        const plugin = async (originalCommand: Function) => {
+            calls.push('plugin')
+            return originalCommand()
+        }
+        const guard = async (originalCommand: Function) => {
+            calls.push('guard start')
+            const result = await originalCommand()
+            calls.push('guard wait')
+            return result
+        }
+
+        register(client, plugin, guard)
+        const element = createElement(client.__propertiesObject__.__elementOverrides__, async () => calls.push('base'))
+
+        await element.someFunc()
+        expect(calls).toEqual(expected)
+    })
+
     it('should propagate errors through sequential element command overrides', async () => {
         const client = webdriverMonad({}, (browser: any) => browser, { ...prototype })(sessionId)
         const calls: string[] = []
