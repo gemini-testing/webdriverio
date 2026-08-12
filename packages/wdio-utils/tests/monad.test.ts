@@ -147,6 +147,10 @@ describe('monad', () => {
     ])('should preserve a navigation guard with $name', async ({ register, expected }) => {
         const client = webdriverMonad({}, (browser: any) => browser, { ...prototype })(sessionId)
         const calls: string[] = []
+        let resolveBase!: (value: string) => void
+        const baseResult = new Promise<string>((resolve) => {
+            resolveBase = resolve
+        })
         const plugin = async (originalCommand: Function) => {
             calls.push('plugin')
             return originalCommand()
@@ -159,9 +163,22 @@ describe('monad', () => {
         }
 
         register(client, plugin, guard)
-        const element = createElement(client.__propertiesObject__.__elementOverrides__, async () => calls.push('base'))
+        const element = createElement(client.__propertiesObject__.__elementOverrides__, async () => {
+            calls.push('base')
+            return baseResult
+        })
+        let commandSettled = false
+        const commandResult = element.someFunc().then((result: string) => {
+            commandSettled = true
+            return result
+        })
 
-        await element.someFunc()
+        await Promise.resolve()
+        expect(commandSettled).toBe(false)
+        expect(calls).toEqual(expected.slice(0, -1))
+
+        resolveBase('base result')
+        await expect(commandResult).resolves.toBe('base result')
         expect(calls).toEqual(expected)
     })
 
@@ -260,31 +277,39 @@ describe('monad', () => {
             foo: {
                 __propertiesObject__: {
                     __elementOverrides__: {
-                        value: {
-                            someFunc: (originalCommand: Function, x: number, y: number) => {
-                                calls.push('first')
-                                return originalCommand(x * 2, y) + 1
-                            }
-                        }
+                        value: {}
+                    }
+                }
+            },
+            bar: {
+                __propertiesObject__: {
+                    __elementOverrides__: {
+                        value: {}
                     }
                 }
             }
         }
 
-        const func = function (originalCommand: Function, x: number, y: number) {
+        client.overwriteCommand('someFunc', function (originalCommand: Function, x: number, y: number) {
+            calls.push('first')
+            return originalCommand(x * 2, y) + 1
+        }, true, undefined, instances)
+        client.overwriteCommand('someFunc', function (originalCommand: Function, x: number, y: number) {
             calls.push('second')
             return originalCommand(x, y * 3) * 2
-        }
-
-        client.overwriteCommand('someFunc', func, true, undefined, instances)
-        const baseCommand = (x: number, y: number) => {
-            calls.push('base')
+        }, true, undefined, instances)
+        const fooElement = createElement(instances.foo.__propertiesObject__.__elementOverrides__, (x: number, y: number) => {
+            calls.push('foo base')
             return x + y
-        }
-        const element = createElement(instances.foo.__propertiesObject__.__elementOverrides__, baseCommand)
+        })
+        const barElement = createElement(instances.bar.__propertiesObject__.__elementOverrides__, (x: number, y: number) => {
+            calls.push('bar base')
+            return x + y
+        })
 
-        expect(element.someFunc(2, 3)).toBe(28)
-        expect(calls).toEqual(['second', 'first', 'base'])
+        expect(fooElement.someFunc(2, 3)).toBe(28)
+        expect(barElement.someFunc(2, 3)).toBe(28)
+        expect(calls).toEqual(['second', 'first', 'foo base', 'second', 'first', 'bar base'])
     })
 
     it('should invoke command wrappers once for each composed element override', () => {
