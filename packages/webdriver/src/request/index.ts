@@ -34,7 +34,7 @@ export const COMMANDS_WITHOUT_RETRY = [
     findCommandPathByName('performActions'),
 ]
 const MAX_RETRY_TIMEOUT = 100 // 100ms
-const SESSION_429_RETRY_BASE_DELAY = 5000 // 5s
+const RETRY_429_BASE_DELAY = 5000 // 5s
 const DEFAULT_HEADERS = {
     'Content-Type': 'application/json; charset=utf-8',
     'Connection': 'keep-alive',
@@ -209,14 +209,10 @@ export default abstract class WebDriverRequest extends EventEmitter {
             log.warn(msg)
             log.info(`Retrying ${retryCount}/${totalRetryCount}`)
 
-            const isSessionCreation =
-                fullRequestOptions.method === 'POST' &&
-                (fullRequestOptions.url as URL)?.pathname?.endsWith('/session')
+            if (!(response instanceof Error) && response.statusCode === 429) {
+                const delay = Math.round(RETRY_429_BASE_DELAY * 2 ** (retryCount - 1) + Math.random() * 1000)
 
-            if (isSessionCreation && !(response instanceof Error) && response.statusCode === 429) {
-                const delay = Math.round(SESSION_429_RETRY_BASE_DELAY * 2 ** (retryCount - 1) + Math.random() * 1000)
-
-                log.info(`Session creation rate-limited (429), retrying in ${delay}ms`)
+                log.debug(`Request rate-limited (429), retrying in ${delay}ms`)
 
                 return new Promise<void>(resolve => setTimeout(resolve, delay)).then(
                     () => this._request(fullRequestOptions, transformResponse, customWdRequestAgent, totalRetryCount, retryCount)
