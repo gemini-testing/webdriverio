@@ -35,6 +35,7 @@ export const COMMANDS_WITHOUT_RETRY = [
 ]
 const MAX_RETRY_TIMEOUT = 100 // 100ms
 const RETRY_429_BASE_DELAY = 5000 // 5s
+const RETRY_429_MAX_COUNT = 5
 const DEFAULT_HEADERS = {
     'Content-Type': 'application/json; charset=utf-8',
     'Connection': 'keep-alive',
@@ -191,12 +192,14 @@ export default abstract class WebDriverRequest extends EventEmitter {
          * @param {Error} error  error object that causes the retry
          * @param {string} msg   message that is being shown as warning to user
          */
-        const retry = (error: Error, msg: string) => {
+        const retry = async (error: Error, msg: string) => {
             /**
              * stop retrying if totalRetryCount was exceeded or there is no reason to
              * retry, e.g. if sessionId is invalid
              */
-            if (retryCount >= totalRetryCount || error.message.includes('invalid session id')) {
+            const is429 = !(response instanceof Error) && response.statusCode === 429
+            const effectiveRetryCount = is429 ? Math.min(totalRetryCount, RETRY_429_MAX_COUNT) : totalRetryCount
+            if (retryCount >= effectiveRetryCount || error.message.includes('invalid session id')) {
                 log.error(`Request failed with status ${response.statusCode} due to ${error}`)
                 this.emit('response', { error })
                 this.emit('performance', { request: fullRequestOptions, durationMillisecond, success: false, error, retryCount })
@@ -209,14 +212,10 @@ export default abstract class WebDriverRequest extends EventEmitter {
             log.warn(msg)
             log.info(`Retrying ${retryCount}/${totalRetryCount}`)
 
-            if (!(response instanceof Error) && response.statusCode === 429) {
+            if (is429) {
                 const delay = Math.round(RETRY_429_BASE_DELAY * 2 ** (retryCount - 1) + Math.random() * 1000)
-
                 log.debug(`Request rate-limited (429), retrying in ${delay}ms`)
-
-                return new Promise<void>(resolve => setTimeout(resolve, delay)).then(
-                    () => this._request(fullRequestOptions, transformResponse, customWdRequestAgent, totalRetryCount, retryCount)
-                )
+                await new Promise<void>(resolve => setTimeout(resolve, delay))
             }
 
             return this._request(fullRequestOptions, transformResponse, customWdRequestAgent, totalRetryCount, retryCount)
