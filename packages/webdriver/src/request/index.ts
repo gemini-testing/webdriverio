@@ -34,6 +34,8 @@ export const COMMANDS_WITHOUT_RETRY = [
     findCommandPathByName('performActions'),
 ]
 const MAX_RETRY_TIMEOUT = 100 // 100ms
+const RETRY_429_BASE_DELAY = 5000 // 5s
+const RETRY_429_MAX_DELAY = 30000 // 30s
 const DEFAULT_HEADERS = {
     'Content-Type': 'application/json; charset=utf-8',
     'Connection': 'keep-alive',
@@ -190,11 +192,12 @@ export default abstract class WebDriverRequest extends EventEmitter {
          * @param {Error} error  error object that causes the retry
          * @param {string} msg   message that is being shown as warning to user
          */
-        const retry = (error: Error, msg: string) => {
+        const retry = async (error: Error, msg: string) => {
             /**
              * stop retrying if totalRetryCount was exceeded or there is no reason to
              * retry, e.g. if sessionId is invalid
              */
+            const is429 = !(response instanceof Error) && response.statusCode === 429
             if (retryCount >= totalRetryCount || error.message.includes('invalid session id')) {
                 log.error(`Request failed with status ${response.statusCode} due to ${error}`)
                 this.emit('response', { error })
@@ -207,6 +210,13 @@ export default abstract class WebDriverRequest extends EventEmitter {
             this.emit('performance', { request: fullRequestOptions, durationMillisecond, success: false, error, retryCount })
             log.warn(msg)
             log.info(`Retrying ${retryCount}/${totalRetryCount}`)
+
+            if (is429) {
+                const delay = Math.min(Math.round(RETRY_429_BASE_DELAY * 2 ** (retryCount - 1) + Math.random() * 1000), RETRY_429_MAX_DELAY)
+                log.debug(`Request rate-limited (429), retrying in ${delay}ms`)
+                await new Promise<void>(resolve => setTimeout(resolve, delay))
+            }
+
             return this._request(fullRequestOptions, transformResponse, customWdRequestAgent, totalRetryCount, retryCount)
         }
 
