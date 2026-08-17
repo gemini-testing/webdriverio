@@ -210,7 +210,7 @@ export default abstract class WebDriverRequest extends EventEmitter {
             log.warn(msg)
             log.info(`Retrying ${retryCount}/${totalRetryCount}`)
 
-            if (response.statusCode === 429) {
+            if (!(response instanceof Error) && response.statusCode === 429) {
                 const delay = Math.min(Math.round(RETRY_429_BASE_DELAY * 2 ** (retryCount - 1) + Math.random() * 1000), RETRY_429_MAX_DELAY)
                 log.debug(`Request rate-limited (429), retrying in ${delay}ms`)
                 await new Promise<void>(resolve => setTimeout(resolve, delay))
