@@ -139,10 +139,13 @@ describe('main suite 1', () => {
         expect(sameScrollPosition).toEqual([x, y])
 
         await browser.scroll(0, Math.floor(-y))
-        const oldScrollPosition = await browser.execute(() => [
+        await browser.waitUntil(async () => (
+            await browser.execute(() => window.scrollY)
+        ) === 0, { timeoutMsg: 'Expected the upward wheel action to reach the top of the page' })
+        const topScrollPosition = await browser.execute(() => [
             window.scrollX, window.scrollY
         ])
-        expect(oldScrollPosition).toEqual([x, y])
+        expect(topScrollPosition).toEqual([x, 0])
     })
 
     describe('moveTo tests', () => {
