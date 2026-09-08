@@ -91,7 +91,9 @@ export function parseOverwrite<
 }
 
 export function getPatternParam (pattern: URLPattern, key: keyof Omit<remote.NetworkUrlPatternPattern, 'type'>) {
-    if (key !== 'pathname' && pattern[key] === '*') {
+    // BiDi compares URL components for equality; it does not evaluate URLPattern syntax.
+    // Omit dynamic components and let BidiInterception apply the complete pattern.
+    if (/[*():{}+?]/.test(pattern[key])) {
         return
     }
 

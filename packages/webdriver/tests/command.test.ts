@@ -8,7 +8,7 @@ import type { Options } from '@testplane/wdio-types'
 
 import '../src/browser.js'
 // @ts-expect-error mock feature
-import { WebDriverRequest as RequestMock, thenMock, catchMock } from '../src/request/request.js'
+import { WebRequest as RequestMock, thenMock, catchMock } from '../src/request/web.js'
 import commandWrapper from '../src/command.js'
 import type { BaseClient } from '../src/types.js'
 
@@ -49,14 +49,7 @@ const commandEndpoint: CommandEndpoint = {
     }]
 }
 
-const requestHandler = {
-    onPerformance: expect.any(Function),
-    onRequest: expect.any(Function),
-    onResponse: expect.any(Function),
-    onRetry: expect.any(Function)
-}
-
-vi.mock('../src/request/request', () => {
+vi.mock('../src/request/web.js', () => {
     const thenMock = vi.fn()
     const finallyMock = vi.fn()
     const catchMock = vi.fn().mockReturnValue({ finally: finallyMock })
@@ -72,7 +65,7 @@ vi.mock('../src/request/request', () => {
         thenMock,
         catchMock,
         finallyMock,
-        WebDriverRequest,
+        WebRequest: WebDriverRequest,
     }
 })
 
@@ -155,9 +148,7 @@ describe('command wrapper', () => {
                 using: 'css selector',
                 value: '#body'
             },
-            expect.any(AbortSignal),
-            false,
-            requestHandler
+            false
         )
     })
 
@@ -172,9 +163,7 @@ describe('command wrapper', () => {
                 value: '#body',
                 customParam: 123
             },
-            expect.any(AbortSignal),
-            false,
-            requestHandler
+            false
         )
     })
 
@@ -186,9 +175,7 @@ describe('command wrapper', () => {
             'POST',
             '/session/:sessionId/element/%2Fpath/element',
             expect.anything(),
-            expect.any(AbortSignal),
-            false,
-            requestHandler
+            false
         )
     })
 
@@ -200,9 +187,7 @@ describe('command wrapper', () => {
             'POST',
             '/session/:sessionId/element/%252Fpath/element',
             expect.anything(),
-            expect.any(AbortSignal),
-            false,
-            requestHandler
+            false
         )
         expect(log.warn).toHaveBeenCalledTimes(0)
     })
@@ -258,7 +243,7 @@ describe('command wrapper result log', () => {
         const commandFn = commandWrapper(method, path, endpoint)
         await commandFn.call(scope)
         expect(RequestMock).toHaveBeenCalledTimes(1)
-        expect(RequestMock).toHaveBeenCalledWith(method, path, expect.any(Object), expect.any(AbortSignal), false, requestHandler)
+        expect(RequestMock).toHaveBeenCalledWith(method, path, expect.any(Object), false)
 
         const callback = thenMock.mock.calls[0][0]
 

@@ -20,6 +20,9 @@ const STACKTRACE_FILTER = [
     'node_modules/webdriver/',
     'node_modules/webdriverio/',
     'node_modules/@wdio/',
+    'node_modules/@testplane/webdriver/',
+    'node_modules/@testplane/webdriverio/',
+    'node_modules/@testplane/wdio-utils/',
     '(internal/process/task',
     '(node:internal/process/task'
 ]

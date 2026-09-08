@@ -81,7 +81,7 @@ const requestMock: any = vi.fn().mockImplementation((uri, params) => {
     if (
         body &&
         body.capabilities &&
-        body.capabilities.alwaysMatch.jsonwpMode
+        (body.capabilities.alwaysMatch.jsonwpMode || body.capabilities.alwaysMatch.browserName?.endsWith('-noW3C'))
     ) {
         jsonwpMode = true
         sessionResponse = {
@@ -518,4 +518,28 @@ requestMock.resetSessionId = () => {
     sessionId = defaultSessionId
 }
 
-vi.stubGlobal('fetch', requestMock)
+/**
+ * Keep protocol assertions independent of fetch's two equivalent call forms.
+ * Ky sends Request objects; other callers send URL + RequestInit. Record both
+ * as URL + RequestInit only after reading the actual serialized request body.
+ * Forward all spy controls to the same recorder (including mockClear/reset).
+ */
+const fetchMock = new Proxy(requestMock, {
+    async apply (target, thisArg, [input, init]) {
+        if (input instanceof Request) {
+            const request = input.clone()
+            const body = request.body ? await request.text() : undefined
+            return Reflect.apply(target, thisArg, [new URL(request.url), {
+                method: request.method,
+                headers: Object.fromEntries(request.headers),
+                body,
+                json: body ? JSON.parse(body) : undefined,
+                signal: request.signal,
+                ...init
+            }])
+        }
+        return Reflect.apply(target, thisArg, [input, init])
+    }
+})
+
+vi.stubGlobal('fetch', fetchMock)

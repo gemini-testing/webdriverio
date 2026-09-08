@@ -113,10 +113,10 @@ export async function findElement (
      * implicitly wait for the element if timeout is set
      */
     const implicitTimeout = this.timeouts.get('implicit')
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    using === 'xpath'
-        ? await context.waitForSelector(`xpath/.${value}`, { timeout: implicitTimeout })
-        : await context.waitForSelector(value, { timeout: implicitTimeout })
+    if (implicitTimeout) {
+        const selector = using === 'xpath' ? `xpath/.${value}` : value
+        await context.waitForSelector(selector, { timeout: implicitTimeout })
+    }
 
     let element: ElementHandle<Element> | null = null
     try {
@@ -153,10 +153,10 @@ export async function findElements (
      * implicitly wait for the element if timeout is set
      */
     const implicitTimeout = this.timeouts.get('implicit')
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    using === 'xpath'
-        ? await context.waitForSelector(`xpath/.${value}`, { timeout: implicitTimeout })
-        : await context.waitForSelector(value, { timeout: implicitTimeout })
+    if (implicitTimeout) {
+        const selector = using === 'xpath' ? `xpath/.${value}` : value
+        await context.waitForSelector(selector, { timeout: implicitTimeout })
+    }
 
     const elements = using === 'xpath'
         ? await context.$$(`xpath/.${value}`) as ElementHandle<Element>[]

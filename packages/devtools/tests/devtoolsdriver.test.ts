@@ -36,6 +36,7 @@ const setNormalPageLoadBehavior = () => executionContext.evaluate.mockImplementa
 ))
 
 const frame = {
+    get evaluate () { return executionContext.evaluate },
     executionContext: vi.fn().mockImplementation(() => Promise.resolve(executionContext))
 }
 

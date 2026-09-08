@@ -77,3 +77,31 @@ describe('executeAsync', () => {
         expect(result).toEqual('Execution Error')
     })
 })
+
+describe('missing array index preserves query arguments', () => {
+    it.each([
+        ['react$$', ['Button', { props: { color: 'orange' } }]],
+        ['custom$$', ['byColor', 'orange', { exact: true }]]
+    ] as [string, unknown[]][])('%s retries the original query without dropping filters', async (name, args) => {
+        let attempts = 0
+        const query = vi.fn(async function (this: any, ...queryArgs: unknown[]) {
+            const sameArgs = JSON.stringify(queryArgs) === JSON.stringify(args)
+            const elements = ++attempts === 1 ? [] : [{ elementId: sameArgs ? 'orange' : 'blue' }]
+            return Object.assign(elements, { parent: this, selector: queryArgs[0], foundWith: name })
+        })
+        const scope: any = {
+            options: {},
+            waitUntil: async (condition: () => Promise<boolean>) => {
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    if (await condition()) {return}
+                }
+                throw new Error('Expected matching element to appear')
+            }
+        }
+        scope[name] = wrapCommand(name, query)
+        const element = await scope[name](...args)[0]
+        expect(element.elementId).toBe('orange')
+        expect(query).toHaveBeenCalledTimes(2)
+        expect(query.mock.calls[1]).toEqual(args)
+    })
+})

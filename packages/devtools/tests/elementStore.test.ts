@@ -13,9 +13,7 @@ const elementHandleFactory = (
     async evaluate(cb: any) {
         return cb({ isConnected })
     },
-    executionContext() {
-        return { _world: { frame: () => frame } }
-    }
+    frame
 })
 
 test('should keep a map of elements', async () => {

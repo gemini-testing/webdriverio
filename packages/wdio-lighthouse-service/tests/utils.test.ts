@@ -12,7 +12,7 @@ vi.mock('fs', () => ({
 
 vi.mock('lighthouse/lighthouse-core/gather/connections/cri.js', () => ({
     default: class ChromeProtocol {
-        public _runJsonCommand = vi.fn().mockReturnValue(['foobar'])
+        public _runJsonCommand = vi.fn().mockReturnValue([{ id: 'unrelated-target' }, { id: 'foobar321' }])
         public _connectToSocket = vi.fn()
         public _sendCommandMock = vi.fn()
         public on = vi.fn()
@@ -46,21 +46,25 @@ describe('getLighthouseDriver', () => {
     test('should return a driver w/o creating new session', async () => {
         const urlMock = vi.fn().mockReturnValue('ws://127.0.0.1:56513/devtools/browser/9aae0e34-86a9-4b0e-856b-d0d37009ddbb')
         const session = {
-            connection: vi.fn().mockReturnValue({ url: urlMock })
+            connection: vi.fn().mockReturnValue({ url: urlMock }),
+            send: vi.fn().mockResolvedValue({ targetInfo: { targetId: 'foobar321' } })
         }
-        const target = { _targetId: 'foobar321' }
+        const target = { _targetId: 'foobar321', asPage: vi.fn().mockResolvedValue({ mainFrame: () => ({ _id: 'foobar321' }) }) }
         const driver = await getLighthouseDriver(session as any, target as any)
         expect(session.connection).toBeCalledTimes(1)
         expect(urlMock).toBeCalledTimes(1)
+        expect(session.send).toHaveBeenCalledWith('Target.getTargetInfo')
         expect(driver.constructor.name).toBe('Driver')
+        expect(driver._connection._connectToSocket).toHaveBeenCalledWith({ id: 'foobar321' })
     })
 
     test('should create a new session', async () => {
         const urlMock = vi.fn().mockReturnValue('ws://127.0.0.1:56513/session/9aae0e34-86a9-4b0e-856b-d0d37009ddbb/se/cdp')
         const session = {
-            connection: vi.fn().mockReturnValue({ url: urlMock })
+            connection: vi.fn().mockReturnValue({ url: urlMock }),
+            send: vi.fn().mockResolvedValue({ targetInfo: { targetId: 'foobar321' } })
         }
-        const target = { _targetId: 'foobar321' }
+        const target = { _targetId: 'foobar321', asPage: vi.fn().mockResolvedValue({ mainFrame: () => ({ _id: 'foobar321' }) }) }
         const driver = await getLighthouseDriver(session as any, target as any)
         // @ts-expect-error
         driver._connection.sendCommand('foobar')

@@ -2,7 +2,6 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
     test: {
-        dangerouslyIgnoreUnhandledErrors: true,
         include: ['packages/**/*.test.ts'],
         /**
          * not to ESM ported packages

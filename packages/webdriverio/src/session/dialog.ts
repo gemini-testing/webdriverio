@@ -14,8 +14,8 @@ export class DialogManager extends SessionManager {
     #browser: WebdriverIO.Browser
     #initialize: Promise<boolean>
     #autoHandleDialog = true
-
-    #handleUserPromptListener = this.#handleUserPrompt.bind(this)
+    #onDialogListenerRegistered = () => this.#switchListenerFlag(false)
+    #onDialogListenerRemoved = () => this.#switchListenerFlag(true)
 
     constructor(browser: WebdriverIO.Browser) {
         super(browser, DialogManager.name)
@@ -36,17 +36,17 @@ export class DialogManager extends SessionManager {
             events: ['browsingContext.userPromptOpened']
         }).then(() => true, () => false)
         // @ts-ignore this is a private event
-        this.#browser.on('_dialogListenerRegistered', () => this.#switchListenerFlag(false))
+        this.#browser.on('_dialogListenerRegistered', this.#onDialogListenerRegistered)
         // @ts-ignore this is a private event
-        this.#browser.on('_dialogListenerRemoved', () => this.#switchListenerFlag(true))
-        this.#browser.on('browsingContext.userPromptOpened', this.#handleUserPromptListener)
+        this.#browser.on('_dialogListenerRemoved', this.#onDialogListenerRemoved)
+        this.#browser.on('browsingContext.userPromptOpened', this.#handleUserPrompt)
     }
 
     removeListeners(): void {
         super.removeListeners()
-        this.#browser.off('browsingContext.userPromptOpened', this.#handleUserPromptListener)
-        this.#browser.removeAllListeners('_dialogListenerRegistered')
-        this.#browser.removeAllListeners('_dialogListenerRemoved')
+        this.#browser.off('browsingContext.userPromptOpened', this.#handleUserPrompt)
+        this.#browser.off('_dialogListenerRegistered', this.#onDialogListenerRegistered)
+        this.#browser.off('_dialogListenerRemoved', this.#onDialogListenerRemoved)
     }
 
     async initialize () {
@@ -56,7 +56,7 @@ export class DialogManager extends SessionManager {
     /**
      * capture shadow root elements propagated through console.debug
      */
-    async #handleUserPrompt(log: local.BrowsingContextUserPromptOpenedParameters) {
+    #handleUserPrompt = async (log: local.BrowsingContextUserPromptOpenedParameters) => {
         if (this.#autoHandleDialog) {
             return this.#browser.browsingContextHandleUserPrompt({
                 accept: false,

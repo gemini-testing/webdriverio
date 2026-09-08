@@ -22,7 +22,7 @@ vi.mock('@testplane/wdio-utils', () => {
 
 vi.mock('repl')
 vi.mock('yargs')
-vi.mock('webdriverio', () => import(path.join(process.cwd(), '__mocks__', 'webdriverio')))
+vi.mock('@testplane/webdriverio', () => import(path.join(process.cwd(), '__mocks__', 'webdriverio')))
 
 describe('repl commandDir', () => {
     it('should call debug command', async () => {

@@ -11,7 +11,11 @@ import type { WaitForOptions } from '../../types.js'
 
 const log = logger('BidiInterception')
 
-let hasSubscribedToEvents = false
+const sessions = new WeakMap<WebdriverIO.Browser, {
+    sessionId: string
+    subscribed: Promise<unknown>
+    mocks: Set<BidiInterception>
+}>()
 
 type RespondBody = string | JsonCompatible | Buffer
 interface Overwrite {
@@ -37,6 +41,8 @@ export default class BidiInterception {
     #requestOverwrites: Overwrite[] = []
     #respondOverwrites: Overwrite[] = []
     #calls: local.NetworkResponseCompletedParameters[] = []
+    #beforeRequestSent = this.#handleBeforeRequestSent.bind(this)
+    #responseStarted = this.#handleResponseStarted.bind(this)
 
     constructor (
         pattern: URLPattern,
@@ -52,8 +58,8 @@ export default class BidiInterception {
         /**
          * attach network listener to this mock
          */
-        browser.on('network.beforeRequestSent', this.#handleBeforeRequestSent.bind(this))
-        browser.on('network.responseStarted', this.#handleResponseStarted.bind(this))
+        browser.on('network.beforeRequestSent', this.#beforeRequestSent)
+        browser.on('network.responseStarted', this.#responseStarted)
     }
 
     static async initiate(
@@ -62,15 +68,27 @@ export default class BidiInterception {
         browser: WebdriverIO.Browser
     ) {
         const pattern = parseUrlPattern(url)
-        if (!hasSubscribedToEvents) {
-            await browser.sessionSubscribe({
-                events: [
-                    'network.beforeRequestSent',
-                    'network.responseStarted'
-                ]
-            })
-            log.info('subscribed to network events')
-            hasSubscribedToEvents = true
+        let session = sessions.get(browser)
+        if (!session || session.sessionId !== browser.sessionId) {
+            for (const mock of session?.mocks || []) {
+                mock.#detach()
+            }
+            session = {
+                sessionId: browser.sessionId,
+                subscribed: browser.sessionSubscribe({
+                    events: ['network.beforeRequestSent', 'network.responseStarted']
+                }),
+                mocks: new Set()
+            }
+            sessions.set(browser, session)
+        }
+        try {
+            await session.subscribed
+        } catch (error) {
+            if (sessions.get(browser) === session) {
+                sessions.delete(browser)
+            }
+            throw error
         }
 
         /**
@@ -88,7 +106,9 @@ export default class BidiInterception {
             }]
         })
 
-        return new BidiInterception(pattern, interception.intercept, filterOptions, browser)
+        const mock = new BidiInterception(pattern, interception.intercept, filterOptions, browser)
+        session.mocks.add(mock)
+        return mock
     }
 
     #emit (event: string, args: unknown) {
@@ -124,7 +144,7 @@ export default class BidiInterception {
         /**
          * check if request matches filter option and do nothing if not
          */
-        if (!this.#matchesFilterOptions(request)) {
+        if (!this.#pattern.test(request.request.url) || !this.#matchesFilterOptions(request)) {
             return this.#browser.networkContinueRequest({
                 request: request.request.request
             })
@@ -168,7 +188,7 @@ export default class BidiInterception {
         /**
          * continue mock if not matching filter
          */
-        if (!this.#matchesFilterOptions(request)) {
+        if (!this.#pattern.test(request.request.url) || !this.#matchesFilterOptions(request)) {
             this.#emit('continue', request.request.request)
             return this.#browser.networkProvideResponse({
                 request: request.request.request
@@ -231,7 +251,20 @@ export default class BidiInterception {
     }
 
     #isRequestMatching<T extends local.NetworkBeforeRequestSentParameters | local.NetworkResponseCompletedParameters> (request: T) {
-        return request.isBlocked && this.#pattern && this.#pattern.test(request.request.url)
+        if (!request.isBlocked || this.#restored) {
+            return false
+        }
+
+        // BiDi URL components are exact matches, so wildcard components are
+        // filtered locally. Only one mock may resume a blocked request, even
+        // when several broad protocol intercepts captured it.
+        const mocks = [...(sessions.get(this.#browser)?.mocks || [])].filter(mock => (
+            !mock.#restored && (!request.intercepts || request.intercepts.includes(mock.#mockId))
+        ))
+        const owner = mocks.find(mock => (
+            mock.#pattern.test(request.request.url) && mock.#matchesFilterOptions(request)
+        )) || mocks[0]
+        return owner === this
     }
 
     #matchesFilterOptions<T extends local.NetworkBeforeRequestSentParameters | local.NetworkResponseCompletedParameters> (request: T) {
@@ -323,6 +356,12 @@ export default class BidiInterception {
         return this
     }
 
+    #detach() {
+        this.#browser.off('network.beforeRequestSent', this.#beforeRequestSent)
+        this.#browser.off('network.responseStarted', this.#responseStarted)
+        this.#restored = true
+    }
+
     /**
      * Does everything that `mock.reset()` does, and also
      * removes any mocked return values or implementations.
@@ -330,16 +369,17 @@ export default class BidiInterception {
      */
     async restore() {
         this.reset()
-        this.#respondOverwrites = []
-        this.#restored = true
-        const handle = await this.#browser.getWindowHandle()
-
-        log.trace(`Restoring mock for ${handle}`)
-        SESSION_BIDI_MOCKS[handle].delete(this as BidiInterception)
-
+        // Keep listeners alive while the remote end removes the intercept:
+        // requests already blocked by it still need to be continued.
         if (this.#mockId) {
             await this.#browser.networkRemoveIntercept({ intercept: this.#mockId })
         }
+        this.#detach()
+        sessions.get(this.#browser)?.mocks.delete(this)
+        const handle = await this.#browser.getWindowHandle()
+
+        log.trace(`Restoring mock for ${handle}`)
+        SESSION_BIDI_MOCKS[handle]?.delete(this)
 
         return this
     }

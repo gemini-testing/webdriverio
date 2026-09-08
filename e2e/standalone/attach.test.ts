@@ -1,13 +1,19 @@
 import os from 'node:os'
-import { test, expect } from 'vitest'
-/**
- * in order to run this file make sure you have `webdriverio`
- * installed using NPM before running it:
- *
- *   $ npm install webdriverio
- *
- */
+import { afterEach, test, expect } from 'vitest'
+import { startTestPages } from '../__fixtures__/pages.js'
+
 import { remote, attach } from '@testplane/webdriverio'
+
+let browser: WebdriverIO.Browser | undefined
+let pages: Awaited<ReturnType<typeof startTestPages>> | undefined
+
+afterEach(async () => {
+    try {
+        await browser?.deleteSession().catch(() => {})
+    } finally {
+        await pages?.close()
+    }
+})
 
 test('allow to attach to an existing session', async () => {
     /**
@@ -18,7 +24,8 @@ test('allow to attach to an existing session', async () => {
         return
     }
 
-    const browser = await remote({
+    pages = await startTestPages()
+    browser = await remote({
         capabilities: {
             browserName: 'chrome',
             'goog:chromeOptions': {
@@ -27,7 +34,7 @@ test('allow to attach to an existing session', async () => {
         }
     })
 
-    await browser.url('https://guinea-pig.webdriver.io')
+    await browser.url(pages.url)
     expect(await browser.getTitle()).toBe('WebdriverJS Testpage')
     const origContextTree = await browser.browsingContextGetTree({ maxDepth: 1 })
     expect(origContextTree.contexts).toHaveLength(1)
@@ -41,7 +48,7 @@ test('allow to attach to an existing session', async () => {
     /**
      * can open other pages which requires e.g. network manager to be reinitialized correctly
      */
-    await otherBrowser.url('https://guinea-pig.webdriver.io/two.html')
+    await otherBrowser.url(`${pages.url}/two.html`)
     expect(await otherBrowser.getTitle()).toBe('two')
 
     await otherBrowser.deleteSession()
@@ -50,6 +57,6 @@ test('allow to attach to an existing session', async () => {
      * verify that browser session is deleted
      */
     const error = await browser.status().catch((err) => err)
-    expect(error.message).not.toBe('ChromeDriver ready for new sessions.')
-    expect(error.message).toEqual(expect.stringContaining('Request failed with error code ECONNREFUSED'))
+    expect(error).toBeInstanceOf(Error)
+    expect(error.code).toBe('ECONNREFUSED')
 })
