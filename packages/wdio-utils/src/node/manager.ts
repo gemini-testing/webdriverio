@@ -34,7 +34,7 @@ function mapCapabilities (
                 if (typeof multiremoteCaps[multiremoteInstanceNames[0]] === 'object' && 'capabilities' in multiremoteCaps[multiremoteInstanceNames[0]]) {
                     return Object.values(multiremoteCaps).map((c: Capabilities.WithRequestedCapabilities) => {
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        if ((c as any).automationProtocol === 'devtools') {
+                        if ((c as any).automationProtocol === 'devtools' || definesRemoteDriver({ ...options, ...c })) {
                             return
                         }
 
@@ -51,7 +51,7 @@ function mapCapabilities (
             }).flat()
             : Object.values(caps as Capabilities.WithRequestedMultiremoteCapabilities['capabilities']).map((mrOpts) => {
                 const w3cCaps = mrOpts.capabilities as Capabilities.W3CCapabilities
-                if (mrOpts.automationProtocol === 'devtools') {
+                if (mrOpts.automationProtocol === 'devtools' || definesRemoteDriver({ ...options, ...mrOpts })) {
                     return
                 }
                 if (w3cCaps.alwaysMatch) {
@@ -68,7 +68,7 @@ function mapCapabilities (
         // - browserName is defined so we know it is a browser session
         cap.browserName &&
         // - we are not about to run a cloud session
-        !definesRemoteDriver(options) &&
+        !definesRemoteDriver({ ...options, ...cap }) &&
         // - we are not running Safari (driver already installed on macOS)
         !isSafari(cap.browserName) &&
         // - environment does not define a binary path

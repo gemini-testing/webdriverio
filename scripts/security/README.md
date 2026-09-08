@@ -106,3 +106,17 @@ pnpm exec vitest --config ./e2e/vitest.config.ts --run e2e/launch/reloadSession.
 Компоненты запускаются в headless Chrome, локальная WebDriver-матрица — Chrome/Firefox, без Edge/Safari. Не пересобирать пакеты одновременно с browser-runner: Vite HMR изменяет исполняемый код посреди теста. Основные DOM/navigation/PWA E2E используют настоящие локальные HTTP-фикстуры вместо нестабильных внешних страниц; браузерные команды не замоканы.
 
 Последняя команда запускает только локальный launch-сценарий. Общий `test:e2e:launch` дополнительно загружает исторически отключённый внутри тела AWS-тест, который требует credentials на уровне модуля; без них команда падает. AWS/Sauce здесь не считаются пройденными. Существующие skipped/no-op наборы и точные результаты перечислены в `TEST-RESULTS.md`.
+
+## 5. Параллельные E2E с пустым кэшем браузеров
+
+После сборки из корня checkout:
+
+```bash
+node scripts/security/testrunner-cold-cache.mjs testrunner
+node scripts/security/testrunner-cold-cache.mjs multiremote
+node scripts/security/testrunner-cold-cache.mjs classic
+```
+
+Каждый запуск создаёт новый временный каталог, передаёт его как cacheDir настоящему Launcher и запускает существующий E2E-конфиг без уменьшения maxInstances: пять workers у testrunner, два workers с двумя браузерами в каждом у multiremote. Скрипт требует exit code 0; путь к сохранённым логам и кэшу печатается как `Cold-cache evidence: ...`. Нужен доступ к загрузке Chrome/ChromeDriver; testrunner дополнительно проверяет reload Chrome → Firefox. Edge/Safari не запускаются. Существующий пользовательский кэш не очищается.
+
+Такой прогон проверяет подготовку бинарников **до** запуска параллельных воркеров. Обычный локальный запуск с уже установленным браузером не обнаруживает гонку скачивания/распаковки. На коде до исправления PR #52 этот multiremote-прогон воспроизвёл CI-ошибку: каталог ChromeDriver существует, но бинарник ещё отсутствует.

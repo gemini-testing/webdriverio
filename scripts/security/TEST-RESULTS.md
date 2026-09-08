@@ -76,3 +76,25 @@ Audit 0 относится **только к распространяемой pr
 Логи локального RED/GREEN и полных Node 22/24 прогонов: `/tmp/webdriverio-ci52`. Успех локальных проверок не объявляется успешным Windows/полным GitHub CI: итог нового CI нужно проверять после push. PR остаётся в текущем статусе, без перевода в draft.
 
 Автоматическая preview-публикация pkg-pr-new для PR отключена: Continuous Releases продолжает сборку, но Publish выполняется только на существующем push-триггере main. Это не npm-релиз; существующий первый PR run запускал preview-публикацию автоматически, поэтому предыдущая фраза «пакеты не публиковались» относится к отсутствию ручного npm publish, а не к действиям этого CI workflow.
+
+## PR #52: гонка установки браузеров в четырёх E2E jobs
+
+[Run 34216214214](https://github.com/gemini-testing/webdriverio/actions/runs/34216214214) подтвердил исправление предыдущих unit/smoke проблем: все девять комбинаций OS/Node каждого набора прошли. Четыре jobs Testrunner / Multiremote на Windows и Intel macOS упали при подготовке сессий, до проверок тестов:
+
+- Windows: одновременная работа с архивом Chrome завершалась `EBUSY: resource busy or locked, unlink`.
+- macOS: параллельный install обнаруживал уже созданный каталог Chrome/ChromeDriver до появления исполняемого файла.
+
+Причина: историческая правка `5836bd8050` подменила аргументы предварительной установки в Launcher на `{}, []`. Воркеры начинали независимые скачивания/распаковки в общий пустой кэш. Восстановлены `setupDriver(config, caps)` и `setupBrowser(config, caps)` с ожиданием завершения до запуска workers. Дополнительно учтены per-instance hostname/port/user/key у multiremote и connection overrides обычных capabilities: для удалённых сессий локальные бинарники не скачиваются; смешанный local/remote конфиг подготавливает только локальный браузер. Новые unit-регрессии проверяют эти случаи, передачу конфигурации, ожидание подготовки и отказ запуска workers при ошибке.
+
+Локальная проверка на Node 22.21.1 / macOS arm64 / Chrome 152.0.7977.82:
+
+| Проверка | Результат |
+| --- | --- |
+| Новый cold-cache multiremote-скрипт на старом Launcher | RED: оба spec files упали с тем же отсутствующим ChromeDriver в существующем каталоге |
+| Тот же скрипт после исправления, новый пустой кэш | GREEN: 2 spec files, 4 tests passed, 6 существующих skips |
+| Cold-cache testrunner, пять параллельных workers | GREEN: 5 spec files, 98 tests passed, 2 существующих skips |
+| Classic E2E | GREEN: 1 spec file, 2 tests passed |
+| Полный unit-набор после всех правок | GREEN: 306 suites / 3485 tests passed, 1 suite / 13 tests skipped |
+| Сборка utils/CLI, TypeScript обоих пакетов, ESLint изменённых файлов | GREEN |
+
+Команды воспроизведения — раздел 5 `scripts/security/README.md`; логи этого локального RED/GREEN — `/tmp/webdriverio-ci52-cold`, отдельные browser caches сохраняются по напечатанным скриптом путям. Параллельность не уменьшалась; E2E не отключались. Это не утверждение об успешном новом Windows/Intel macOS CI: его результат проверяется отдельно после push.
