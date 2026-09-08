@@ -32,4 +32,6 @@ jobs:
           GITHUB_AUTH: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish
+        # PR validation builds packages without publishing preview releases.
+        if: github.event_name == 'push'
         run: pnpx pkg-pr-new publish --pnpm './packages/*'

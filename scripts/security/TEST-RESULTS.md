@@ -62,3 +62,17 @@ Audit 0 относится **только к распространяемой pr
 - `/tmp/webdriverio-monorepo-tests/component-release-final.log`: полный component-прогон и coverage; в том же каталоге RED/GREEN-логи lifecycle, polling и shadow regressions.
 
 Пакеты не публиковались. Файлы планов остаются локально и не включаются в PR.
+
+## PR #52: исправления по логам GitHub Actions
+
+Исходный [CI run 34214203198](https://github.com/gemini-testing/webdriverio/actions/runs/34214203198) выявил три причины, не проявившиеся в предыдущем локальном Node 22 прогоне:
+
+- **Node 24 / JSDOM:** нативный Request Node отвергает AbortSignal из JSDOM до вызова fetch mock. Тестовое окружение теперь использует согласованные нативные AbortController/AbortSignal; новая регрессия проверяет создание Request, clone и распространение abort. Производственный HTTP transport не менялся. До исправления локально воспроизведены те же 3 failed suites, после — полный unit-набор на Node 22.21.1 и 24.19.0: **306 suites / 3479 tests passed**, существующие 1 suite / 13 tests skipped. Минимальный Node 22.12.0: targeted regression/polling tests 4 passed.
+- **Windows / polling tests:** литерал file:///spec.ts не является абсолютным Windows file URL. Фикстуры теперь получают URL относительно import.meta.url, сохраняя native drive/path. CI раньше завершал runSpec до polling с `File URL path must be absolute`; последующий unhandled rejection был следствием незапущенного poll, а не отдельным production-сбоем.
+- **macOS / Lit:** сумма четырёх проверок отсутствующего элемента занимала 1405–1785 мс вместо искусственного лимита 1000 мс. По уточнённому объёму пользователя job Component Tests удалён из Test workflow: Testplane использует собственную реализацию компонентных тестов. Зависимости needs у E2E обновлены, остальные проверки сохранены. Локальные component-команды и код Lit-теста в этом CI-исправлении не меняются; эксперимент по замене временного лимита не включён в коммит.
+
+В следующих E2E jobs заменён выведенный из эксплуатации macos-13 на macos-15-intel, сохраняя Intel-архитектуру и набор проверок. [Официальное уведомление GitHub](https://github.blog/changelog/2025-09-19-github-actions-macos-13-runner-image-is-closing-down/).
+
+Логи локального RED/GREEN и полных Node 22/24 прогонов: `/tmp/webdriverio-ci52`. Успех локальных проверок не объявляется успешным Windows/полным GitHub CI: итог нового CI нужно проверять после push. PR остаётся в текущем статусе, без перевода в draft.
+
+Автоматическая preview-публикация pkg-pr-new для PR отключена: Continuous Releases продолжает сборку, но Publish выполняется только на существующем push-триггере main. Это не npm-релиз; существующий первый PR run запускал preview-публикацию автоматически, поэтому предыдущая фраза «пакеты не публиковались» относится к отсутствию ручного npm publish, а не к действиям этого CI workflow.

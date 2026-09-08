@@ -36,7 +36,7 @@ describe('BrowserFramework error polling', () => {
         vi.mocked(browser.execute)
             .mockRejectedValueOnce(new Error('execution contexts cleared'))
             .mockResolvedValue({ errors: [] })
-        const framework = new BrowserFramework('0-0', {}, ['file:///spec.ts'], { emit: vi.fn() } as any)
+        const framework = new BrowserFramework('0-0', {}, [new URL('./spec.ts', import.meta.url).href], { emit: vi.fn() } as any)
         const result = framework.run()
         await vi.advanceTimersByTimeAsync(1000)
         const onMessage = process.listeners('message').find((listener) => !listeners.includes(listener))!
@@ -51,7 +51,8 @@ describe('BrowserFramework error polling', () => {
     it('does not apply an unfinished poll failure to the next spec', async () => {
         let rejectPoll: (error: Error) => void
         vi.mocked(browser.execute).mockReturnValue(new Promise((_, reject) => { rejectPoll = reject }))
-        const framework = new BrowserFramework('0-0', {}, ['file:///first.ts', 'file:///second.ts'], { emit: vi.fn() } as any)
+        const specs = ['first.ts', 'second.ts'].map((name) => new URL(name, import.meta.url).href)
+        const framework = new BrowserFramework('0-0', {}, specs, { emit: vi.fn() } as any)
         const result = framework.run()
         await vi.advanceTimersByTimeAsync(500)
         const onMessage = process.listeners('message').find((listener) => !listeners.includes(listener))!
@@ -70,7 +71,7 @@ describe('BrowserFramework error polling', () => {
 
     it('reports a polling command failure without an unhandled rejection', async () => {
         vi.mocked(browser.execute).mockRejectedValue(new Error('session disconnected'))
-        const framework = new BrowserFramework('0-0', { mochaOpts: { timeout: 1000 } }, ['file:///spec.ts'], { emit: vi.fn() } as any)
+        const framework = new BrowserFramework('0-0', { mochaOpts: { timeout: 1000 } }, [new URL('./spec.ts', import.meta.url).href], { emit: vi.fn() } as any)
         const result = framework.run()
         await vi.advanceTimersByTimeAsync(1000)
         expect(await result).toBe(1)

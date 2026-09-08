@@ -1,5 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { transferableAbortController } from 'node:util'
 import { vi } from 'vitest'
+
+// JSDOM supplies AbortController/AbortSignal but no fetch/Request. Keep the
+// cancellation primitives in the same realm as Node's native Request; Node 24
+// rejects JSDOM's signal before our fetch mock can receive the request.
+if (typeof window !== 'undefined') {
+    const controller = transferableAbortController()
+    vi.stubGlobal('AbortController', controller.constructor)
+    vi.stubGlobal('AbortSignal', controller.signal.constructor)
+}
 
 /**
  * This flag helps to indicate that WebdriverIO is running in a unit test environment.
