@@ -25,6 +25,12 @@ export interface RequestWithOptions {
 
 export interface RespondWithOptions extends Omit<RequestWithOptions, 'url' | 'method'> {
     statusCode?: Overwrite<number, local.NetworkResponseCompletedParameters>
+    /**
+     * Fetch the real response before replacing its body. Defaults to true on
+     * Chromium and false on Firefox, which only supports bodies before the
+     * request is sent. Firefox does not support an explicit true value.
+     */
+    fetchResponse?: boolean
 }
 
 export interface MockRequestOptions {

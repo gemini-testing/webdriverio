@@ -62,7 +62,7 @@ Firefox 128 проверялся отдельным CDP-процессом: со
 
 - Пользовательские `$x`/waitForXPath/waitForTimeout, PDF/stream/screenshot и прямые Puppeteer imports: необходим аудит используемого API либо breaking migration.
 - Удалённые Selenium/Selenoid/Moon, авторизация, корпоративные прокси/TLS и Linux/Windows: живое окружение не проверялось.
-- Полный Testplane integration suite не запускался с подменой зависимостей; проверялся воспроизводимый сценарий его изоляции без изменения соседнего checkout.
+- Полная Testplane CI-матрица с Linux grid остаётся не проверенной локально. Совместная проверка изменённых Testplane/WDIO и контроль на настоящем master выполнены 2026-09-11; результаты ниже.
 
 Публикация не выполнялась. Считать ветку безусловно безопасным бесшовным релизом для всех нынешних пользователей нельзя.
 
@@ -83,3 +83,25 @@ Firefox 128 проверялся отдельным CDP-процессом: со
 - Проверка необработанных ошибок Vitest больше не отключена.
 
 Эти исправления шире исходного обновления зависимостей. Их нужно просматривать отдельно от security diff. Подробные зелёные локальные smoke/component/E2E результаты и ограничения приведены в TEST-RESULTS.md. Они не заменяют облачную, кроссплатформенную и полную Testplane-интеграционную проверку.
+
+## Optional Devtools package: 2026-09-11
+
+Отдельная проверка consumer с явно установленным `@testplane/devtools` обнаружила оставшийся runtime `puppeteer-core@20.9.0`: audit этого consumer показал 9 уязвимостей, хотя consumer без optional Devtools уже проходил. Поэтому проверка только обязательного дерева Testplane недостаточна для вывода обо всех распространяемых WDIO-пакетах.
+
+В `@testplane/devtools` runtime обновлён до `^25.10.0`, минимум Node — `>=22.12.0`. Перенесены импорты на поддерживаемые exports, `ignoreHTTPSErrors` переводится в `acceptInsecureCerts`, Chromium/Edge используют современный selector `browser`, двойной клик — `Mouse.click({ count: 2 })`. Генерация UUID v4 для session/window IDs использует встроенный `crypto.randomUUID`; runtime `uuid` и его types удалены после того, как повторный optional audit выявил оставшуюся уязвимость этой зависимости. CJS-вход использует асинхронный ESM bridge, поскольку зависимость `@testplane/wdio-config` не предоставляет require-вход. Firefox/CDP отклоняется явно до запуска браузера и исключён из `SUPPORTED_BROWSER`; это не отменяет поддержку Firefox через WebDriver BiDi.
+
+На Node 22.21.1 и Chrome 152.0.7977.82 отдельный настоящий Devtools smoke проверил навигацию/title, CSS/XPath/shadow selectors, ввод/keyboard actions, DOM-событие double-click, cookies add/read/delete, iframe, создание/переключение/закрытие окна, PNG screenshot/reload и завершение сессии. Команды проверяются отдельно от Testplane: Testplane 9 не разрешает Devtools как automation backend. Доказательства и команды находятся в `vibe/release-readiness/devtools/`.
+
+Ограничение логирования: Puppeteer 25 больше не использует пакет `debug`, поэтому прежний `patchDebug` не перенаправляет CDP protocol logs в WDIO logger. В строгом workspace он предупреждает об отсутствующем `debug`; наличие транзитивного `debug` в consumer может скрыть это предупреждение, но не восстанавливает protocol logging. Диагностика самого Puppeteer доступна через `NODE_DEBUG=puppeteer:*`; прозрачное сохранение прежнего logging API не заявляется. Пользовательские прямые Puppeteer API по-прежнему требуют собственного аудита. Финальный audit optional consumer необходимо проверять по свежему `pack-consumer.mjs --with-devtools`, а не переносить результат consumer без Devtools.
+
+Финальная проверка optional consumer `testplane-release-consumer-hCkj2F`: production audit **0**, `npm ls --all --omit=dev` проходит, установленные build-файлы совпадают с локальными tarball preview, нет overrides и package symlinks. Настоящий Devtools smoke из установленного consumer прошёл **36/36** проверок: ESM и холодный CJS на Node 22.21.1 и минимальном Node 22.12.0, Chrome 152.0.7977.82 и Puppeteer 25.10.0. Полный package unit suite — **118/118**, package ESLint и ESM/CJS/declaration build проходят. Локальные пути и JSON-результаты сохранены в `vibe/release-readiness/devtools/consumer-summary.json`; эти результаты не заменяют проверку удалённых browser providers.
+
+## Совместная проверка с Testplane, 2026-09-11
+
+Проверены обе изменённые ветки одновременно, а для атрибуции ошибок — четыре независимые комбинации настоящего Testplane master/PR и старого/замороженного нового WDIO. У каждого Testplane собственные lockfile, npm ci и build; проверены реальные загруженные модули. REPL-регрессия относилась к Testplane PR: master проходил с обеими версиями WDIO, PR падал с обеими. Исправлена последовательность preload WDIO/Mocha, сохранены исходные тесты с конфликтующим loader; REPL 5/5 проходит на Node 22.12.0, 22.21.1 и 24.19.0.
+
+После дополнительных исправлений cookies partition, диалогов, preload lifecycle и BiDi network errors чистая установка Testplane из локальных tarballs с восемью обязательными WDIO-пакетами имеет production audit **0**, валидное dependency tree и проходит **35/35** Chrome/Firefox сценариев как на Node 22.21.1, так и на минимальном 22.12.0. Это не linked-only проверка: package symlinks, devDependencies и корневые overrides отсутствуют, пути master/worker и содержимое build проверены. Во временных manifest только ссылки на неопубликованные first-party пакеты заменены на tarballs; выбор новых release-версий и обновление зависимостей Testplane остаются отдельным шагом выпуска.
+
+Firefox body mocking теперь выполняется до отправки запроса: по умолчанию сервер не вызывается и его status/headers не наследуются. Явный `fetchResponse: true` для Firefox и response-зависимые фильтры при ранней подмене отклоняются с объяснением. Chromium сохраняет прежнее поведение по умолчанию; ранняя подмена доступна через `fetchResponse: false`. Поздняя ошибка протокольного fulfillment не считается успешным вызовом и доступна через `waitForResponse`/`restore`. Это существенная граница совместимости, не просто повышение версии Node.
+
+Финальные WDIO unit: **3540 passed / 13 existing skipped**; локальные testrunner, Classic, multiremote, standalone, reloadSession и Chrome/Firefox launch/BiDi завершаются успешно. Testplane unit: **3462 passed / 1 existing pending**, выбранные integration-наборы **40/40**. Весь Testplane репозиторий зелёным не объявляется: Linux-grid E2E не получили браузер в локальном окружении; пять screenshot integration и 50 browser-env failures воспроизведены на baseline без изменения эталонов. Установленный production dependency graph проверен свежим npm audit, но отдельная актуальная проверка всех сторонних пакетов внутри runtime-бандла пока ожидает разрешения на отправку их имён/версий в npm. Полный локальный отчёт и воспроизводимые команды сохранены в untracked `vibe/release-readiness/README.md`.

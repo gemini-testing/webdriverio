@@ -1,5 +1,7 @@
 import type { remote } from '@testplane/webdriver'
 
+import { getContextManager } from '../../session/context.js'
+
 /**
  * Delete cookies visible to the current page. By providing a cookie name it
  * just removes the single cookie or more when multiple names are passed.
@@ -36,8 +38,11 @@ export async function deleteCookies(
         return
     }
 
+    const contextManager = getContextManager(this)
+    const context = await contextManager.getCurrentContext()
+
     if (!filterArray) {
-        await this.storageDeleteCookies({})
+        await this.storageDeleteCookies({ partition: { type: 'context', context } })
         return
     }
 
@@ -53,7 +58,7 @@ export async function deleteCookies(
     })
 
     await Promise.all(bidiFilter.map((filter) => (
-        this.storageDeleteCookies({ filter })
+        this.storageDeleteCookies({ filter, partition: { type: 'context', context } })
     )))
 
     return

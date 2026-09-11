@@ -40,9 +40,19 @@ export default class BidiInterception {
     #restored = false
     #requestOverwrites: Overwrite[] = []
     #respondOverwrites: Overwrite[] = []
+    #providedRequests = new Set<string>()
+    #failedRequests = new Set<string>()
     #calls: local.NetworkResponseCompletedParameters[] = []
-    #beforeRequestSent = this.#handleBeforeRequestSent.bind(this)
-    #responseStarted = this.#handleResponseStarted.bind(this)
+    #pendingCalls = new Map<string, local.NetworkResponseCompletedParameters[]>()
+    #pendingRequests = new Map<string, number>()
+    #pendingOperations = new Set<Promise<void>>()
+    #networkError?: Error
+    #beforeRequestSent = (request: local.NetworkBeforeRequestSentParameters) => {
+        void this.#handleNetworkEvent(() => this.#handleBeforeRequestSent(request), request.request.request)
+    }
+    #responseStarted = (request: local.NetworkResponseCompletedParameters) => {
+        void this.#handleNetworkEvent(() => this.#handleResponseStarted(request), request.request.request)
+    }
 
     constructor (
         pattern: URLPattern,
@@ -95,7 +105,10 @@ export default class BidiInterception {
          * register network intercept
          */
         const interception = await browser.networkAddIntercept({
-            phases: ['beforeRequestSent', 'responseStarted'],
+            // Firefox can only replace bodies beforeRequestSent. Intercepting
+            // its synthetic responseStarted event also races the first phase's
+            // continuation, so observe those responses without blocking them.
+            phases: browser.isFirefox ? ['beforeRequestSent'] : ['beforeRequestSent', 'responseStarted'],
             urlPatterns: [{
                 type: 'pattern',
                 protocol: getPatternParam(pattern, 'protocol'),
@@ -131,6 +144,54 @@ export default class BidiInterception {
         handlers?.push(handler)
     }
 
+    #handleNetworkEvent(handler: () => Promise<unknown> | undefined, requestId: string) {
+        this.#pendingRequests.set(requestId, (this.#pendingRequests.get(requestId) || 0) + 1)
+        const operation = this.#runNetworkEvent(handler, requestId)
+        this.#pendingOperations.add(operation)
+        void operation.then(() => {
+            this.#pendingOperations.delete(operation)
+            const remaining = (this.#pendingRequests.get(requestId) || 1) - 1
+            if (remaining > 0) {
+                this.#pendingRequests.set(requestId, remaining)
+                return
+            }
+            this.#pendingRequests.delete(requestId)
+            this.#calls.push(...(this.#pendingCalls.get(requestId) || []))
+            this.#pendingCalls.delete(requestId)
+        })
+    }
+
+    async #runNetworkEvent(handler: () => Promise<unknown> | undefined, requestId: string) {
+        try {
+            await handler()
+        } catch (error) {
+            // EventEmitter does not await listener promises. Keep the failure
+            // observable through calls/waitForResponse instead of crashing the
+            // process with an unhandled rejection, and release the blocked request.
+            this.#networkError ||= error instanceof Error ? error : new Error(String(error))
+            this.#failedRequests.add(requestId)
+            this.#providedRequests.delete(requestId)
+            this.#pendingCalls.delete(requestId)
+            log.error(`Failed to mock request ${requestId}: ${this.#networkError.message}`)
+            try {
+                await this.#browser.networkFailRequest({ request: requestId })
+            } catch (abortError) {
+                log.error(`Failed to abort mocked request ${requestId}: ${abortError}`)
+            }
+        }
+    }
+
+    #recordResponse(request: local.NetworkResponseCompletedParameters) {
+        // A late browser event cannot turn a failed interception into a
+        // successful call, even if clear/reset acknowledged the stored error.
+        if (this.#failedRequests.has(request.request.request)) {
+            return
+        }
+        const calls = this.#pendingCalls.get(request.request.request) || []
+        calls.push(request)
+        this.#pendingCalls.set(request.request.request, calls)
+    }
+
     #handleBeforeRequestSent(request: local.NetworkBeforeRequestSentParameters) {
         /**
          * don't do anything if:
@@ -151,6 +212,24 @@ export default class BidiInterception {
         }
 
         this.#emit('request', request)
+        const responseOverwrite = this.#respondOverwrites[0]
+        if (
+            responseOverwrite?.overwrite &&
+            'fetchResponse' in responseOverwrite.overwrite &&
+            responseOverwrite.overwrite.fetchResponse === false &&
+            this.#requestOverwrites.length === 0
+        ) {
+            if (responseOverwrite.once) {
+                this.#respondOverwrites.shift()
+            }
+            this.#providedRequests.add(request.request.request)
+            this.#emit('overwrite', request)
+            return this.#browser.networkProvideResponse({
+                request: request.request.request,
+                ...parseOverwrite(responseOverwrite.overwrite, request)
+            })
+        }
+
         const hasRequestOverwrites = this.#requestOverwrites.length > 0
         if (hasRequestOverwrites) {
             const { overwrite, abort } = this.#requestOverwrites[0].once
@@ -176,6 +255,29 @@ export default class BidiInterception {
     }
 
     #handleResponseStarted(request: local.NetworkResponseCompletedParameters) {
+        // Providing a complete response before the request is sent still emits
+        // response events. Record that response, but never consume another
+        // respondOnce overwrite or provide its body a second time.
+        if (!this.#restored && this.#providedRequests.has(request.request.request)) {
+            this.#recordResponse(request)
+            // Chromium can report isBlocked from the configured intercepts,
+            // even though provideResponse already fulfilled this request.
+            // Keep ownership until the other listeners saw this event.
+            queueMicrotask(() => {
+                this.#providedRequests.delete(request.request.request)
+            })
+            return
+        }
+
+        // Firefox only intercepts the request phase, but spies still need real
+        // response data and response filters without resuming unblocked events.
+        if (this.#browser.isFirefox && !request.isBlocked) {
+            if (!this.#restored && this.#pattern.test(request.request.url) && this.#matchesFilterOptions(request)) {
+                this.#recordResponse(request)
+            }
+            return
+        }
+
         /**
          * don't do anything if:
          * - request is not blocked
@@ -196,16 +298,18 @@ export default class BidiInterception {
         }
 
         /**
-         * mark mock to be "called"
+         * Publish the call only after its protocol operations have settled.
          */
-        this.#calls.push(request)
+        this.#recordResponse(request)
 
         /**
          * continue response as mock has no respond overwrites
          */
         if (
             this.#respondOverwrites.length === 0 ||
-            !this.#respondOverwrites[0].overwrite
+            !this.#respondOverwrites[0].overwrite ||
+            ('fetchResponse' in this.#respondOverwrites[0].overwrite &&
+                this.#respondOverwrites[0].overwrite.fetchResponse === false)
         ) {
             this.#emit('continue', request.request.request)
             return this.#browser.networkProvideResponse({
@@ -261,7 +365,7 @@ export default class BidiInterception {
         const mocks = [...(sessions.get(this.#browser)?.mocks || [])].filter(mock => (
             !mock.#restored && (!request.intercepts || request.intercepts.includes(mock.#mockId))
         ))
-        const owner = mocks.find(mock => (
+        const owner = mocks.find(mock => mock.#providedRequests.has(request.request.request)) || mocks.find(mock => (
             mock.#pattern.test(request.request.url) && mock.#matchesFilterOptions(request)
         )) || mocks[0]
         return owner === this
@@ -334,6 +438,9 @@ export default class BidiInterception {
      * allows access to all requests made with given pattern
      */
     get calls(): local.NetworkResponseCompletedParameters[] {
+        if (this.#networkError) {
+            throw this.#networkError
+        }
         return this.#calls
     }
 
@@ -342,6 +449,8 @@ export default class BidiInterception {
      */
     clear() {
         this.#calls = []
+        this.#pendingCalls.clear()
+        this.#networkError = undefined
         return this
     }
 
@@ -360,6 +469,7 @@ export default class BidiInterception {
         this.#browser.off('network.beforeRequestSent', this.#beforeRequestSent)
         this.#browser.off('network.responseStarted', this.#responseStarted)
         this.#restored = true
+        this.#providedRequests.clear()
     }
 
     /**
@@ -368,7 +478,10 @@ export default class BidiInterception {
      * Restored mock does not emit events and could not mock responses
      */
     async restore() {
-        this.reset()
+        // Stop applying overrides, but preserve in-flight failures until after
+        // cleanup. Clearing the error here could turn a failed mock into a pass.
+        this.#respondOverwrites = []
+        this.#requestOverwrites = []
         // Keep listeners alive while the remote end removes the intercept:
         // requests already blocked by it still need to be continued.
         if (this.#mockId) {
@@ -376,11 +489,17 @@ export default class BidiInterception {
         }
         this.#detach()
         sessions.get(this.#browser)?.mocks.delete(this)
+        // Includes requests received while networkRemoveIntercept was pending.
+        await Promise.all(this.#pendingOperations)
         const handle = await this.#browser.getWindowHandle()
 
         log.trace(`Restoring mock for ${handle}`)
         SESSION_BIDI_MOCKS[handle]?.delete(this)
 
+        if (this.#networkError) {
+            throw this.#networkError
+        }
+        this.reset()
         return this
     }
 
@@ -392,6 +511,9 @@ export default class BidiInterception {
      */
     request(overwrite: RequestWithOptions, once?: boolean) {
         this.#ensureNotRestored()
+        if (this.#respondOverwrites.some(({ overwrite }) => overwrite && 'fetchResponse' in overwrite && overwrite.fetchResponse === false)) {
+            throw new Error('Request overwrites cannot be combined with mock.respond when it does not fetch the real response')
+        }
         this.#requestOverwrites = this.#setOverwrite(this.#requestOverwrites, { overwrite, once })
         return this
     }
@@ -412,12 +534,25 @@ export default class BidiInterception {
      */
     respond(payload: RespondBody, params: Omit<RespondWithOptions, 'body'> = {}, once?: boolean) {
         this.#ensureNotRestored()
+        if (this.#browser.isFirefox && params.fetchResponse === true) {
+            throw new Error('Firefox does not support mock.respond with fetchResponse: true; response bodies can only be provided before the request is sent')
+        }
+        const fetchResponse = params.fetchResponse ?? !this.#browser.isFirefox
+        if (!fetchResponse && (this.#filterOptions.responseHeaders || this.#filterOptions.statusCode !== undefined)) {
+            throw new Error('Response filters (responseHeaders and statusCode) cannot be used when mock.respond does not fetch the real response')
+        }
+        if (!fetchResponse && typeof params.statusCode === 'function') {
+            throw new Error('A statusCode function requires the real response; use a numeric statusCode when mock.respond does not fetch the real response')
+        }
+        if (!fetchResponse && this.#requestOverwrites.some(({ overwrite }) => overwrite)) {
+            throw new Error('Request overwrites cannot be combined with mock.respond when it does not fetch the real response')
+        }
         const body = typeof payload === 'string'
             ? payload
             : globalThis.Buffer && globalThis.Buffer.isBuffer(payload)
                 ? payload.toString('base64')
                 : JSON.stringify(payload)
-        const overwrite: RespondWithOptions = { body, ...params }
+        const overwrite: RespondWithOptions = { body, ...params, fetchResponse }
         this.#respondOverwrites = this.#setOverwrite(this.#respondOverwrites, { overwrite, once })
         return this
     }

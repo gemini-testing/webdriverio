@@ -2,8 +2,8 @@
 import path from 'node:path'
 import { expect, test, vi, beforeEach } from 'vitest'
 import DevToolsDriver from '../src/devtoolsdriver.js'
-import type { Dialog } from 'puppeteer-core/lib/esm/puppeteer/common/Dialog.js'
-import type { Frame } from 'puppeteer-core/lib/esm/puppeteer/api/Frame.js'
+import type { Dialog } from 'puppeteer-core'
+import type { Frame } from 'puppeteer-core'
 
 vi.mock('@testplane/wdio-logger', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-logger')))
 vi.mock('puppeteer-core', () => import(path.join(process.cwd(), '__mocks__', 'puppeteer-core')))

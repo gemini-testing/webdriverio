@@ -1,5 +1,5 @@
 import os from 'node:os'
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'node:crypto'
 
 import launch from '../launcher.js'
 import { sessionMap } from '../index.js'
@@ -19,7 +19,7 @@ export default async function newSession (
     { capabilities }: { capabilities: WebdriverIO.Capabilities }
 ) {
     const browser = await launch(capabilities)
-    const sessionId = uuidv4()
+    const sessionId = randomUUID()
     const [browserName, browserVersion] = (await browser.version()).split('/')
 
     sessionMap.set(sessionId, browser)

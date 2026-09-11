@@ -103,7 +103,8 @@ describe('setCookies', () => {
             storageSetCookie.mockImplementation((() => {}) as any)
         })
 
-        beforeEach(() => {
+        beforeEach(async () => {
+            await browser.switchWindow('window-handle-2')
             storageSetCookie.mockClear()
         })
 
@@ -111,6 +112,7 @@ describe('setCookies', () => {
             await browser.setCookies([cookie1])
             expect(storageSetCookie).toBeCalledTimes(1)
             expect(storageSetCookie).toBeCalledWith({
+                partition: { type: 'context', context: 'window-handle-2' },
                 cookie: {
                     domain: 'webdriver.io',
                     name: 'cookie1',
@@ -126,6 +128,7 @@ describe('setCookies', () => {
             await browser.setCookies(cookie1)
             expect(storageSetCookie).toBeCalledTimes(1)
             expect(storageSetCookie).toBeCalledWith({
+                partition: { type: 'context', context: 'window-handle-2' },
                 cookie: {
                     domain: 'webdriver.io',
                     name: 'cookie1',
@@ -140,6 +143,27 @@ describe('setCookies', () => {
         it('can be called multiple times', async () => {
             await browser.setCookies([cookie1, cookie2, cookie3])
             expect(storageSetCookie).toBeCalledTimes(3)
+            for (let i = 1; i <= 3; i++) {
+                expect(storageSetCookie).toHaveBeenNthCalledWith(i, expect.objectContaining({
+                    partition: { type: 'context', context: 'window-handle-2' }
+                }))
+            }
+        })
+
+        it('should use the new partition after switching windows with an explicit domain', async () => {
+            const cookie = { ...cookie1, domain: 'foobar.com' }
+            await browser.setCookies(cookie)
+            await browser.switchWindow('window-handle-3')
+            await browser.setCookies(cookie)
+
+            expect(storageSetCookie).toHaveBeenNthCalledWith(1, {
+                partition: { type: 'context', context: 'window-handle-2' },
+                cookie: { ...cookie, value: { type: 'string', value: cookie.value } }
+            })
+            expect(storageSetCookie).toHaveBeenNthCalledWith(2, {
+                partition: { type: 'context', context: 'window-handle-3' },
+                cookie: { ...cookie, value: { type: 'string', value: cookie.value } }
+            })
         })
     })
 })

@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'node:crypto'
 import { sleep } from '../utils.js'
 import type DevToolsDriver from '../devtoolsdriver.js'
 
@@ -22,7 +22,7 @@ export default async function closeWindow (this: DevToolsDriver) {
 
     if (!this.currentWindowHandle) {
         const page = await this.browser.newPage()
-        const newWindowHandle = uuidv4()
+        const newWindowHandle = randomUUID()
         this.windows.set(newWindowHandle, page)
         this.currentWindowHandle = newWindowHandle
     }
