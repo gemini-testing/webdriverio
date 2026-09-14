@@ -31,7 +31,14 @@ jobs:
           NODE_ENV: production
           GITHUB_AUTH: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish
-        # PR validation builds packages without publishing preview releases.
-        if: github.event_name == 'push'
-        run: pnpx pkg-pr-new publish --pnpm './packages/*'
+      - name: Publish Preview Packages
+        # Allow PR #52 previews for Testplane integration testing, but not fork PRs.
+        if: >-
+          github.event_name == 'push' ||
+          (github.event.pull_request.number == 52 &&
+           github.event.pull_request.head.repo.full_name == github.repository)
+        run: >-
+          pnpm exec pkg-pr-new publish --pnpm --no-compact --commentWithSha
+          './packages/wdio-types' './packages/wdio-logger' './packages/wdio-protocols'
+          './packages/wdio-repl' './packages/wdio-utils' './packages/wdio-config'
+          './packages/webdriver' './packages/webdriverio' './packages/devtools'
