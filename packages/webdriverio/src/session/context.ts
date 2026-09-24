@@ -2,7 +2,7 @@ import type { local } from '@testplane/webdriver'
 import logger from '@testplane/wdio-logger'
 
 import { SessionManager } from './session.js'
-import { reportSessionManagerError } from './errorHandler.js'
+import { trackSessionManagerTask } from './errorHandler.js'
 import { getMobileContext, getNativeContext } from '../utils/mobile.js'
 
 const log = logger('webdriverio:context')
@@ -43,9 +43,8 @@ export class ContextManager extends SessionManager {
         this.#onCommandListener = this.#onCommand.bind(this)
         this.#onCommandResultMobileListener = this.#onCommandResultMobile.bind(this)
         this.#navigationStartedListener = (nav) => {
-            void this.#navigationStarted(nav).catch((err) => {
+            trackSessionManagerTask(this.#browser, this.#navigationStarted(nav), (err) => {
                 log.warn(`Failed to update current context after navigation: ${err}`)
-                reportSessionManagerError(this.#browser, err)
             })
         }
 

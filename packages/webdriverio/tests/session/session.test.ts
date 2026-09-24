@@ -5,7 +5,7 @@ import { logMock } from '@testplane/wdio-logger'
 
 import { SessionManager } from '../../src/session/session.js'
 import { ContextManager } from '../../src/session/context.js'
-import { wrapCommandWithSessionManagerErrors } from '../../src/session/errorHandler.js'
+import { flushSessionManagerErrors, wrapCommandWithSessionManagerErrors } from '../../src/session/errorHandler.js'
 
 vi.mock('@testplane/wdio-logger', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-logger')))
 
@@ -114,6 +114,16 @@ describe('SessionManager', () => {
 
         await expect(runCommand(browser)).rejects.toThrow('get tree failed')
         expect(browser.switchToWindow).not.toHaveBeenCalled()
+    })
+
+    it('should report a navigation error after the final browser command', async () => {
+        const browser = createBidiBrowser(undefined)
+        const cm = createEnabledContextManager(browser)
+        cm.setCurrentContext('old-context')
+
+        getNavigationStartedListener(browser)({ context: 'new-context' })
+
+        await expect(flushSessionManagerErrors(browser)).rejects.toThrow('browsingContextGetTree returned no result')
     })
 })
 

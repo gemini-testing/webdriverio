@@ -20,6 +20,7 @@ import type { AttachOptions } from './types.js'
 import type * as elementCommands from './commands/element.js'
 
 export * from './types.js'
+export { flushSessionManagerErrors } from './session/errorHandler.js'
 export const Key = KeyConstant
 export const SevereServiceError = SevereServiceErrorImport
 const wrapCommandWithErrors = wrapCommandWithSessionManagerErrors(wrapCommand)
