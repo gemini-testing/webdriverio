@@ -39,6 +39,8 @@ export class PolyfillManager extends SessionManager {
     #browser: WebdriverIO.Browser
     #scriptsRegisteredInContexts: Set<string> = new Set()
 
+    #registerScriptsListener = this.#registerScripts.bind(this)
+
     constructor(browser: WebdriverIO.Browser) {
         super(browser, PolyfillManager.name)
         this.#browser = browser
@@ -51,6 +53,9 @@ export class PolyfillManager extends SessionManager {
             return
         }
 
+        // start listening for browsingContext.contextCreated
+        this.#browser.on('browsingContext.contextCreated', this.#registerScriptsListener)
+
         /**
          * apply polyfill script for upcoming as well as current execution context
          */
@@ -62,13 +67,12 @@ export class PolyfillManager extends SessionManager {
                 events: ['browsingContext.contextCreated']
             })
         ]).then(() => true, () => false)
-
-        this.#browser.on('browsingContext.contextCreated', this.#registerScripts.bind(this))
     }
 
     removeListeners() {
         super.removeListeners()
-        this.#browser.off('browsingContext.contextCreated', this.#registerScripts.bind(this))
+        // stop listening for browsingContext.contextCreated
+        this.#browser.off('browsingContext.contextCreated', this.#registerScriptsListener)
     }
 
     #registerScripts (context: Pick<local.BrowsingContextInfo, 'context' | 'parent'>) {
