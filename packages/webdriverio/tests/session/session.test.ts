@@ -5,6 +5,7 @@ import { logMock } from '@testplane/wdio-logger'
 
 import { SessionManager } from '../../src/session/session.js'
 import { ContextManager } from '../../src/session/context.js'
+import { wrapCommandWithSessionManagerErrors } from '../../src/session/errorHandler.js'
 
 vi.mock('@testplane/wdio-logger', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-logger')))
 
@@ -91,7 +92,7 @@ describe('SessionManager', () => {
         expect(logMock.warn).not.toHaveBeenCalled()
     })
 
-    it('should ignore an empty context tree result without an unhandled rejection', async () => {
+    it('should propagate an empty context tree result to the active command', async () => {
         const browser = createBidiBrowser(undefined)
         const cm = createEnabledContextManager(browser)
         cm.setCurrentContext('old-context')
@@ -99,13 +100,11 @@ describe('SessionManager', () => {
         const listener = getNavigationStartedListener(browser)
         expect(listener({ context: 'new-context' })).toBeUndefined()
 
-        await vi.waitFor(() => expect(logMock.warn).toHaveBeenCalledWith(
-            expect.stringContaining('browsingContextGetTree returned no result')
-        ))
+        await expect(runCommand(browser)).rejects.toThrow('browsingContextGetTree returned no result')
         expect(browser.switchToWindow).not.toHaveBeenCalled()
     })
 
-    it('should handle navigation errors without an unhandled rejection', async () => {
+    it('should propagate navigation errors to the active command', async () => {
         const browser = createBidiBrowser(new Error('get tree failed'))
         const cm = createEnabledContextManager(browser)
         cm.setCurrentContext('old-context')
@@ -113,9 +112,7 @@ describe('SessionManager', () => {
         const listener = getNavigationStartedListener(browser)
         expect(listener({ context: 'new-context' })).toBeUndefined()
 
-        await vi.waitFor(() => expect(logMock.warn).toHaveBeenCalledWith(
-            expect.stringContaining('Failed to update current context after navigation: Error: get tree failed')
-        ))
+        await expect(runCommand(browser)).rejects.toThrow('get tree failed')
         expect(browser.switchToWindow).not.toHaveBeenCalled()
     })
 })
@@ -164,4 +161,12 @@ function createEnabledContextManager(browser: WebdriverIO.Browser) {
             process.env.WDIO_UNIT_TESTS = unitTestFlag
         }
     }
+}
+
+function runCommand(browser: WebdriverIO.Browser) {
+    const command = wrapCommandWithSessionManagerErrors(
+        (_commandName: string, command: Function) => command
+    )('test', () => new Promise((resolve) => setTimeout(resolve, 0)))
+
+    return command.call(browser)
 }

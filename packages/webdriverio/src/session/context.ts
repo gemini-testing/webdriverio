@@ -2,6 +2,7 @@ import type { local } from '@testplane/webdriver'
 import logger from '@testplane/wdio-logger'
 
 import { SessionManager } from './session.js'
+import { reportSessionManagerError } from './errorHandler.js'
 import { getMobileContext, getNativeContext } from '../utils/mobile.js'
 
 const log = logger('webdriverio:context')
@@ -44,6 +45,7 @@ export class ContextManager extends SessionManager {
         this.#navigationStartedListener = (nav) => {
             void this.#navigationStarted(nav).catch((err) => {
                 log.warn(`Failed to update current context after navigation: ${err}`)
+                reportSessionManagerError(this.#browser, err)
             })
         }
 
@@ -109,8 +111,7 @@ export class ContextManager extends SessionManager {
          */
         const contextTree = await this.#browser.browsingContextGetTree({})
         if (!contextTree) {
-            log.warn('Failed to update current context after navigation: browsingContextGetTree returned no result')
-            return
+            throw new Error('Failed to update current context after navigation: browsingContextGetTree returned no result')
         }
         const { contexts } = contextTree
         /**
