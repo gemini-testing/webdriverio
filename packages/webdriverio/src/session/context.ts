@@ -41,7 +41,11 @@ export class ContextManager extends SessionManager {
 
         this.#onCommandListener = this.#onCommand.bind(this)
         this.#onCommandResultMobileListener = this.#onCommandResultMobile.bind(this)
-        this.#navigationStartedListener = this.#navigationStarted.bind(this)
+        this.#navigationStartedListener = (nav) => {
+            void this.#navigationStarted(nav).catch((err) => {
+                log.warn(`Failed to update current context after navigation: ${err}`)
+            })
+        }
 
         /**
          * Listens for the 'closeWindow' browser command to handle context changes.
@@ -103,7 +107,12 @@ export class ContextManager extends SessionManager {
          * current tree and see if our context is still there, if not, we need to reset
          * the context to the first context in the tree.
          */
-        const { contexts } = await this.#browser.browsingContextGetTree({})
+        const contextTree = await this.#browser.browsingContextGetTree({})
+        if (!contextTree) {
+            log.warn('Failed to update current context after navigation: browsingContextGetTree returned no result')
+            return
+        }
+        const { contexts } = contextTree
         /**
          * check if the context is still in the tree, if not, switch to...
          */

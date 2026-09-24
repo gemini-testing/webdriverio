@@ -1,7 +1,12 @@
+import path from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { logMock } from '@testplane/wdio-logger'
 
 import { SessionManager } from '../../src/session/session.js'
 import { ContextManager } from '../../src/session/context.js'
+
+vi.mock('@testplane/wdio-logger', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-logger')))
 
 describe('SessionManager', () => {
     const browser ={
@@ -11,6 +16,7 @@ describe('SessionManager', () => {
 
     beforeEach(()=>{
         vi.mocked(browser.on).mockClear()
+        logMock.warn.mockClear()
     })
 
     it('should listener registered', ()=>{
@@ -51,7 +57,7 @@ describe('SessionManager', () => {
             switchToWindow: vi.fn(),
         } as any as WebdriverIO.Browser
 
-        const cm = new ContextManager(browser)
+        const cm = createEnabledContextManager(browser)
 
         const onCalls = vi.mocked(browser.on).mock.calls
         const commandListeners = onCalls.filter(([event]) => event === 'command').map(([, listener]) => listener)
@@ -70,4 +76,92 @@ describe('SessionManager', () => {
         expect(browser.off).toHaveBeenCalledWith('command', contextCommandListener)
         expect(browser.off).toHaveBeenCalledWith('result', resultListeners[0])
     })
+
+    it('should update the current context after navigation without returning a promise to EventEmitter', async () => {
+        const browser = createBidiBrowser({
+            contexts: [{ context: 'new-context' }]
+        })
+        const cm = createEnabledContextManager(browser)
+        cm.setCurrentContext('old-context')
+
+        const listener = getNavigationStartedListener(browser)
+        expect(listener({ context: 'new-context' })).toBeUndefined()
+
+        await vi.waitFor(() => expect(browser.switchToWindow).toHaveBeenCalledWith('new-context'))
+        expect(logMock.warn).not.toHaveBeenCalled()
+    })
+
+    it('should ignore an empty context tree result without an unhandled rejection', async () => {
+        const browser = createBidiBrowser(undefined)
+        const cm = createEnabledContextManager(browser)
+        cm.setCurrentContext('old-context')
+
+        const listener = getNavigationStartedListener(browser)
+        expect(listener({ context: 'new-context' })).toBeUndefined()
+
+        await vi.waitFor(() => expect(logMock.warn).toHaveBeenCalledWith(
+            expect.stringContaining('browsingContextGetTree returned no result')
+        ))
+        expect(browser.switchToWindow).not.toHaveBeenCalled()
+    })
+
+    it('should handle navigation errors without an unhandled rejection', async () => {
+        const browser = createBidiBrowser(new Error('get tree failed'))
+        const cm = createEnabledContextManager(browser)
+        cm.setCurrentContext('old-context')
+
+        const listener = getNavigationStartedListener(browser)
+        expect(listener({ context: 'new-context' })).toBeUndefined()
+
+        await vi.waitFor(() => expect(logMock.warn).toHaveBeenCalledWith(
+            expect.stringContaining('Failed to update current context after navigation: Error: get tree failed')
+        ))
+        expect(browser.switchToWindow).not.toHaveBeenCalled()
+    })
 })
+
+let bidiSessionCounter = 0
+
+function createBidiBrowser(contextTree: unknown): WebdriverIO.Browser {
+    return {
+        sessionId: `bidi-${++bidiSessionCounter}`,
+        capabilities: {},
+        isBidi: true,
+        isMobile: false,
+        isAndroid: false,
+        on: vi.fn(),
+        off: vi.fn(),
+        sessionSubscribe: vi.fn(),
+        browsingContextGetTree: vi.fn().mockImplementation(() => contextTree instanceof Error
+            ? Promise.reject(contextTree)
+            : Promise.resolve(contextTree)),
+        switchToWindow: vi.fn(),
+    } as any as WebdriverIO.Browser
+}
+
+function getNavigationStartedListener(browser: WebdriverIO.Browser) {
+    const listener = vi.mocked(browser.on).mock.calls.find(
+        ([event]) => event === 'browsingContext.navigationStarted'
+    )?.[1]
+
+    expect(
+        vi.mocked(browser.on).mock.calls.map(([event]) => event)
+    ).toContain('browsingContext.navigationStarted')
+    expect(listener).toBeTypeOf('function')
+    return listener as (event: { context: string }) => unknown
+}
+
+function createEnabledContextManager(browser: WebdriverIO.Browser) {
+    const unitTestFlag = process.env.WDIO_UNIT_TESTS
+    delete process.env.WDIO_UNIT_TESTS
+
+    try {
+        return new ContextManager(browser)
+    } finally {
+        if (unitTestFlag === undefined) {
+            delete process.env.WDIO_UNIT_TESTS
+        } else {
+            process.env.WDIO_UNIT_TESTS = unitTestFlag
+        }
+    }
+}
