@@ -14,13 +14,16 @@ import { getProtocolDriver } from './utils/driver.js'
 import { WDIO_DEFAULTS, Key as KeyConstant } from './constants.js'
 import { getPrototype, addLocatorStrategyHandler, isStub } from './utils/index.js'
 import { registerSessionManager } from './session/index.js'
+import { wrapCommandWithSessionManagerErrors } from './session/errorHandler.js'
 
 import type { AttachOptions } from './types.js'
 import type * as elementCommands from './commands/element.js'
 
 export * from './types.js'
+export { flushSessionManagerErrors } from './session/errorHandler.js'
 export const Key = KeyConstant
 export const SevereServiceError = SevereServiceErrorImport
+const wrapCommandWithErrors = wrapCommandWithSessionManagerErrors(wrapCommand)
 
 /**
  * A method to create a new session with WebdriverIO.
@@ -62,7 +65,7 @@ export const remote = async function(
 
     const { Driver, options } = await getProtocolDriver({ ...params, ...config })
     const prototype = getPrototype('browser')
-    const instance = await Driver.newSession(options, modifier, prototype, wrapCommand) as WebdriverIO.Browser
+    const instance = await Driver.newSession(options, modifier, prototype, wrapCommandWithErrors) as WebdriverIO.Browser
 
     /**
      * we need to overwrite the original addCommand and overwriteCommand
@@ -102,7 +105,7 @@ export const attach = async function (attachOptions: AttachOptions): Promise<Web
         params,
         undefined,
         prototype,
-        wrapCommand
+        wrapCommandWithErrors
     ) as WebdriverIO.Browser
     driver.addLocatorStrategy = addLocatorStrategyHandler(driver)
 
@@ -169,7 +172,7 @@ export const multiremote = async function (
         sessionParams,
         multibrowser.modifier.bind(multibrowser),
         prototype,
-        wrapCommand
+        wrapCommandWithErrors
     ) as WebdriverIO.MultiRemoteBrowser
 
     /**

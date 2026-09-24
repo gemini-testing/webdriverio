@@ -92,6 +92,12 @@ exports.attach = async function(attachOptions: any) {
     return attach(attachOptions)
 }
 
+/** Report and clear background session manager errors at the end of a test. */
+exports.flushSessionManagerErrors = async function(browser: object) {
+    const { flushSessionManagerErrors } = await import('./node.js')
+    return flushSessionManagerErrors(browser)
+}
+
 /**
  * WebdriverIO allows you to run multiple automated sessions in a single test.
  * This is handy when you're testing features that require multiple users (for example, chat or WebRTC applications).
