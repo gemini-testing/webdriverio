@@ -539,6 +539,7 @@ describe('Hook reporting', () => {
         reporter.onRunnerStart(runnerEvent)
         reporter.onSuiteStart(suiteStart())
         reporter.onTestStart(testStart())
+        reporter.onTestPass()
         reporter.onHookStart(eachHookStart())
         reporter.onHookEnd(eachHookFailed())
         reporter.onSuiteEnd(suiteEnd())
@@ -552,9 +553,10 @@ describe('Hook reporting', () => {
         expect(testCaseStep).toBeDefined()
         expect(testCaseStep.status).toEqual(Status.BROKEN)
 
-        const hookCase = results.find((tc => tc.name === '"before each" hook'))
-        expect(hookCase).toBeDefined()
-        expect(hookCase.status).toEqual(Status.BROKEN)
+        // Hooks are container fixtures, not duplicate test cases.
+        const previousTest = results.find(tc => tc.name === testStart().title)
+        expect(previousTest).toBeDefined()
+        expect(previousTest.status).toEqual(Status.PASSED)
         expect(containers[0].befores[0].steps[0]).toBeDefined()
         expect(containers[0].befores[0].steps[0].name).toEqual('"before each" hook')
         expect(containers[0].befores[0].steps[0].status).toEqual(Status.BROKEN)
@@ -903,8 +905,10 @@ for (const protocol of ['webdriver', 'devtools']) {
             reporter.onSuiteEnd(suiteEnd())
             reporter.onRunnerEnd(runnerEnd())
 
-            const { results } = getResults(outputDir)
-            expect(results).toHaveLength(2)
+            const { results, containers } = getResults(outputDir)
+            expect(results).toHaveLength(1)
+            expect(containers[0].befores[0].status).toBe(Status.BROKEN)
+            expect(containers[0].befores[0].steps[0].name).toBe(hookFailed().title)
 
             const result = results.find( res => res.attachments.length === 1)
             expect(result).toBeDefined()

@@ -11,10 +11,7 @@ import type { CommandParameters, CommandPathVariables, ElementReference } from '
 import { WebDriverProtocol } from '@testplane/wdio-protocols'
 import { launch as launchChromeBrowser, type Options } from 'chrome-launcher'
 import type { Logger } from '@testplane/wdio-logger'
-import type { ElementHandle } from 'puppeteer-core/lib/esm/puppeteer/api/ElementHandle.js'
-import type { Browser } from 'puppeteer-core/lib/esm/puppeteer/api/Browser.js'
-import type { Frame } from 'puppeteer-core/lib/esm/puppeteer/api/Frame.js'
-import type { Page } from 'puppeteer-core/lib/esm/puppeteer/api/Page.js'
+import type { ElementHandle, Browser, Frame, Page } from 'puppeteer-core'
 
 import cleanUp from './scripts/cleanUpSerializationSelector.js'
 import { ELEMENT_KEY, SERIALIZE_PROPERTY, SERIALIZE_FLAG, ERROR_MESSAGES } from './constants.js'
@@ -113,10 +110,10 @@ export async function findElement (
      * implicitly wait for the element if timeout is set
      */
     const implicitTimeout = this.timeouts.get('implicit')
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    using === 'xpath'
-        ? await context.waitForSelector(`xpath/.${value}`, { timeout: implicitTimeout })
-        : await context.waitForSelector(value, { timeout: implicitTimeout })
+    if (implicitTimeout) {
+        const selector = using === 'xpath' ? `xpath/.${value}` : value
+        await context.waitForSelector(selector, { timeout: implicitTimeout })
+    }
 
     let element: ElementHandle<Element> | null = null
     try {
@@ -153,10 +150,10 @@ export async function findElements (
      * implicitly wait for the element if timeout is set
      */
     const implicitTimeout = this.timeouts.get('implicit')
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    using === 'xpath'
-        ? await context.waitForSelector(`xpath/.${value}`, { timeout: implicitTimeout })
-        : await context.waitForSelector(value, { timeout: implicitTimeout })
+    if (implicitTimeout) {
+        const selector = using === 'xpath' ? `xpath/.${value}` : value
+        await context.waitForSelector(selector, { timeout: implicitTimeout })
+    }
 
     const elements = using === 'xpath'
         ? await context.$$(`xpath/.${value}`) as ElementHandle<Element>[]

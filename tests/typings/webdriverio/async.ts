@@ -424,8 +424,8 @@ async function bar() {
         method: 'get',
         requestHeaders: { foo: 'bar' }
     })
-    mock.abort(true)
-    mock.abortOnce()
+    mock.abort('Failed')
+    mock.abortOnce('Failed')
     mock.clear()
     mock.respond('/other/resource.jpg')
     mock.respond('/other/resource.jpg', {
@@ -441,8 +441,10 @@ async function bar() {
     })
     mock.restore()
     const match = mock.calls[0]
-    match.isBlocked
-    match.response.content
+    match.url
+    match.statusCode
+    match.responseHeaders
+    match.body
 
     // async chain API
     expectType<WebdriverIO.Element>(

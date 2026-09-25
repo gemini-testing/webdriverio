@@ -77,12 +77,16 @@ export async function reloadSession (this: WebdriverIO.Browser, newCapabilities?
         log.warn(`Suppressing error closing the session: ${(err as Error).stack}`)
     }
 
-    if (this.puppeteer?.isConnected()) {
-        this.puppeteer.disconnect()
+    if (this.puppeteer?.connected) {
+        await this.puppeteer.disconnect()
         log.debug('Disconnected puppeteer session')
     }
 
-    const ProtocolDriver = (await import(/* @vite-ignore */this.options.automationProtocol!)).default
+    const automationProtocol = this.options.automationProtocol || 'webdriver'
+    const packageName = automationProtocol === 'webdriver' || automationProtocol === 'devtools'
+        ? `@testplane/${automationProtocol}`
+        : automationProtocol
+    const ProtocolDriver = (await import(/* @vite-ignore */packageName)).default
     await ProtocolDriver.reloadSession(this, newCapabilities)
     await registerSessionManager(this)
 

@@ -1,5 +1,7 @@
 import type { Cookie } from '@testplane/wdio-protocols'
 
+import { getContextManager } from '../../session/context.js'
+
 /**
  *
  * Sets one or more [cookies](https://w3c.github.io/webdriver/#cookies) for the current page. Make sure you are
@@ -80,8 +82,11 @@ export async function setCookies(
         url = new URL(await this.getUrl())
     }
 
+    const contextManager = getContextManager(this)
+    const context = await contextManager.getCurrentContext()
     await Promise.all(cookieObjsList.map((cookie) => (
         this.storageSetCookie({
+            partition: { type: 'context', context },
             cookie: {
                 ...cookie,
                 domain: cookie.domain || url.hostname,

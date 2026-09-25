@@ -19,6 +19,18 @@ export default wdioEslint.config([
         ],
     },
     {
+        // Flat config does not load e2e/browser-runner/.eslintrc.
+        files: ['e2e/browser-runner/**/*.test.{js,ts,tsx}'],
+        languageOptions: {
+            globals: {
+                ...globals.browser,
+                ...globals.mocha,
+                browser: true,
+                expect: true
+            }
+        }
+    },
+    {
         /**
          * Eslint rules for /example directory and unit tests
          */

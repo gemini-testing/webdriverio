@@ -66,6 +66,8 @@ class PageMock2 extends PageMock {
 const page2 = new PageMock2()
 
 class PuppeteerMock {
+    connected = true
+    disconnect = vi.fn().mockImplementation(async () => { this.connected = false })
     on = vi.fn()
     off = vi.fn()
     waitForTarget = vi.fn().mockImplementation(() => target)

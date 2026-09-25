@@ -4,13 +4,13 @@ import { SessionManager } from '../../src/session/session.js'
 import { ContextManager } from '../../src/session/context.js'
 
 describe('SessionManager', () => {
-    const browser ={
-        sessionId: '123',
-        on: vi.fn(),
-    } as unknown as WebdriverIO.Browser
+    let browser: WebdriverIO.Browser
 
-    beforeEach(()=>{
-        vi.mocked(browser.on).mockClear()
+    beforeEach(() => {
+        browser = {
+            sessionId: '123',
+            on: vi.fn(),
+        } as unknown as WebdriverIO.Browser
     })
 
     it('should listener registered', ()=>{

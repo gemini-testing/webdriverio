@@ -24,6 +24,20 @@ function createElement (elementOverrides: PropertyDescriptor, command: Function)
 }
 
 describe('monad', () => {
+    it('returns the actual listener count while listener registration remains chainable', () => {
+        const browser = webdriverMonad({})(sessionId)
+        const handler = vi.fn()
+        expect(browser.listenerCount('dialog')).toBe(0)
+        expect(browser.on('dialog', handler)).toBe(browser)
+        expect(browser.listenerCount('dialog')).toBe(1)
+        expect(browser.once('dialog', handler)).toBe(browser)
+        expect(browser.listenerCount('dialog')).toBe(2)
+        browser.emit('dialog')
+        expect(browser.listenerCount('dialog')).toBe(1)
+        expect(browser.off('dialog', handler)).toBe(browser)
+        expect(browser.listenerCount('dialog')).toBe(0)
+    })
+
     it('should be able to initialize client with prototype with commands', () => {
         const modifier = vi.fn()
         const monad = webdriverMonad({ baseUrl: 'option' }, (client: any) => {

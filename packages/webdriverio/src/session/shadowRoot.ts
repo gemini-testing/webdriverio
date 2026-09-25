@@ -23,10 +23,9 @@ export class ShadowRootManager extends SessionManager {
     #shadowRoots = new Map<string, ShadowRootTree>()
     #documentElement?: remote.ScriptNodeRemoteValue
     #frameDepth = 0
-
-    #handleLogEntryListener = this.handleLogEntry.bind(this)
-    #commandResultHandlerListener = this.#commandResultHandler.bind(this)
-    #handleBidiCommandListener = this.#handleBidiCommand.bind(this)
+    #onLogEntry = this.handleLogEntry.bind(this)
+    #onCommandResult = this.#commandResultHandler.bind(this)
+    #onBidiCommand = this.#handleBidiCommand.bind(this)
 
     constructor(browser: WebdriverIO.Browser) {
         super(browser, ShadowRootManager.name)
@@ -46,9 +45,9 @@ export class ShadowRootManager extends SessionManager {
         this.#initialize = this.#browser.sessionSubscribe({
             events: ['log.entryAdded', 'browsingContext.navigationStarted']
         }).then(() => true, () => false)
-        this.#browser.on('log.entryAdded', this.#handleLogEntryListener)
-        this.#browser.on('result', this.#commandResultHandlerListener)
-        this.#browser.on('bidiCommand', this.#handleBidiCommandListener)
+        this.#browser.on('log.entryAdded', this.#onLogEntry)
+        this.#browser.on('result', this.#onCommandResult)
+        this.#browser.on('bidiCommand', this.#onBidiCommand)
         this.#browser.scriptAddPreloadScript({
             functionDeclaration: customElementWrapper.toString()
         })
@@ -56,9 +55,9 @@ export class ShadowRootManager extends SessionManager {
 
     removeListeners(): void {
         super.removeListeners()
-        this.#browser.off('log.entryAdded', this.#handleLogEntryListener)
-        this.#browser.off('result', this.#commandResultHandlerListener)
-        this.#browser.off('bidiCommand', this.#handleBidiCommandListener)
+        this.#browser.off('log.entryAdded', this.#onLogEntry)
+        this.#browser.off('result', this.#onCommandResult)
+        this.#browser.off('bidiCommand', this.#onBidiCommand)
     }
 
     async initialize () {
