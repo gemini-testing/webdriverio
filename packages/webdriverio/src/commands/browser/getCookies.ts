@@ -2,6 +2,8 @@ import logger from '@testplane/wdio-logger'
 import type { Cookie } from '@testplane/wdio-protocols'
 import type { remote } from '@testplane/webdriver'
 
+import { getContextManager } from '../../session/context.js'
+
 const log = logger('webdriverio')
 
 /**
@@ -54,7 +56,12 @@ export async function getCookies(
     }
 
     const cookieFilter = getCookieFilter(filter)
-    const { cookies } = await this.storageGetCookies({ filter: cookieFilter })
+    const contextManager = getContextManager(this)
+    const context = await contextManager.getCurrentContext()
+    const { cookies } = await this.storageGetCookies({
+        filter: cookieFilter,
+        partition: { type: 'context', context }
+    })
     return cookies.map((cookie) => ({
         ...cookie,
         value: cookie.value.type === 'base64' ? atob(cookie.value.value) : cookie.value.value

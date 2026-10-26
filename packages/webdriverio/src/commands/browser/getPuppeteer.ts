@@ -3,6 +3,7 @@ import puppeteer, { type Browser as PuppeteerBrowser } from 'puppeteer-core'
 import type { Capabilities } from '@testplane/wdio-types'
 
 import { FF_REMOTE_DEBUG_ARG } from '../../constants.js'
+import { addPuppeteerCompatibility, type CompatiblePuppeteerBrowser } from '../../utils/puppeteerCompatibility.js'
 
 const log = logger('webdriverio')
 const DEBUG_PIPE_FLAG = 'remote-debugging-pipe'
@@ -49,7 +50,7 @@ const DEBUG_PIPE_FLAG = 'remote-debugging-pipe'
  *
  * @return {PuppeteerBrowser}  initiated puppeteer instance connected to the browser
  */
-export async function getPuppeteer (this: WebdriverIO.Browser): Promise<PuppeteerBrowser> {
+export async function getPuppeteer (this: WebdriverIO.Browser): Promise<CompatiblePuppeteerBrowser> {
     /**
      * Tell user that Puppeteer is not supported in browser runner
      */
@@ -61,9 +62,9 @@ export async function getPuppeteer (this: WebdriverIO.Browser): Promise<Puppetee
      * check if we already connected Puppeteer and if so return
      * that instance
      */
-    if (this.puppeteer?.isConnected()) {
+    if (this.puppeteer?.connected) {
         log.debug('Reusing existing puppeteer session')
-        return this.puppeteer
+        return addPuppeteerCompatibility(this.puppeteer)
     }
 
     const { headers } = this.options
@@ -77,7 +78,7 @@ export async function getPuppeteer (this: WebdriverIO.Browser): Promise<Puppetee
             defaultViewport: null,
             headers
         }) as unknown as PuppeteerBrowser
-        return this.puppeteer
+        return addPuppeteerCompatibility(this.puppeteer)
     }
     /**
      * attach to a Selenoid\Moon CDP Session if there are Aerokube vendor capabilities
@@ -91,7 +92,7 @@ export async function getPuppeteer (this: WebdriverIO.Browser): Promise<Puppetee
             defaultViewport: null,
             headers
         }) as unknown as PuppeteerBrowser
-        return this.puppeteer
+        return addPuppeteerCompatibility(this.puppeteer)
     }
     /**
      * attach to Chromium debugger session
@@ -102,7 +103,7 @@ export async function getPuppeteer (this: WebdriverIO.Browser): Promise<Puppetee
             browserURL: `http://${chromiumOptions.debuggerAddress.replace('localhost', '0.0.0.0')}`,
             defaultViewport: null
         }) as unknown as PuppeteerBrowser
-        return this.puppeteer
+        return addPuppeteerCompatibility(this.puppeteer)
     } else if (
         /**
          * if --remote-debugging-pipe is set as Chrome flag, we can't attach to the session
@@ -156,7 +157,7 @@ export async function getPuppeteer (this: WebdriverIO.Browser): Promise<Puppetee
                 browserURL,
                 defaultViewport: null
             }) as unknown as PuppeteerBrowser
-            return this.puppeteer as unknown as PuppeteerBrowser
+            return addPuppeteerCompatibility(this.puppeteer)
         }
     }
 

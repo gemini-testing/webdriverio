@@ -258,3 +258,26 @@ test('onReload hook', async () => {
     service.onReload()
     expect(service._setupHandler).toBeCalledTimes(1)
 })
+
+test.each(['about:blank', 'data:,', 'https://example.org/'])('selects a page target rather than another target with the same URL (%s)', async (url) => {
+    const page = {}
+    const otherTarget = {
+        type: () => 'other', url: () => url,
+        _getTargetInfo: () => ({ browserContextId: 'context' }),
+        page: vi.fn().mockResolvedValue(null)
+    }
+    const pageTarget = {
+        type: () => 'page', url: () => url,
+        page: vi.fn().mockResolvedValue(page),
+        createCDPSession: vi.fn().mockResolvedValue(sessionMock)
+    }
+    vi.mocked(browser.getUrl).mockResolvedValue(url)
+    vi.mocked(browser.getPuppeteer).mockResolvedValue({
+        waitForTarget: vi.fn(async predicate => [otherTarget, pageTarget].find(predicate))
+    } as any)
+    const service = new DevToolsService({})
+    await service.before({}, [], browser)
+    expect(otherTarget.page).not.toHaveBeenCalled()
+    expect(pageTarget.page).toHaveBeenCalledOnce()
+    expect(browser.addCommand).toHaveBeenCalledWith('checkPWA', expect.any(Function))
+})

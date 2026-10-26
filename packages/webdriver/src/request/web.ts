@@ -1,5 +1,5 @@
 import type { Options as KyOptions } from 'ky'
-import ky from 'ky'
+import ky, { TimeoutError } from 'ky'
 import logger from '@testplane/wdio-logger'
 import WebDriverRequest from './index.js'
 import type { RequestOptions, RequestLibOptions, RequestLibResponse } from './types.js'
@@ -45,7 +45,16 @@ export class WebRequest extends WebDriverRequest {
             }
         }
 
-        const res = await ky(url, kyOptions)
+        // The shared request layer uses got's timeout shape and owns retries.
+        // Passing that object to ky coerces the timeout to 1 ms in setTimeout.
+        kyOptions.timeout = options.timeout?.response
+        kyOptions.retry = 0
+        const res = await ky(url.href, kyOptions).catch((error: unknown) => {
+            if (error instanceof TimeoutError) {
+                Object.assign(error, { code: 'ETIMEDOUT', event: 'response' })
+            }
+            throw error
+        })
         return {
             statusCode: res.status,
             body: await res.json(),

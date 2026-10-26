@@ -1,5 +1,5 @@
-import type { Page } from 'puppeteer-core/lib/esm/puppeteer/api/Page.js'
-import type { Frame } from 'puppeteer-core/lib/esm/puppeteer/api/Frame.js'
+import type { Page } from 'puppeteer-core'
+import type { Frame } from 'puppeteer-core/internal/api/Frame.js'
 import type { ElementReference } from '@testplane/wdio-protocols'
 
 import { ELEMENT_KEY } from '../constants.js'
@@ -78,7 +78,7 @@ export default async function switchToFrame (
         }
 
         this.currentFrame = childFrame as unknown as Page
-        return { id: childFrame._id }
+        return { id: (childFrame as unknown as Pick<Frame, '_id'>)._id }
     }
 
     throw new Error(`Could not switch frame, unknown id: ${id}`)

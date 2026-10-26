@@ -1,21 +1,19 @@
 import { type local } from '@testplane/webdriver'
+import logger from '@testplane/wdio-logger'
 import { SessionManager } from './session.js'
+
+const log = logger('webdriverio:DialogManager')
 
 export function getDialogManager(browser: WebdriverIO.Browser) {
     return SessionManager.getSessionManager(browser, DialogManager)
 }
 
 /**
- * This class is responsible for managing shadow roots and their elements.
- * It allows to do deep element lookups and pierce into shadow DOMs across
- * all components of a page.
+ * Dispatch dialog events to user listeners, or dismiss unhandled dialogs.
  */
 export class DialogManager extends SessionManager {
     #browser: WebdriverIO.Browser
     #initialize: Promise<boolean>
-    #autoHandleDialog = true
-
-    #handleUserPromptListener = this.#handleUserPrompt.bind(this)
 
     constructor(browser: WebdriverIO.Browser) {
         super(browser, DialogManager.name)
@@ -35,46 +33,33 @@ export class DialogManager extends SessionManager {
         this.#initialize = this.#browser.sessionSubscribe({
             events: ['browsingContext.userPromptOpened']
         }).then(() => true, () => false)
-        // @ts-ignore this is a private event
-        this.#browser.on('_dialogListenerRegistered', () => this.#switchListenerFlag(false))
-        // @ts-ignore this is a private event
-        this.#browser.on('_dialogListenerRemoved', () => this.#switchListenerFlag(true))
-        this.#browser.on('browsingContext.userPromptOpened', this.#handleUserPromptListener)
+        this.#browser.on('browsingContext.userPromptOpened', this.#handleUserPrompt)
     }
 
     removeListeners(): void {
         super.removeListeners()
-        this.#browser.off('browsingContext.userPromptOpened', this.#handleUserPromptListener)
-        this.#browser.removeAllListeners('_dialogListenerRegistered')
-        this.#browser.removeAllListeners('_dialogListenerRemoved')
+        this.#browser.off('browsingContext.userPromptOpened', this.#handleUserPrompt)
     }
 
     async initialize () {
         return this.#initialize
     }
 
-    /**
-     * capture shadow root elements propagated through console.debug
-     */
-    async #handleUserPrompt(log: local.BrowsingContextUserPromptOpenedParameters) {
-        if (this.#autoHandleDialog) {
+    #handleUserPrompt = async (event: local.BrowsingContextUserPromptOpenedParameters) => {
+        // Query the live listener count: once(), addListener(), removeAllListeners()
+        // and removing one of several listeners cannot be represented by a boolean.
+        if (this.#browser.listenerCount('dialog') === 0) {
             return this.#browser.browsingContextHandleUserPrompt({
                 accept: false,
-                context: log.context
+                context: event.context
+            }).catch((error: Error) => {
+                // EventEmitter does not await async listeners. Report the failure
+                // instead of leaking an unhandled rejection from automatic handling.
+                log.warn(`Unable to auto-dismiss dialog in context ${event.context}: ${error.message}`)
             })
         }
 
-        const dialog = new Dialog(log, this.#browser)
-        this.#browser.emit('dialog', dialog)
-    }
-
-    /**
-     * Is called when a new dialog listener is registered with the `dialog` name.
-     * In these cases we set a flag to the `#listener` map to indicate that we
-     * are listening to dialog events for this page in this context.
-     */
-    #switchListenerFlag(value: boolean) {
-        this.#autoHandleDialog = value
+        this.#browser.emit('dialog', new Dialog(event, this.#browser))
     }
 }
 

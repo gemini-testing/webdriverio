@@ -18,6 +18,61 @@ vi.mock('../../src/node/utils.js', async (orig) => {
 })
 vi.mock('@testplane/wdio-logger', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-logger')))
 
+describe('remote session preparation', () => {
+    beforeEach(() => {
+        vi.mocked(setupChromedriver).mockClear()
+        vi.mocked(setupPuppeteerBrowser).mockClear()
+    })
+
+    test('skips remote connection overrides in regular capabilities', async () => {
+        const caps = [{
+            hostname: 'selenium.example.test',
+            port: 4444,
+            browserName: 'chrome',
+            browserVersion: '114'
+        }]
+
+        await setupDriver({}, caps)
+        await setupBrowser({}, caps)
+
+        expect(setupChromedriver).not.toHaveBeenCalled()
+        expect(setupPuppeteerBrowser).not.toHaveBeenCalled()
+    })
+
+    test.each([false, true])('skips per-instance remote connections (parallel: %s)', async (parallel) => {
+        const caps = {
+            grid: {
+                hostname: 'selenium.example.test',
+                port: 4444,
+                capabilities: { browserName: 'chrome', browserVersion: '114' }
+            },
+            cloud: {
+                user: 'user',
+                key: 'key',
+                capabilities: { browserName: 'chrome', browserVersion: '113' }
+            }
+        }
+        const capabilities = parallel ? [caps] : caps
+
+        await setupDriver({}, capabilities)
+        await setupBrowser({}, capabilities)
+
+        expect(setupChromedriver).not.toHaveBeenCalled()
+        expect(setupPuppeteerBrowser).not.toHaveBeenCalled()
+
+        const mixed = { ...caps, local: { capabilities: { browserName: 'chrome', browserVersion: 'stable' } } }
+        await setupDriver({}, parallel ? [mixed] : mixed)
+        await setupBrowser({}, parallel ? [mixed] : mixed)
+
+        expect(setupChromedriver).toHaveBeenCalledTimes(1)
+        expect(setupChromedriver).toHaveBeenCalledWith('/foo/bar', 'stable')
+        expect(setupPuppeteerBrowser).toHaveBeenCalledTimes(1)
+        expect(setupPuppeteerBrowser).toHaveBeenCalledWith('/foo/bar', {
+            browserName: 'chrome', browserVersion: 'stable'
+        })
+    })
+})
+
 describe('setupDriver', () => {
     beforeEach(() => {
         vi.mocked(setupChromedriver).mockClear()

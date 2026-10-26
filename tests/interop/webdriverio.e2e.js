@@ -1,5 +1,5 @@
 const assert = require('node:assert')
-const { remote, attach, multiremote, Key, SevereServiceError } = require('webdriverio')
+const { remote, attach, multiremote, Key, SevereServiceError } = require('@testplane/webdriverio')
 
 ;(async () => {
     assert.equal(typeof remote, 'function')

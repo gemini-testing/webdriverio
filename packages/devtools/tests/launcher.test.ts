@@ -4,6 +4,7 @@ import puppeteer, { Puppeteer } from 'puppeteer-core'
 import { launch as launchChromeBrowser } from 'chrome-launcher'
 
 import launch from '../src/launcher.js'
+import { SUPPORTED_BROWSER } from '../src/constants.js'
 
 vi.mock('@testplane/wdio-logger', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-logger')))
 vi.mock('puppeteer-core', () => import(path.join(process.cwd(), '__mocks__', 'puppeteer-core')))
@@ -29,6 +30,28 @@ beforeEach(() => {
     vi.mocked(puppeteer.connect).mockClear()
     vi.mocked(puppeteer.launch).mockClear()
     vi.mocked(launchChromeBrowser).mockClear()
+})
+
+test('rejects Firefox before launching the unsupported CDP backend', async () => {
+    expect(SUPPORTED_BROWSER).not.toContain('firefox')
+    await expect(launch({ browserName: 'firefox' })).rejects.toThrow(/Firefox.*CDP.*WebDriver BiDi/)
+    expect(puppeteer.launch).not.toHaveBeenCalled()
+    expect(puppeteer.connect).not.toHaveBeenCalled()
+})
+
+test('maps legacy HTTPS error handling to Puppeteer connect options', async () => {
+    await launch({
+        browserName: 'chrome',
+        'wdio:devtoolsOptions': { browserURL: 'http://localhost:9222', ignoreHTTPSErrors: true }
+    })
+    expect(puppeteer.connect).toHaveBeenCalledWith(expect.objectContaining({ acceptInsecureCerts: true }))
+    expect(puppeteer.connect).not.toHaveBeenCalledWith(expect.objectContaining({ ignoreHTTPSErrors: true }))
+})
+
+test('uses the supported Puppeteer browser selector for Edge', async () => {
+    await launch({ browserName: 'edge' })
+    expect(puppeteer.launch).toHaveBeenCalledWith(expect.objectContaining({ browser: 'chrome' }))
+    expect(puppeteer.launch).not.toHaveBeenCalledWith(expect.objectContaining({ product: 'chrome' }))
 })
 
 test('launch chrome with default values', async () => {
@@ -182,8 +205,8 @@ test('throws an error if an unknown deviceName is picked', async () => {
     expect(err.message).toContain('Unknown device name "Cool Nexus 5"')
 })
 
-test('launch Firefox with custom arguments', async () => {
-    await launch({
+test('rejects Firefox with custom arguments', async () => {
+    await expect(launch({
         browserName: 'firefox',
         'wdio:devtoolsOptions': {
             headless: true,
@@ -192,8 +215,9 @@ test('launch Firefox with custom arguments', async () => {
                 height: 456
             }
         }
-    })
-    expect(vi.mocked(puppeteer.launch).mock.calls).toMatchSnapshot()
+    })).rejects.toThrow(/Firefox.*CDP.*WebDriver BiDi/)
+    expect(puppeteer.launch).not.toHaveBeenCalled()
+    expect(puppeteer.connect).not.toHaveBeenCalled()
 })
 
 test('launch Edge with default values', async () => {
@@ -230,8 +254,8 @@ test('throws if browser is unknown', async () => {
     }
 })
 
-test('launch Firefox Nightly without Puppeteer default args', async () => {
-    await launch({
+test('rejects Firefox Nightly without Puppeteer default args', async () => {
+    await expect(launch({
         browserName: 'firefox',
         'moz:firefoxOptions': {
             binary: '/foo/firefox-nightly'
@@ -240,12 +264,13 @@ test('launch Firefox Nightly without Puppeteer default args', async () => {
             headless: true,
             ignoreDefaultArgs: true
         }
-    })
-    expect(vi.mocked(puppeteer.launch).mock.calls).toMatchSnapshot()
+    })).rejects.toThrow(/Firefox.*CDP.*WebDriver BiDi/)
+    expect(puppeteer.launch).not.toHaveBeenCalled()
+    expect(puppeteer.connect).not.toHaveBeenCalled()
 })
 
-test('launch Firefox Nightly binary without Puppeteer default args', async () => {
-    await launch({
+test('rejects Firefox Nightly binary without Puppeteer default args', async () => {
+    await expect(launch({
         browserName: 'firefox',
         'moz:firefoxOptions': {
             binary: 'firefox',
@@ -257,8 +282,9 @@ test('launch Firefox Nightly binary without Puppeteer default args', async () =>
             ignoreDefaultArgs: true,
             headless: true
         }
-    })
-    expect(vi.mocked(puppeteer.launch).mock.calls).toMatchSnapshot()
+    })).rejects.toThrow(/Firefox.*CDP.*WebDriver BiDi/)
+    expect(puppeteer.launch).not.toHaveBeenCalled()
+    expect(puppeteer.connect).not.toHaveBeenCalled()
 })
 
 test('launch Edge without Puppeteer default args', async () => {
@@ -329,7 +355,7 @@ test('connect to an existing devtools browser url', async () => {
     })
     expect(puppeteer.launch).not.toBeCalled()
     expect(vi.mocked(puppeteer.connect))
-        .toBeCalledWith(devtoolsOptions)
+        .toBeCalledWith({ browserURL: devtoolsOptions.browserURL, acceptInsecureCerts: true })
 })
 
 test('launch Chrome with default Args to ignore certificate errors (devtools option ignoreHTTPSErrors)', async () => {
@@ -402,36 +428,30 @@ test('launch Edge while ignoring default args to ignore certificate errors (devt
     )
 })
 
-test('launch Firefox with default Args to ignore certificate errors (devtools option ignoreHTTPSErrors)', async () => {
-    await launch({
+test('rejects Firefox with default Args to ignore certificate errors (devtools option ignoreHTTPSErrors)', async () => {
+    await expect(launch({
         browserName: 'firefox',
         'wdio:devtoolsOptions': {
             ignoreDefaultArgs: false,
             headless: true,
             ignoreHTTPSErrors: true
         }
-    })
-    expect(puppeteer.launch).toBeCalledWith(
-        expect.objectContaining({
-            'ignoreHTTPSErrors': true
-        })
-    )
+    })).rejects.toThrow(/Firefox.*CDP.*WebDriver BiDi/)
+    expect(puppeteer.launch).not.toHaveBeenCalled()
+    expect(puppeteer.connect).not.toHaveBeenCalled()
 })
 
-test('launch Firefox while ignoring default args to ignore certificate errors (devtools option ignoreHTTPSErrors)', async () => {
-    await launch({
+test('rejects Firefox while ignoring default args to ignore certificate errors (devtools option ignoreHTTPSErrors)', async () => {
+    await expect(launch({
         browserName: 'firefox',
         'wdio:devtoolsOptions': {
             ignoreDefaultArgs: true,
             headless: true,
             ignoreHTTPSErrors: true
         }
-    })
-    expect(puppeteer.launch).toBeCalledWith(
-        expect.objectContaining({
-            'ignoreHTTPSErrors': true
-        })
-    )
+    })).rejects.toThrow(/Firefox.*CDP.*WebDriver BiDi/)
+    expect(puppeteer.launch).not.toHaveBeenCalled()
+    expect(puppeteer.connect).not.toHaveBeenCalled()
 })
 
 test('launch Chrome with default Args to ignore certificate errors (W3C capability acceptInsecureCerts)', async () => {
@@ -504,37 +524,30 @@ test('launch Edge while ignoring default args to ignore certificate errors (W3C 
     )
 })
 
-test('launch Firefox with default Args to ignore certificate errors (W3C capability acceptInsecureCerts)', async () => {
-    await launch({
+test('rejects Firefox with default Args to ignore certificate errors (W3C capability acceptInsecureCerts)', async () => {
+    await expect(launch({
         browserName: 'firefox',
         acceptInsecureCerts: true,
         'wdio:devtoolsOptions': {
             ignoreDefaultArgs: false,
             headless: true,
         }
-    })
-    expect(puppeteer.launch).toBeCalledWith(
-        expect.objectContaining({
-            'ignoreHTTPSErrors': true
-        })
-    )
+    })).rejects.toThrow(/Firefox.*CDP.*WebDriver BiDi/)
+    expect(puppeteer.launch).not.toHaveBeenCalled()
+    expect(puppeteer.connect).not.toHaveBeenCalled()
 })
 
-test('launch Firefox while ignoring default args to ignore certificate errors (W3C capability acceptInsecureCerts)', async () => {
-    await launch({
+test('rejects Firefox while ignoring default args to ignore certificate errors (W3C capability acceptInsecureCerts)', async () => {
+    await expect(launch({
         browserName: 'firefox',
         acceptInsecureCerts: true,
         'wdio:devtoolsOptions': {
             ignoreDefaultArgs: true,
             headless: true,
         }
-    })
-
-    expect(puppeteer.launch).toBeCalledWith(
-        expect.objectContaining({
-            'ignoreHTTPSErrors': true,
-        })
-    )
+    })).rejects.toThrow(/Firefox.*CDP.*WebDriver BiDi/)
+    expect(puppeteer.launch).not.toHaveBeenCalled()
+    expect(puppeteer.connect).not.toHaveBeenCalled()
 })
 
 // qwe
@@ -610,34 +623,28 @@ test('launch Edge while ignoring default args and not specifying devtools option
     )
 })
 
-test('launch Firefox with default Args and not specifying devtools option ignoreHTTPSErrors', async () => {
-    await launch({
+test('rejects Firefox with default Args and not specifying devtools option ignoreHTTPSErrors', async () => {
+    await expect(launch({
         browserName: 'firefox',
         'wdio:devtoolsOptions': {
             ignoreDefaultArgs: false,
             headless: true,
         }
-    })
-    expect(puppeteer.launch).toBeCalledWith(
-        expect.objectContaining({
-            'ignoreHTTPSErrors': false
-        })
-    )
+    })).rejects.toThrow(/Firefox.*CDP.*WebDriver BiDi/)
+    expect(puppeteer.launch).not.toHaveBeenCalled()
+    expect(puppeteer.connect).not.toHaveBeenCalled()
 })
 
-test('launch Firefox while ignoring default args and not specifying devtools option ignoreHTTPSErrors', async () => {
-    await launch({
+test('rejects Firefox while ignoring default args and not specifying devtools option ignoreHTTPSErrors', async () => {
+    await expect(launch({
         browserName: 'firefox',
         'wdio:devtoolsOptions': {
             ignoreDefaultArgs: true,
             headless: true,
         }
-    })
-    expect(puppeteer.launch).toBeCalledWith(
-        expect.objectContaining({
-            'ignoreHTTPSErrors': false
-        })
-    )
+    })).rejects.toThrow(/Firefox.*CDP.*WebDriver BiDi/)
+    expect(puppeteer.launch).not.toHaveBeenCalled()
+    expect(puppeteer.connect).not.toHaveBeenCalled()
 })
 
 test('launch Chrome with default Args and not specifying W3C capability acceptInsecureCerts', async () => {
@@ -710,35 +717,28 @@ test('launch Edge while ignoring default args and not specifying W3C capability 
     )
 })
 
-test('launch Firefox with default args and not specifying W3C capability acceptInsecureCerts', async () => {
-    await launch({
+test('rejects Firefox with default args and not specifying W3C capability acceptInsecureCerts', async () => {
+    await expect(launch({
         browserName: 'firefox',
         'wdio:devtoolsOptions': {
             ignoreDefaultArgs: false,
             headless: true,
         }
-    })
-    expect(puppeteer.launch).toBeCalledWith(
-        expect.objectContaining({
-            'ignoreHTTPSErrors': false
-        })
-    )
+    })).rejects.toThrow(/Firefox.*CDP.*WebDriver BiDi/)
+    expect(puppeteer.launch).not.toHaveBeenCalled()
+    expect(puppeteer.connect).not.toHaveBeenCalled()
 })
 
-test('launch Firefox while ignoring default args and not specifying W3C capability acceptInsecureCerts', async () => {
-    await launch({
+test('rejects Firefox while ignoring default args and not specifying W3C capability acceptInsecureCerts', async () => {
+    await expect(launch({
         browserName: 'firefox',
         'wdio:devtoolsOptions': {
             ignoreDefaultArgs: true,
             headless: true,
         }
-    })
-
-    expect(puppeteer.launch).toBeCalledWith(
-        expect.objectContaining({
-            'ignoreHTTPSErrors': false,
-        })
-    )
+    })).rejects.toThrow(/Firefox.*CDP.*WebDriver BiDi/)
+    expect(puppeteer.launch).not.toHaveBeenCalled()
+    expect(puppeteer.connect).not.toHaveBeenCalled()
 })
 
 test('launch Chrome with defaultViewPort as null', async () => {

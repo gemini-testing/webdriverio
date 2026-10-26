@@ -4,8 +4,6 @@ import path from 'node:path'
 import { loadEnv } from 'vite'
 import { expect } from '@wdio/globals'
 
-const isMac = os.platform() === 'darwin' && process.env.CI
-
 /**
  * skip tests if:
  */
@@ -16,12 +14,7 @@ if (
      * see https://github.com/testing-library/vue-testing-library/issues/292
      * Please ignore and remove this in your project!
      */
-    (process.env.CI && process.env.WDIO_PRESET === 'vue') ||
-    /**
-     * We are running network mocking tests on Safari in CI where Safari has no support for
-     * Bidi just yet.
-     */
-    (process.env.CI && isMac && process.argv.includes('mock.test.ts'))
+    process.env.CI && os.platform() === 'win32' && process.env.WDIO_PRESET === 'vue'
 ) {
     process.exit(0)
 }
@@ -39,16 +32,13 @@ export const config = {
     /**
      * capabilities
      */
-    capabilities: [
-        isMac
-            ? {
-                browserName: 'safari'
-            }
-            : {
-                browserName: 'chrome',
-                browserVersion: 'canary',
-            }
-    ],
+    capabilities: [{
+        browserName: 'chrome',
+        browserVersion: 'canary',
+        'goog:chromeOptions': {
+            args: ['--headless=new']
+        }
+    }],
 
     /**
      * test configurations
@@ -72,11 +62,10 @@ export const config = {
         },
         coverage: {
             enabled: true,
-            // we skip some tests on Mac, therefor lower coverage treshold
             /**
              * Todo(@christian-bromann): set treshold back to 100
              */
-            functions: isMac ? 60 : 80
+            functions: 80
         }
     }],
 

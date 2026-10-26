@@ -20,11 +20,6 @@ export class NetworkManager extends SessionManager {
     #requests = new Map<Context, WebdriverIO.Request>()
     #lastNetworkId?: string
 
-    #navigationStartedListener = this.#navigationStarted.bind(this)
-    #responseCompletedListener = this.#responseCompleted.bind(this)
-    #beforeRequestSentListener = this.#beforeRequestSent.bind(this)
-    #fetchErrorListener = this.#fetchError.bind(this)
-
     constructor(browser: WebdriverIO.Browser) {
         super(browser, NetworkManager.name)
         this.#browser = browser
@@ -49,27 +44,27 @@ export class NetworkManager extends SessionManager {
                 'network.fetchError'
             ]
         }).then(() => true, () => false)
-        this.#browser.on('browsingContext.navigationStarted', this.#navigationStartedListener)
-        this.#browser.on('browsingContext.fragmentNavigated', this.#navigationStartedListener)
-        this.#browser.on('network.responseCompleted', this.#responseCompletedListener)
-        this.#browser.on('network.beforeRequestSent', this.#beforeRequestSentListener)
-        this.#browser.on('network.fetchError', this.#fetchErrorListener)
+        this.#browser.on('browsingContext.navigationStarted', this.#navigationStarted)
+        this.#browser.on('browsingContext.fragmentNavigated', this.#navigationStarted)
+        this.#browser.on('network.responseCompleted', this.#responseCompleted)
+        this.#browser.on('network.beforeRequestSent', this.#beforeRequestSent)
+        this.#browser.on('network.fetchError', this.#fetchError)
     }
 
     removeListeners(): void {
         super.removeListeners()
-        this.#browser.off('browsingContext.navigationStarted', this.#navigationStartedListener)
-        this.#browser.off('browsingContext.fragmentNavigated', this.#navigationStartedListener)
-        this.#browser.off('network.responseCompleted', this.#responseCompletedListener)
-        this.#browser.off('network.beforeRequestSent', this.#beforeRequestSentListener)
-        this.#browser.off('network.fetchError', this.#fetchErrorListener)
+        this.#browser.off('browsingContext.navigationStarted', this.#navigationStarted)
+        this.#browser.off('browsingContext.fragmentNavigated', this.#navigationStarted)
+        this.#browser.off('network.responseCompleted', this.#responseCompleted)
+        this.#browser.off('network.beforeRequestSent', this.#beforeRequestSent)
+        this.#browser.off('network.fetchError', this.#fetchError)
     }
 
     async initialize () {
         return this.#initialize
     }
 
-    #beforeRequestSent(log: local.NetworkBeforeRequestSentParameters) {
+    #beforeRequestSent = (log: local.NetworkBeforeRequestSentParameters) => {
         /**
          * for events with navigation id we skip this step as we pull information
          * from the `navigationStarted` event
@@ -104,7 +99,7 @@ export class NetworkManager extends SessionManager {
 
     }
 
-    #navigationStarted(log: local.BrowsingContextNavigationInfo) {
+    #navigationStarted = (log: local.BrowsingContextNavigationInfo) => {
         if (
             /**
              * we need a navigation id to identify the request
@@ -144,7 +139,7 @@ export class NetworkManager extends SessionManager {
         })
     }
 
-    #fetchError (log: local.NetworkFetchErrorParameters) {
+    #fetchError = (log: local.NetworkFetchErrorParameters) => {
         const response = this.#findRootRequest(log.navigation)
         if (!response) {
             return
@@ -176,7 +171,7 @@ export class NetworkManager extends SessionManager {
             : firstRequest
     }
 
-    #responseCompleted (log: local.NetworkResponseCompletedParameters) {
+    #responseCompleted = (log: local.NetworkResponseCompletedParameters) => {
         const response = this.#findRootRequest(log.navigation)
         if (!response) {
             return

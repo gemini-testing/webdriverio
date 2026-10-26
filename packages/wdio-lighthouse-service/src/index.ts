@@ -121,14 +121,10 @@ export default class DevToolsService implements Services.ServiceInstance {
             }
 
             const url = await (browser as WebdriverIO.Browser).getUrl()
-            const target = url !== 'data:,' ?
-                await puppeteer.waitForTarget(
-                /* istanbul ignore next */
-                    (t) => t.url().includes(url)) :
-                await puppeteer.waitForTarget(
-                    /* istanbul ignore next */
-                    // @ts-expect-error
-                    (t) => t.type() === 'page' || Boolean(t._getTargetInfo().browserContextId))
+            const target = await puppeteer.waitForTarget(
+                // Modern Chromium also exposes non-page targets with the same
+                // URL. Their page() is null, even when a browserContextId exists.
+                (t) => t.type() === 'page' && (url === 'data:,' || t.url().includes(url)))
 
             /* istanbul ignore next */
             if (!target) {

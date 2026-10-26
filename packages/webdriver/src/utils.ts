@@ -20,7 +20,10 @@ import type { WebDriverResponse } from './request/types.js'
 import type { Client, JSONWPCommandError, SessionFlags, RemoteConfig } from './types.js'
 
 const log = logger('webdriver')
-const deepmerge = deepmergeCustom({ mergeArrays: false })
+const deepmerge = deepmergeCustom({
+    mergeArrays: false,
+    mergeMaps: (maps) => new Map(maps.flatMap((map) => [...map]))
+})
 
 const BROWSER_DRIVER_ERRORS = [
     'unknown command: wd/hub/session', // chromedriver

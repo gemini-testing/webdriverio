@@ -118,25 +118,10 @@ describe('Lit Component testing', () => {
              */
             const closedNode = $('closed-node')
             await expect(closedNode).toHaveText('Hello,')
-            await expect(closedNode).toMatchInlineSnapshot(`
-              "<closed-node>Hello,
-                <template shadowrootmode="closed">
-                  <style>section { color: blue; }</style>
-                  <h2>Closed Node</h2>
-                  <section>
-                    <slot></slot>
-                    <closed-node-nested>hidden
-                      <template shadowrootmode="closed">
-                        <style>.findMe { color: green; }</style>
-                        <h2>Deep Closed Node</h2>
-                        <div class="findMe">I am
-                          <slot></slot>!</div>
-                      </template>
-                    </closed-node-nested>
-                  </section>
-                </template>
-              </closed-node>"
-            `)
+            await expect(closedNode).toMatchInlineSnapshot('"<closed-node>Hello, </closed-node>"')
+            await expect(closedNode.$('closed-node-nested').$('h2')).toHaveText('Deep Closed Node')
+            await expect(closedNode.$('closed-node-nested').$('.findMe')).toHaveText('I am hidden!')
+
         })
 
         it('can fetch multiple elements within various closed shadow roots', async function () {
@@ -180,28 +165,13 @@ describe('Lit Component testing', () => {
 
             const elem = $('simple-greeting')
             await expect(elem).toMatchSnapshot()
-            await expect(elem).toMatchInlineSnapshot(`
-              "<simple-greeting name="WebdriverIO">
-                <template shadowrootmode="open">
-                  <style>:host { color: blue; }</style>
-                  <div>
-                    <p>Hello Sir, WebdriverIO! Does this work?</p>
-                    <button>Good</button>
-                    <hr />
-                    <em></em>
-                    <sub-elem>
-                      <template shadowrootmode="open">
-                        <style>.selectMeToo { color: blue; }</style>
-                        <div>
-                          <p class="selectMe">I am within another shadow root element</p>
-                          <p class="selectMeToo">I am within another shadow root element as well</p>
-                        </div>
-                      </template>
-                    </sub-elem>
-                  </div>
-                </template>
-              </simple-greeting>"
-            `)
+            await expect(elem).toMatchInlineSnapshot('"<simple-greeting name="WebdriverIO"></simple-greeting>"')
+            expect(await elem.getHTML(true)).toBe('<simple-greeting name="WebdriverIO"></simple-greeting>')
+            expect(await elem.getHTML(false)).toBe('')
+            await expect(elem.$('p')).toHaveText('Hello Sir, WebdriverIO! Does this work?')
+            await expect(elem.$('sub-elem').$('.selectMeToo'))
+                .toHaveText('I am within another shadow root element as well')
+
         })
 
         it('of objects', async () => {
@@ -227,7 +197,7 @@ describe('Lit Component testing', () => {
             `)
         })
 
-        it('should be able to fetch elements that created without registering to the element registry', async () => {
+        it('finds shadow content when a regular host attaches its root before being connected', async () => {
             /**
              * only run snapshot tests in non-Safari browsers as shadow dom piercing
              * is not yet supported in Safari
@@ -239,10 +209,10 @@ describe('Lit Component testing', () => {
             const shadowResult = await browser.execute(() => {
                 const shadowElement = document.createElement('div')
                 shadowElement.id = 'helloshadow'
-                document.body.appendChild(shadowElement)
 
                 const shadowCreated = shadowElement.attachShadow({ mode: 'open' })
                 shadowCreated.innerHTML = '<p id=\'shadowelement\'>Hello World</p>'
+                document.body.appendChild(shadowElement)
                 const shadowExists = document.querySelector('#helloshadow')?.shadowRoot
                 return shadowExists ? 'created' : 'failed'
             })
@@ -391,7 +361,6 @@ describe('Lit Component testing', () => {
     })
 
     describe('Selector Tests', () => {
-        const getHTMLOptions = { includeSelectorTag: false, prettify: false }
 
         it('fetches element by content correctly', async () => {
             render(
@@ -415,10 +384,10 @@ describe('Lit Component testing', () => {
                 html`<div class="foo" id="#bar"><div><span>Find me</span></div></div>`,
                 document.body
             )
-            expect(await $('div.foo*=me').getHTML(getHTMLOptions)).toBe('<div><span>Find me</span></div>')
-            expect(await $('.foo*=me').getHTML(getHTMLOptions)).toBe('<div><span>Find me</span></div>')
-            expect(await $('div#bar*=me').getHTML(getHTMLOptions)).toBe('<div><span>Find me</span></div>')
-            expect(await $('#bar*=me').getHTML(getHTMLOptions)).toBe('<div><span>Find me</span></div>')
+            expect(await $('div.foo*=me').getHTML(false)).toBe('<div><span>Find me</span></div>')
+            expect(await $('.foo*=me').getHTML(false)).toBe('<div><span>Find me</span></div>')
+            expect(await $('div#bar*=me').getHTML(false)).toBe('<div><span>Find me</span></div>')
+            expect(await $('#bar*=me').getHTML(false)).toBe('<div><span>Find me</span></div>')
         })
 
         const outerClassLists = ['foo', 'bar foo', 'foo bar baz', 'bar foo baz', 'bar baz foo']
@@ -430,7 +399,7 @@ describe('Lit Component testing', () => {
                         html`<div class="${outerClassList}"><div class="${innerClassList}"></div><div><div>Find me</div></div></div>`,
                         document.body
                     )
-                    expect(await $('.foo*=Find').getHTML(getHTMLOptions)).toBe(`<div class="${innerClassList}"></div><div><div>Find me</div></div>`)
+                    expect(await $('.foo*=Find').getHTML(false)).toBe(`<div class="${innerClassList}"></div><div><div>Find me</div></div>`)
                 })
             }
         }
@@ -452,10 +421,10 @@ describe('Lit Component testing', () => {
                 <div class="foo" id="#bar"><div><div class="foo" id="#bar"><div><span>Find me</span></div></div></div></div>`,
                 document.body
             )
-            expect(await $('div.foo*=me').getHTML(getHTMLOptions)).toBe('<div><span>Find me</span></div>')
-            expect(await $('.foo*=me').getHTML(getHTMLOptions)).toBe('<div><span>Find me</span></div>')
-            expect(await $('div#bar*=me').getHTML(getHTMLOptions)).toBe('<div><span>Find me</span></div>')
-            expect(await $('#bar*=me').getHTML(getHTMLOptions)).toBe('<div><span>Find me</span></div>')
+            expect(await $('div.foo*=me').getHTML(false)).toBe('<div><span>Find me</span></div>')
+            expect(await $('.foo*=me').getHTML(false)).toBe('<div><span>Find me</span></div>')
+            expect(await $('div#bar*=me').getHTML(false)).toBe('<div><span>Find me</span></div>')
+            expect(await $('#bar*=me').getHTML(false)).toBe('<div><span>Find me</span></div>')
         })
 
         it('fetches inner element by content correctly with nested attribute selector', async () => {
@@ -475,10 +444,10 @@ describe('Lit Component testing', () => {
                 <div data-testid="foobar"><div><div data-testid="foobar"><div><span>Find me</span></div></div></div></div>`,
                 document.body
             )
-            expect(await $('[data-testid="foobar"]*=me').getHTML(getHTMLOptions)).toBe('<div><span>Find me</span></div>')
-            expect(await $('[data-testid]*=me').getHTML(getHTMLOptions)).toBe('<div><span>Find me</span></div>')
-            expect(await $('div[data-testid="foobar"]*=me').getHTML(getHTMLOptions)).toBe('<div><span>Find me</span></div>')
-            expect(await $('div[data-testid]*=me').getHTML(getHTMLOptions)).toBe('<div><span>Find me</span></div>')
+            expect(await $('[data-testid="foobar"]*=me').getHTML(false)).toBe('<div><span>Find me</span></div>')
+            expect(await $('[data-testid]*=me').getHTML(false)).toBe('<div><span>Find me</span></div>')
+            expect(await $('div[data-testid="foobar"]*=me').getHTML(false)).toBe('<div><span>Find me</span></div>')
+            expect(await $('div[data-testid]*=me').getHTML(false)).toBe('<div><span>Find me</span></div>')
         })
 
         it('fetches the parent element by content correctly', async () => {

@@ -136,8 +136,8 @@ class Launcher {
              * pre-configure necessary driver for worker threads
              */
             await Promise.all([
-                setupDriver({}, []),
-                setupBrowser({}, [])
+                setupDriver(config, caps),
+                setupBrowser(config, caps)
             ])
 
             exitCode = await this._runMode(config, caps)

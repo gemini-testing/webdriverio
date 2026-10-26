@@ -9,7 +9,7 @@ import { remote, multiremote, attach, Key, SevereServiceError } from '../src/ind
 
 vi.mock('../src/utils/detectBackend', () => ({ default: vi.fn() }))
 vi.mock('@testplane/wdio-logger', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-logger')))
-vi.mock('webdriver', () => {
+vi.mock('@testplane/webdriver', () => {
     const client = {
         sessionId: 'foobar-123',
         options: {},
@@ -40,7 +40,7 @@ vi.mock('webdriver', () => {
     }
 })
 
-vi.mock('devtools', () => {
+vi.mock('@testplane/devtools', () => {
     const client = { sessionId: 'foobar-123', isDevTools: true }
     const newSessionMock = vi.fn()
     newSessionMock.mockReturnValue(new Promise((resolve) => resolve(client)))

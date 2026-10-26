@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import logger from '@testplane/wdio-logger'
-import { deepmerge, deepmergeCustom } from 'deepmerge-ts'
+import { deepmergeCustom } from 'deepmerge-ts'
 import type { Capabilities, Options, Reporters, Services } from '@testplane/wdio-types'
 
 import FileSystemPathService from './FileSystemPathService.js'
@@ -10,6 +10,10 @@ import { removeLineNumbers, isCucumberFeatureWithLineNumber, validObjectOrArray 
 import { SUPPORTED_HOOKS, SUPPORTED_FILE_EXTENSIONS, DEFAULT_CONFIGS, NO_NAMED_CONFIG_EXPORT } from '../constants.js'
 
 import type { PathService } from '../types.js'
+
+// Keep the shallow Map value merging used before deepmerge-ts 8.
+const mergeMaps = (maps: ReadonlyArray<ReadonlyMap<unknown, unknown>>) => new Map(maps.flatMap((map) => [...map]))
+const deepmerge = deepmergeCustom({ mergeMaps })
 
 const log = logger('@testplane/wdio-config:ConfigParser')
 const MERGE_DUPLICATION = ['services', 'reporters', 'capabilities'] as const
@@ -182,6 +186,7 @@ export default class ConfigParser {
          * Add deepmergeCustom to remove array('services', 'reporters', 'capabilities') duplication in the config object
          */
         const customDeepMerge = deepmergeCustom({
+            mergeMaps,
             mergeArrays: ([oldValue, newValue], utils, meta) => {
                 const key = meta?.key as KeyWithMergeDuplication
                 if (meta && MERGE_DUPLICATION.includes(key)) {

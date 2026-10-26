@@ -162,14 +162,14 @@ describe('findElement utils', () => {
                 timeouts: { get: vi.fn() },
                 elementStore: { set: vi.fn().mockReturnValue('foobar') }
             }
-            pageMock.$x.mockReturnValue(Promise.resolve([42]))
+            pageMock.$$.mockReturnValue(Promise.resolve([42]))
 
             expect(await findElement.call(scope as any, pageMock as any, 'xpath', '//img'))
                 .toEqual({ 'element-6066-11e4-a52e-4f735466cecf': 'foobar' })
 
             expect(pageMock.waitForSelector).toBeCalledTimes(0)
             expect(pageMock.$).toBeCalledTimes(0)
-            expect(pageMock.$x).toBeCalledWith('//img')
+            expect(pageMock.$$).toBeCalledWith('xpath/.//img')
         })
 
         it('should fail if not found', async () => {
@@ -212,10 +212,10 @@ describe('findElement utils', () => {
                 timeouts: { get: vi.fn().mockReturnValue(1234) },
                 elementStore: { set: vi.fn() }
             }
-            pageMock.$.mockReturnValue(Promise.resolve('foobar'))
+            pageMock.$$.mockReturnValue(Promise.resolve(['foobar']))
             await findElement.call(scope as any, pageMock as any, 'xpath', 'barfoo')
-            expect(pageMock.waitForSelector).toBeCalledTimes(0)
-            expect(pageMock.waitForXPath).toBeCalledTimes(1)
+            expect(pageMock.waitForSelector).toBeCalledWith('xpath/.barfoo', { timeout: 1234 })
+            expect(pageMock.waitForXPath).not.toHaveBeenCalled()
         })
     })
 
@@ -237,11 +237,10 @@ describe('findElement utils', () => {
                 timeouts: { get: vi.fn() },
                 elementStore: { set: vi.fn().mockReturnValue('foobar') }
             }
-            pageMock.$x.mockReturnValue(Promise.resolve([42, 11]))
+            pageMock.$$.mockReturnValue(Promise.resolve([42, 11]))
             expect(await findElements.call(scope as any, pageMock as any, 'xpath', 'barfoo')).toMatchSnapshot()
             expect(pageMock.waitForSelector).toBeCalledTimes(0)
-            expect(pageMock.$$).toBeCalledTimes(0)
-            expect(pageMock.$x).toBeCalledWith('barfoo')
+            expect(pageMock.$$).toBeCalledWith('xpath/.barfoo')
         })
 
         it('should return immediately if no elements were found', async () => {
@@ -270,10 +269,10 @@ describe('findElement utils', () => {
                 timeouts: { get: vi.fn().mockReturnValue(1234) },
                 elementStore: { set: vi.fn() }
             }
-            pageMock.$x.mockReturnValue(Promise.resolve(['foobar']))
+            pageMock.$$.mockReturnValue(Promise.resolve(['foobar']))
             await findElements.call(scope as any, pageMock as any, 'xpath', 'barfoo')
-            expect(pageMock.waitForSelector).toBeCalledTimes(0)
-            expect(pageMock.waitForXPath).toBeCalledTimes(1)
+            expect(pageMock.waitForSelector).toBeCalledWith('xpath/.barfoo', { timeout: 1234 })
+            expect(pageMock.waitForXPath).not.toHaveBeenCalled()
         })
     })
 })
