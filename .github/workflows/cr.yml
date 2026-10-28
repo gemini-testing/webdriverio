@@ -3,16 +3,24 @@ name: Continuous Releases
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   build:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
 
     steps:
       - name: ⬇️ Checkout Code
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: 🧑‍🔧 Get Core Dependencies
         uses: ./.github/workflows/actions/get-core-dependencies
@@ -32,11 +40,6 @@ jobs:
           GITHUB_AUTH: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Preview Packages
-        # Allow PR #52 previews for Testplane integration testing, but not fork PRs.
-        if: >-
-          github.event_name == 'push' ||
-          (github.event.pull_request.number == 52 &&
-           github.event.pull_request.head.repo.full_name == github.repository)
         run: >-
           pnpm exec pkg-pr-new publish --pnpm --no-compact --commentWithSha
           './packages/wdio-types' './packages/wdio-logger' './packages/wdio-protocols'

@@ -39,6 +39,8 @@ export function addPuppeteerCompatibility(browser: Browser): CompatiblePuppeteer
         decorateContext(await createBrowserContext.call(browser, options))
     )
 
+    browserContexts.call(browser).forEach(decorateContext)
+
     Object.assign(browser, {
         isConnected: () => browser.connected,
         createIncognitoBrowserContext: createContext,

@@ -29,7 +29,7 @@ describe('Puppeteer session lifecycle', () => {
     }
 
     it('reuses a connected Puppeteer session', async () => {
-        const session = { connected: true }
+        const session = { connected: true, browserContexts: () => [] }
         expect(await getPuppeteer.call(browserWith(session))).toBe(session)
         expect(puppeteer.connect).not.toHaveBeenCalled()
     })
@@ -73,6 +73,24 @@ describe('Puppeteer session lifecycle', () => {
         expect((await compatible.createBrowserContext()).isIncognito()).toBe(true)
     })
 
+    it('decorates existing contexts reached through targets and pages before browser context accessors', async () => {
+        const defaultContext: { id?: string, isIncognito?: () => boolean } = {}
+        const privateContext: { id?: string, isIncognito?: () => boolean } = { id: 'isolated' }
+        const target = { browserContext: () => defaultContext }
+        const page = { browserContext: () => privateContext }
+        const session = {
+            connected: true,
+            browserContexts: () => [defaultContext, privateContext],
+            defaultBrowserContext: () => defaultContext,
+            createBrowserContext: vi.fn()
+        }
+
+        await getPuppeteer.call(browserWith(session))
+
+        expect(target.browserContext().isIncognito?.()).toBe(false)
+        expect(page.browserContext().isIncognito?.()).toBe(true)
+    })
+
     it('reloads the default webdriver protocol using the Testplane fork', async () => {
         const browser = browserWith()
         browser.options.automationProtocol = 'webdriver'
@@ -83,7 +101,7 @@ describe('Puppeteer session lifecycle', () => {
     })
 
     it('reconnects when the previous Puppeteer session is disconnected', async () => {
-        const session = { connected: true }
+        const session = { connected: true, browserContexts: () => [] }
         vi.mocked(puppeteer.connect).mockResolvedValue(session as any)
         const browser = browserWith({ connected: false })
         expect(await getPuppeteer.call(browser)).toBe(session)
@@ -117,6 +135,7 @@ describe('Puppeteer session lifecycle', () => {
         const send = vi.fn().mockResolvedValue(undefined)
         const browser = browserWith({
             connected: true,
+            browserContexts: () => [],
             pages: async () => [{ target: () => ({ createCDPSession: async () => ({ send }) }) }]
         })
         await throttleCPU.call(browser, 2)

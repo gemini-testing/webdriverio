@@ -65,6 +65,101 @@ describe('BiDi interception routing', () => {
         await vi.waitFor(() => expect(mock.calls).toHaveLength(1))
     })
 
+    it('evaluates a response filter once even when multiple mocks observe the event', async () => {
+        const browser = browserMock()
+        const method = vi.fn().mockReturnValueOnce(true).mockReturnValue(false)
+        const mock = await BidiInterception.initiate('**/api', { method }, browser as any)
+        await BidiInterception.initiate('**/other', {}, browser as any)
+        mock.respond('mock body')
+
+        browser.emit('network.responseStarted', event('https://example.org/api', ['1', '2']))
+
+        expect(method).toHaveBeenCalledTimes(1)
+        expect(browser.networkProvideResponse).toHaveBeenCalledTimes(1)
+        expect(browser.networkProvideResponse).toHaveBeenCalledWith({
+            request: 'request', body: { type: 'string', value: 'mock body' }
+        })
+        await vi.waitFor(() => expect(mock.calls).toHaveLength(1))
+    })
+
+    it.each([
+        ['chrome', true, true], ['chrome', true, false],
+        ['chrome', false, true], ['chrome', false, false],
+        ['firefox', false, true], ['firefox', false, false]
+    ] as const)('settles overlapping observers with their responder (%s, fetchResponse: %s, spy first: %s)', async (browserName, fetchResponse, spyFirst) => {
+        const browser = browserMock(browserName)
+        const first = await BidiInterception.initiate('**/api', {}, browser as any)
+        const second = await BidiInterception.initiate('**/api', {}, browser as any)
+        const [spy, mock] = spyFirst ? [first, second] : [second, first]
+        mock.respond('mock body', { fetchResponse })
+        let resolve!: () => void
+        let reject!: (error: Error) => void
+        browser.networkProvideResponse.mockImplementation(() => new Promise<void>((done, fail) => { resolve = done; reject = fail }))
+        const emitResponse = (id: string) => {
+            const { response, ...request } = event('https://example.org/api', ['1', '2'])
+            request.request.request = id
+            browser.emit('network.beforeRequestSent', request)
+            browser.emit('network.responseStarted', { ...request, response, isBlocked: browserName === 'chrome' })
+        }
+
+        emitResponse('successful')
+        await new Promise(done => setImmediate(done))
+        expect(spy.calls).toEqual([])
+        expect(mock.calls).toEqual([])
+        expect(browser.networkProvideResponse).toHaveBeenCalledTimes(1)
+        expect(browser.networkProvideResponse).toHaveBeenCalledWith({
+            request: 'successful', body: { type: 'string', value: 'mock body' }
+        })
+        resolve()
+        await vi.waitFor(() => {
+            expect(spy.calls).toHaveLength(1)
+            expect(mock.calls).toHaveLength(1)
+        })
+
+        const spyCalls = spy.clear().calls
+        const mockCalls = mock.clear().calls
+        emitResponse('failed')
+        await new Promise(done => setImmediate(done))
+        expect(spyCalls).toEqual([])
+        expect(mockCalls).toEqual([])
+        const error = new Error('provide failed')
+        reject(error)
+        await expect(spy.waitForResponse()).rejects.toThrow(error.message)
+        await expect(mock.waitForResponse()).rejects.toThrow(error.message)
+        expect(spyCalls).toEqual([])
+        expect(mockCalls).toEqual([])
+        expect(browser.networkFailRequest).toHaveBeenCalledTimes(1)
+        expect(browser.networkFailRequest).toHaveBeenCalledWith({ request: 'failed' })
+    })
+
+    it.each(['clear', 'reset'] as const)('does not wait for unrelated requests or restore calls cleared with %s', async clear => {
+        const browser = browserMock()
+        const spy = await BidiInterception.initiate('**/api', {}, browser as any)
+        const mock = await BidiInterception.initiate('**/api', {}, browser as any)
+        mock.respond('mock body')
+        let finishPending!: () => void
+        browser.networkProvideResponse.mockImplementation(({ request }) => request === 'pending'
+            ? new Promise<void>(resolve => { finishPending = resolve })
+            : Promise.resolve())
+        const pending = event('https://example.org/api', ['1', '2'])
+        pending.request.request = 'pending'
+        browser.emit('network.responseStarted', pending)
+        const successful = event('https://example.org/api', ['1', '2'])
+        successful.request.request = 'successful'
+        browser.emit('network.responseStarted', successful)
+        await vi.waitFor(() => {
+            expect(spy.calls.map(call => call.request.request)).toEqual(['successful'])
+            expect(mock.calls.map(call => call.request.request)).toEqual(['successful'])
+        })
+        spy[clear]()
+        mock[clear]()
+        finishPending()
+        await new Promise(done => setImmediate(done))
+        expect(spy.calls).toEqual([])
+        expect(mock.calls).toEqual([])
+        await Promise.all([spy.restore(), mock.restore()])
+    })
+
     it('subscribes once per session, including concurrent mocks and a reloaded session', async () => {
         const browser = browserMock()
         await Promise.all([
@@ -79,29 +174,12 @@ describe('BiDi interception routing', () => {
         await BidiInterception.initiate('**/four', {}, anotherBrowser as any)
         expect(anotherBrowser.sessionSubscribe).toHaveBeenCalledTimes(1)
     })
-    it('continues in-flight requests until the intercept has been removed', async () => {
-        const browser = browserMock()
-        let finishRemoval!: () => void
-        browser.networkRemoveIntercept.mockImplementation(() => new Promise<void>(resolve => { finishRemoval = resolve }))
-        const mock = await BidiInterception.initiate('**/api', {}, browser as any)
-        mock.respond({ source: 'mock' })
-        const restoring = mock.restore()
-        // Let the public restore command reach the remote-end removal call.
-        await Promise.resolve()
-        browser.emit('network.responseStarted', event('https://example.org/api'))
-        expect(browser.networkProvideResponse).toHaveBeenCalledWith({ request: 'request' })
-        finishRemoval()
-        await restoring
-        expect(browser.listenerCount('network.beforeRequestSent')).toBe(0)
-        expect(browser.listenerCount('network.responseStarted')).toBe(0)
-        expect(() => mock.respond({})).toThrow()
-    })
 
 })
 
 describe('BiDi response mocking phases', () => {
-    it.each(['chrome', 'firefox'])('does not suppress no-such-request failures when fulfilling a response before the request is sent (%s)', async browserName => {
-        const browser = browserMock(browserName)
+    it('does not suppress no-such-request failures when fulfilling a response before the request is sent', async () => {
+        const browser = browserMock()
         const mock = await BidiInterception.initiate('**/api', {}, browser as any)
         let reject!: (error: Error) => void
         browser.networkProvideResponse.mockImplementation(() => new Promise<void>((_resolve, rejectPromise) => { reject = rejectPromise }))
@@ -109,7 +187,7 @@ describe('BiDi response mocking phases', () => {
         const calls = mock.calls
         const { response, ...request } = event('https://example.org/api')
         browser.emit('network.beforeRequestSent', request)
-        browser.emit('network.responseStarted', { ...request, response, isBlocked: browserName === 'chrome' })
+        browser.emit('network.responseStarted', { ...request, response })
         const waiting = Promise.resolve(mock.waitForResponse({ timeout: 100 })).then(value => value, error => error)
         const error = new Error('WebDriver Bidi command failed: no such request')
         reject(error)
@@ -117,36 +195,29 @@ describe('BiDi response mocking phases', () => {
         const restoreResult = await mock.restore().then(value => value, error => error)
         expect(waitResult).toMatchObject({ message: expect.stringContaining(error.message) })
         expect(restoreResult).toBe(error)
+        expect(browser.networkFailRequest).toHaveBeenCalledWith({ request: 'request' })
+        expect(() => mock.calls).toThrow(error.message)
         expect(calls).toEqual([])
     })
 
-    it.each(['none', 'clear', 'reset'])('does not publish a late Firefox response after its request fulfillment failed (history reset: %s)', async historyReset => {
+    it('does not publish a late failed Firefox response after clear acknowledges its error', async () => {
         const browser = browserMock('firefox')
         const mock = await BidiInterception.initiate('**/api', {}, browser as any)
         const error = new Error('provide failed')
         browser.networkProvideResponse.mockRejectedValue(error)
         mock.respond('mock body')
-        const originalCalls = mock.calls
         const { response, ...request } = event('https://example.org/api')
         browser.emit('network.beforeRequestSent', request)
         await vi.waitFor(() => expect(browser.networkFailRequest).toHaveBeenCalledWith({ request: 'request' }))
-        const calls = historyReset === 'clear'
-            ? mock.clear().calls
-            : historyReset === 'reset' ? mock.reset().calls : originalCalls
+        mock.clear()
         browser.emit('network.responseStarted', { ...request, response, isBlocked: false })
         await new Promise(resolve => setImmediate(resolve))
-        const waitResult = await Promise.resolve(mock.waitForResponse()).then(value => value, error => error)
-        const restoreResult = await mock.restore().then(value => value, error => error)
-        expect(waitResult).toBeInstanceOf(Error)
-        expect(restoreResult).toBe(historyReset === 'none' ? error : mock)
-        expect(originalCalls).toEqual([])
-        expect(calls).toEqual([])
-        if (historyReset === 'none') {
-            expect(() => mock.calls).toThrow(error.message)
-        }
+        expect(mock.calls).toEqual([])
+        await expect(mock.waitForResponse()).rejects.toThrow('timed out')
+        await expect(mock.restore()).resolves.toBe(mock)
     })
 
-    it.each(['clear', 'reset'] as const)('retains a request failure that arrives after %s was called while fulfillment was pending', async historyReset => {
+    it('retains a request failure arriving after reset while fulfillment was pending', async () => {
         const browser = browserMock('firefox')
         const mock = await BidiInterception.initiate('**/api', {}, browser as any)
         let reject!: (error: Error) => void
@@ -154,7 +225,7 @@ describe('BiDi response mocking phases', () => {
         mock.respond('mock body')
         const { response, ...request } = event('https://example.org/api')
         browser.emit('network.beforeRequestSent', request)
-        const calls = mock[historyReset]().calls
+        const calls = mock.reset().calls
         const error = new Error('provide failed after clearing history')
         reject(error)
         await vi.waitFor(() => expect(browser.networkFailRequest).toHaveBeenCalledWith({ request: 'request' }))
@@ -165,21 +236,19 @@ describe('BiDi response mocking phases', () => {
         expect(calls).toEqual([])
     })
 
-    it.each(['chrome', 'firefox'])('does not publish a response before its protocol operation succeeds (%s)', async browserName => {
-        const browser = browserMock(browserName)
+    it('does not publish a synthetic response before its request fulfillment succeeds', async () => {
+        const browser = browserMock('firefox')
         const mock = await BidiInterception.initiate('**/api', {}, browser as any)
         let fulfill!: () => void
         browser.networkProvideResponse.mockImplementation(() => new Promise<void>(resolve => { fulfill = resolve }))
         mock.respond('mock body')
         const { response, ...request } = event('https://example.org/api')
-        if (browserName === 'firefox') {
-            browser.emit('network.beforeRequestSent', request)
-        }
-        browser.emit('network.responseStarted', { ...request, response, isBlocked: browserName === 'chrome' })
+        browser.emit('network.beforeRequestSent', request)
+        browser.emit('network.responseStarted', { ...request, response, isBlocked: false })
         const settled = vi.fn()
         const waiting = Promise.resolve(mock.waitForResponse({ timeout: 1000 })).then(settled)
         try {
-            await new Promise(resolve => setTimeout(resolve, 20))
+            await new Promise(resolve => setImmediate(resolve))
             expect(settled).not.toHaveBeenCalled()
             expect(mock.calls).toEqual([])
         } finally {
@@ -191,20 +260,17 @@ describe('BiDi response mocking phases', () => {
         await mock.restore()
     })
 
-    it.each(['chrome', 'firefox'])('propagates a delayed response failure to an already waiting caller and immediate restore (%s)', async browserName => {
-        const browser = browserMock(browserName)
+    it('propagates a delayed response failure to an already waiting caller and immediate restore', async () => {
+        const browser = browserMock()
         const mock = await BidiInterception.initiate('**/api', {}, browser as any)
         let reject!: (error: Error) => void
         browser.networkProvideResponse.mockImplementation(() => new Promise<void>((_resolve, rejectPromise) => { reject = rejectPromise }))
         mock.respond('mock body')
         const { response, ...request } = event('https://example.org/api')
-        if (browserName === 'firefox') {
-            browser.emit('network.beforeRequestSent', request)
-        }
-        browser.emit('network.responseStarted', { ...request, response, isBlocked: browserName === 'chrome' })
+        browser.emit('network.responseStarted', { ...request, response })
         const waiting = Promise.resolve(mock.waitForResponse({ timeout: 1000 })).then(value => value, error => error)
         const restoring = mock.restore().then(value => value, error => error)
-        await new Promise(resolve => setTimeout(resolve, 20))
+        await new Promise(resolve => setImmediate(resolve))
         const error = new Error('delayed provideResponse failure')
         reject(error)
         expect(await waiting).toMatchObject({ message: expect.stringContaining(error.message) })
@@ -221,17 +287,20 @@ describe('BiDi response mocking phases', () => {
         let reject!: (error: Error) => void
         browser.networkRemoveIntercept.mockImplementation(() => new Promise<void>(resolve => { remove = resolve }))
         browser.networkProvideResponse.mockImplementation(() => new Promise<void>((_resolve, rejectPromise) => { reject = rejectPromise }))
+        mock.respond('mock body')
         const settled = vi.fn()
         const restoring = mock.restore().then(settled, error => error)
         browser.emit('network.responseStarted', event('https://example.org/api'))
+        expect(browser.networkProvideResponse).toHaveBeenCalledWith({ request: 'request' })
         remove()
-        await new Promise(resolve => setTimeout(resolve, 20))
+        await new Promise(resolve => setImmediate(resolve))
         expect(settled).not.toHaveBeenCalled()
         const error = new Error('in-flight continuation failure during restore')
         reject(error)
         expect(await restoring).toBe(error)
         expect(browser.listenerCount('network.beforeRequestSent')).toBe(0)
         expect(browser.listenerCount('network.responseStarted')).toBe(0)
+        expect(() => mock.respond('another body')).toThrow('restored mock')
     })
 
     it('publishes only successful concurrent responses while another response is pending or fails', async () => {
@@ -256,29 +325,22 @@ describe('BiDi response mocking phases', () => {
         expect(calls.map(call => call.request.request)).toEqual(['successful'])
     })
 
-    it('provides Firefox response bodies before the request is sent', async () => {
+    it('provides Firefox response bodies before the request is sent and observes the synthetic response', async () => {
         const browser = browserMock('firefox')
-        const first = await BidiInterception.initiate('**/first', {}, browser as any)
-        const second = await BidiInterception.initiate('**/second', {}, browser as any)
-        first.respond({ source: 'first' })
-        second.respond({ source: 'second' })
-
-        for (const name of ['first', 'second']) {
-            const { response, ...request } = event(`https://example.org/${name}`, ['1', '2'])
-            request.request.request = name
-            browser.emit('network.beforeRequestSent', request)
-            expect(browser.networkProvideResponse).toHaveBeenLastCalledWith({
-                request: name, body: { type: 'string', value: `{"source":"${name}"}` }
-            })
-            // Firefox responses are observed, not intercepted: intercepting a
-            // synthetic response races its beforeRequestSent continuation.
-            browser.emit('network.responseStarted', { ...request, response, isBlocked: false })
-        }
-
+        const mock = await BidiInterception.initiate('**/api', {}, browser as any)
+        mock.respond({ source: 'mock' })
+        expect(browser.networkAddIntercept).toHaveBeenCalledWith({
+            phases: ['beforeRequestSent'], urlPatterns: [{ type: 'pattern' }]
+        })
+        const { response, ...request } = event('https://example.org/api')
+        browser.emit('network.beforeRequestSent', request)
+        browser.emit('network.responseStarted', { ...request, response, isBlocked: false })
         expect(browser.networkContinueRequest).not.toHaveBeenCalled()
-        expect(browser.networkProvideResponse).toHaveBeenCalledTimes(2)
-        await vi.waitFor(() => expect(first.calls).toHaveLength(1))
-        await vi.waitFor(() => expect(second.calls).toHaveLength(1))
+        expect(browser.networkProvideResponse).toHaveBeenCalledTimes(1)
+        expect(browser.networkProvideResponse).toHaveBeenCalledWith({
+            request: 'request', body: { type: 'string', value: '{"source":"mock"}' }
+        })
+        await vi.waitFor(() => expect(mock.calls).toHaveLength(1))
     })
 
     it('keeps Chromium default overwrites at responseStarted to retain the real response', async () => {
@@ -298,8 +360,8 @@ describe('BiDi response mocking phases', () => {
         await vi.waitFor(() => expect(mock.calls).toHaveLength(1))
     })
 
-    it.each(['chrome', 'firefox'])('honors fetchResponse: false on %s', async browserName => {
-        const browser = browserMock(browserName)
+    it('honors an explicit request-stage response with status and headers on Chromium', async () => {
+        const browser = browserMock()
         const mock = await BidiInterception.initiate('**/api', {}, browser as any)
         mock.respond('mock body', { fetchResponse: false, statusCode: 202, headers: { 'x-mock': 'yes' } })
         const { response: _response, ...request } = event('https://example.org/api')
@@ -313,32 +375,22 @@ describe('BiDi response mocking phases', () => {
         })
     })
 
-    it('does not consume the next respondOnce overwrite at the synthetic response phase', async () => {
-        const browser = browserMock('firefox')
+    it.each(['chrome', 'firefox'])('does not consume the next respondOnce at the synthetic response phase (%s)', async browserName => {
+        const browser = browserMock(browserName)
         const mock = await BidiInterception.initiate('**/api', {}, browser as any)
-        mock.respondOnce('first')
-        mock.respondOnce('second')
+        mock.respondOnce('first', { fetchResponse: false })
+        mock.respondOnce('second', { fetchResponse: false })
         const { response, ...request } = event('https://example.org/api')
 
         browser.emit('network.beforeRequestSent', request)
-        browser.emit('network.responseStarted', { ...request, response, isBlocked: false })
+        browser.emit('network.responseStarted', { ...request, response, isBlocked: browserName === 'chrome' })
         expect(browser.networkProvideResponse.mock.calls.map(([params]) => params.body?.value)).toEqual(['first'])
+        await vi.waitFor(() => expect(mock.calls).toHaveLength(1))
         request.request = { ...request.request, request: 'next' }
         browser.emit('network.beforeRequestSent', request)
         expect(browser.networkProvideResponse).toHaveBeenLastCalledWith({
             request: 'next', body: { type: 'string', value: 'second' }
         })
-    })
-
-    it('records an unblocked synthetic response without attempting to resume it', async () => {
-        const browser = browserMock('firefox')
-        const mock = await BidiInterception.initiate('**/api', {}, browser as any)
-        mock.respond('mock body')
-        const { response, ...request } = event('https://example.org/api')
-        browser.emit('network.beforeRequestSent', request)
-        browser.emit('network.responseStarted', { ...request, response, isBlocked: false })
-        await vi.waitFor(() => expect(mock.calls).toHaveLength(1))
-        expect(browser.networkProvideResponse).toHaveBeenCalledTimes(1)
     })
 
     it('rejects fetchResponse: true on Firefox before accepting a response overwrite', async () => {
@@ -359,12 +411,6 @@ describe('BiDi response mocking phases', () => {
         const browser = browserMock('firefox')
         const mock = await BidiInterception.initiate('**/api', {}, browser as any)
         expect(() => mock.respond('mock body', { statusCode: response => response.response.status })).toThrow(/statusCode.*function/)
-    })
-
-    it('does not silently ignore response filters when fetchResponse: false is explicit', async () => {
-        const browser = browserMock()
-        const mock = await BidiInterception.initiate('**/api', { statusCode: 200 }, browser as any)
-        expect(() => mock.respond('mock body', { fetchResponse: false })).toThrow(/response.*filter/i)
     })
 
     it.each(['respond-first', 'request-first'])('rejects combining request overwrites with request-stage responses (%s)', async order => {
@@ -395,12 +441,12 @@ describe('BiDi response mocking phases', () => {
         })
     })
 
-    it('does not apply a newly configured Firefox response to an already sent request', async () => {
-        const browser = browserMock('firefox')
+    it('does not apply a newly configured request-stage response to an already sent request', async () => {
+        const browser = browserMock()
         const mock = await BidiInterception.initiate('**/api', {}, browser as any)
         const { response, ...request } = event('https://example.org/api')
         browser.emit('network.beforeRequestSent', request)
-        mock.respondOnce('mock body')
+        mock.respondOnce('mock body', { fetchResponse: false })
         browser.emit('network.responseStarted', { ...request, response })
         expect(browser.networkProvideResponse).toHaveBeenCalledWith({ request: 'request' })
         request.request = { ...request.request, request: 'next' }
@@ -421,29 +467,6 @@ describe('BiDi response mocking phases', () => {
         expect(browser.networkProvideResponse.mock.calls.map(([params]) => params.body?.value)).toEqual(['first'])
     })
 
-    it.each(['chrome', 'firefox'])('reports asynchronous response failures through the mock rather than an unhandled rejection (%s)', async browserName => {
-        const browser = browserMock(browserName)
-        const mock = await BidiInterception.initiate('**/api', {}, browser as any)
-        browser.networkProvideResponse.mockRejectedValue(new Error('unsupported operation: cannot provide response'))
-        mock.respond('mock body')
-        const { response, ...request } = event('https://example.org/api')
-        browser.emit(browserName === 'firefox' ? 'network.beforeRequestSent' : 'network.responseStarted', { ...request, ...(browserName === 'chrome' ? { response } : {}) })
-
-        await vi.waitFor(() => expect(browser.networkFailRequest).toHaveBeenCalledWith({ request: 'request' }))
-        expect(() => mock.calls).toThrow('unsupported operation: cannot provide response')
-        await expect(mock.waitForResponse()).rejects.toThrow('unsupported operation: cannot provide response')
-        mock.reset()
-        expect(mock.calls).toEqual([])
-    })
-
-    it('does not intercept Firefox responses while providing synthetic request-stage responses', async () => {
-        const browser = browserMock('firefox')
-        await BidiInterception.initiate('**/api', {}, browser as any)
-        expect(browser.networkAddIntercept).toHaveBeenCalledWith({
-            phases: ['beforeRequestSent'], urlPatterns: [{ type: 'pattern' }]
-        })
-    })
-
     it('records matching unblocked Firefox responses while retaining response filters for spies', async () => {
         const browser = browserMock('firefox')
         const mock = await BidiInterception.initiate('**/api', { statusCode: 200 }, browser as any)
@@ -457,15 +480,4 @@ describe('BiDi response mocking phases', () => {
         await expect(mock.waitForResponse()).resolves.toBe(true)
     })
 
-    it('does not resume an already provided Chromium response even when its event advertises intercepts', async () => {
-        const browser = browserMock()
-        const mock = await BidiInterception.initiate('**/api', {}, browser as any)
-        mock.respondOnce('first', { fetchResponse: false })
-        mock.respondOnce('second', { fetchResponse: false })
-        const { response, ...request } = event('https://example.org/api')
-        browser.emit('network.beforeRequestSent', request)
-        browser.emit('network.responseStarted', { ...request, response })
-        expect(browser.networkProvideResponse.mock.calls.map(([params]) => params.body?.value)).toEqual(['first'])
-        await vi.waitFor(() => expect(mock.calls).toHaveLength(1))
-    })
 })

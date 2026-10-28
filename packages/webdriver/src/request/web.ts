@@ -45,10 +45,9 @@ export class WebRequest extends WebDriverRequest {
             }
         }
 
-        // The shared request layer uses got's timeout shape and owns retries.
+        // The shared request options use got's timeout shape.
         // Passing that object to ky coerces the timeout to 1 ms in setTimeout.
         kyOptions.timeout = options.timeout?.response
-        kyOptions.retry = 0
         const res = await ky(url.href, kyOptions).catch((error: unknown) => {
             if (error instanceof TimeoutError) {
                 Object.assign(error, { code: 'ETIMEDOUT', event: 'response' })

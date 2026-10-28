@@ -153,15 +153,8 @@ export default class BrowserFramework implements Omit<TestFramework, 'init'> {
         /**
          * run checks for errors here to avoid breakage in communication with the browser
          */
-        const resolveTestState = this.#resolveTestStatePromise!
         const errorInterval = setInterval(
-            () => this.#checkForTestError(resolveTestState).catch((err: Error) => {
-                resolveTestState({
-                    events: [],
-                    failures: 1,
-                    errors: [{ message: `Failed to check browser test state: ${err.message}` }]
-                })
-            }),
+            this.#checkForTestError.bind(this),
             ERROR_CHECK_INTERVAL)
 
         const state: TestState = await testStatePromise
@@ -459,7 +452,7 @@ export default class BrowserFramework implements Omit<TestFramework, 'init'> {
         })
     }
 
-    async #checkForTestError (resolveTestState: (value: TestState) => void) {
+    async #checkForTestError () {
         const testError = await browser.execute(function fetchExecutionState () {
             let viteError
             const viteErrorElem = document.querySelector('vite-error-overlay')
@@ -482,10 +475,7 @@ export default class BrowserFramework implements Omit<TestFramework, 'init'> {
             /**
              * ignore error, see https://github.com/GoogleChromeLabs/chromium-bidi/issues/1102
              */
-            if (
-                err.message.includes('Cannot find context with specified id') ||
-                err.message.includes('execution contexts cleared')
-            ) {
+            if (err.message.includes('Cannot find context with specified id')) {
                 return
             }
 
@@ -497,7 +487,7 @@ export default class BrowserFramework implements Omit<TestFramework, 'init'> {
         }
 
         if ((testError.errors && testError.errors.length > 0) || testError.hasViteError) {
-            resolveTestState({
+            this.#resolveTestStatePromise?.({
                 events: [],
                 failures: 1,
                 ...testError
@@ -518,7 +508,7 @@ export default class BrowserFramework implements Omit<TestFramework, 'init'> {
                 return browser.refresh()
             }
 
-            resolveTestState({
+            this.#resolveTestStatePromise?.({
                 events: [],
                 failures: 1,
                 hasViteError: false,

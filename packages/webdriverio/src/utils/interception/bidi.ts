@@ -11,10 +11,22 @@ import type { WaitForOptions } from '../../types.js'
 
 const log = logger('BidiInterception')
 
+type NetworkEvent = local.NetworkBeforeRequestSentParameters | local.NetworkResponseCompletedParameters
+type InterceptionPhase = 'request' | 'response'
+interface EventRoute {
+    owner?: BidiInterception
+    matches: Set<BidiInterception>
+    completion: Promise<void>
+    complete: () => void
+    error?: Error
+}
+
 const sessions = new WeakMap<WebdriverIO.Browser, {
     sessionId: string
     subscribed: Promise<unknown>
     mocks: Set<BidiInterception>
+    routes: WeakMap<local.NetworkRequestData, Partial<Record<InterceptionPhase, EventRoute>>>
+    pendingRequestRoutes: Map<string, EventRoute>
 }>()
 
 type RespondBody = string | JsonCompatible | Buffer
@@ -45,13 +57,13 @@ export default class BidiInterception {
     #calls: local.NetworkResponseCompletedParameters[] = []
     #pendingCalls = new Map<string, local.NetworkResponseCompletedParameters[]>()
     #pendingRequests = new Map<string, number>()
-    #pendingOperations = new Set<Promise<void>>()
+    #pendingOperations = new Set<Promise<Error | undefined>>()
     #networkError?: Error
     #beforeRequestSent = (request: local.NetworkBeforeRequestSentParameters) => {
-        void this.#handleNetworkEvent(() => this.#handleBeforeRequestSent(request), request.request.request)
+        void this.#handleNetworkEvent(() => this.#handleBeforeRequestSent(request), request, 'request')
     }
     #responseStarted = (request: local.NetworkResponseCompletedParameters) => {
-        void this.#handleNetworkEvent(() => this.#handleResponseStarted(request), request.request.request)
+        void this.#handleNetworkEvent(() => this.#handleResponseStarted(request), request, 'response')
     }
 
     constructor (
@@ -88,7 +100,9 @@ export default class BidiInterception {
                 subscribed: browser.sessionSubscribe({
                     events: ['network.beforeRequestSent', 'network.responseStarted']
                 }),
-                mocks: new Set()
+                mocks: new Set(),
+                routes: new WeakMap(),
+                pendingRequestRoutes: new Map()
             }
             sessions.set(browser, session)
         }
@@ -144,12 +158,23 @@ export default class BidiInterception {
         handlers?.push(handler)
     }
 
-    #handleNetworkEvent(handler: () => Promise<unknown> | undefined, requestId: string) {
+    #handleNetworkEvent(handler: () => Promise<unknown> | undefined, request: NetworkEvent, phase: InterceptionPhase) {
+        const requestData = request.request
+        const requestId = requestData.request
+        const session = sessions.get(this.#browser)
         this.#pendingRequests.set(requestId, (this.#pendingRequests.get(requestId) || 0) + 1)
         const operation = this.#runNetworkEvent(handler, requestId)
         this.#pendingOperations.add(operation)
-        void operation.then(() => {
+        void operation.then((error) => {
             this.#pendingOperations.delete(operation)
+            const route = session?.routes.get(requestData)?.[phase]
+            if (route?.owner === this) {
+                route.error = error
+                route.complete()
+                if (session?.pendingRequestRoutes.get(requestId) === route) {
+                    session.pendingRequestRoutes.delete(requestId)
+                }
+            }
             const remaining = (this.#pendingRequests.get(requestId) || 1) - 1
             if (remaining > 0) {
                 this.#pendingRequests.set(requestId, remaining)
@@ -168,7 +193,8 @@ export default class BidiInterception {
             // EventEmitter does not await listener promises. Keep the failure
             // observable through calls/waitForResponse instead of crashing the
             // process with an unhandled rejection, and release the blocked request.
-            this.#networkError ||= error instanceof Error ? error : new Error(String(error))
+            const failure = error instanceof Error ? error : new Error(String(error))
+            this.#networkError ||= failure
             this.#failedRequests.add(requestId)
             this.#providedRequests.delete(requestId)
             this.#pendingCalls.delete(requestId)
@@ -178,7 +204,20 @@ export default class BidiInterception {
             } catch (abortError) {
                 log.error(`Failed to abort mocked request ${requestId}: ${abortError}`)
             }
+            return failure
         }
+    }
+
+    #waitForRoute(route: EventRoute | undefined, requestId: string) {
+        return route?.completion.then(() => {
+            if (route.error) {
+                // The owner already aborted the request. Observers only retain
+                // its error and discard their pending call, without aborting again.
+                this.#networkError ||= route.error
+                this.#failedRequests.add(requestId)
+                this.#pendingCalls.delete(requestId)
+            }
+        })
     }
 
     #recordResponse(request: local.NetworkResponseCompletedParameters) {
@@ -198,20 +237,27 @@ export default class BidiInterception {
          * - request is not blocked
          * - request is not matching the pattern, e.g. a different mock is responsible for this request
          */
-        if (!this.#isRequestMatching(request)) {
+        if (!request.isBlocked || this.#restored) {
             return
+        }
+        const route = this.#getRoute(request, 'request')
+        const { owner, matches } = route
+        if (matches.has(this)) {
+            this.#emit('request', request)
+        }
+        if (owner !== this) {
+            return matches.has(this) ? this.#waitForRoute(route, request.request.request) : undefined
         }
 
         /**
          * check if request matches filter option and do nothing if not
          */
-        if (!this.#pattern.test(request.request.url) || !this.#matchesFilterOptions(request)) {
+        if (!matches.has(this)) {
             return this.#browser.networkContinueRequest({
                 request: request.request.request
             })
         }
 
-        this.#emit('request', request)
         const responseOverwrite = this.#respondOverwrites[0]
         if (
             responseOverwrite?.overwrite &&
@@ -255,6 +301,8 @@ export default class BidiInterception {
     }
 
     #handleResponseStarted(request: local.NetworkResponseCompletedParameters) {
+        const requestId = request.request.request
+        const pendingRequestRoute = sessions.get(this.#browser)?.pendingRequestRoutes.get(requestId)
         // Providing a complete response before the request is sent still emits
         // response events. Record that response, but never consume another
         // respondOnce overwrite or provide its body a second time.
@@ -266,7 +314,7 @@ export default class BidiInterception {
             queueMicrotask(() => {
                 this.#providedRequests.delete(request.request.request)
             })
-            return
+            return this.#waitForRoute(pendingRequestRoute, requestId)
         }
 
         // Firefox only intercepts the request phase, but spies still need real
@@ -274,6 +322,7 @@ export default class BidiInterception {
         if (this.#browser.isFirefox && !request.isBlocked) {
             if (!this.#restored && this.#pattern.test(request.request.url) && this.#matchesFilterOptions(request)) {
                 this.#recordResponse(request)
+                return this.#waitForRoute(pendingRequestRoute, requestId)
             }
             return
         }
@@ -283,14 +332,26 @@ export default class BidiInterception {
          * - request is not blocked
          * - request is not matching the pattern, e.g. a different mock is responsible for this request
          */
-        if (!this.#isRequestMatching(request)) {
+        if (!request.isBlocked || this.#restored) {
+            return
+        }
+        const route = this.#getRoute(request, 'response')
+        const { owner, matches } = route
+        if (owner !== this) {
+            if (matches.has(this)) {
+                this.#recordResponse(request)
+                return Promise.all([
+                    this.#waitForRoute(route, requestId),
+                    this.#waitForRoute(pendingRequestRoute, requestId)
+                ])
+            }
             return
         }
 
         /**
          * continue mock if not matching filter
          */
-        if (!this.#pattern.test(request.request.url) || !this.#matchesFilterOptions(request)) {
+        if (!matches.has(this)) {
             this.#emit('continue', request.request.request)
             return this.#browser.networkProvideResponse({
                 request: request.request.request
@@ -354,21 +415,40 @@ export default class BidiInterception {
         throw err
     }
 
-    #isRequestMatching<T extends local.NetworkBeforeRequestSentParameters | local.NetworkResponseCompletedParameters> (request: T) {
-        if (!request.isBlocked || this.#restored) {
-            return false
+    #getRoute(request: NetworkEvent, phase: InterceptionPhase): EventRoute {
+        const session = sessions.get(this.#browser)
+        const routes = session?.routes.get(request.request) || {}
+        if (routes[phase]) {
+            return routes[phase]
         }
 
         // BiDi URL components are exact matches, so wildcard components are
-        // filtered locally. Only one mock may resume a blocked request, even
-        // when several broad protocol intercepts captured it.
-        const mocks = [...(sessions.get(this.#browser)?.mocks || [])].filter(mock => (
+        // filtered locally. Evaluate user predicates once per event and share
+        // the result between listeners, before respondOnce consumes an overwrite.
+        const mocks = [...(session?.mocks || [])].filter(mock => (
             !mock.#restored && (!request.intercepts || request.intercepts.includes(mock.#mockId))
         ))
-        const owner = mocks.find(mock => mock.#providedRequests.has(request.request.request)) || mocks.find(mock => (
+        const matchingMocks = mocks.filter(mock => (
             mock.#pattern.test(request.request.url) && mock.#matchesFilterOptions(request)
-        )) || mocks[0]
-        return owner === this
+        ))
+        // A matching spy observes the event but must not consume the single
+        // continuation needed by another mock's configured overwrite.
+        const owner = mocks.find(mock => mock.#providedRequests.has(request.request.request)) || matchingMocks.find(mock => {
+            const response = mock.#respondOverwrites[0]?.overwrite
+            const providesBeforeRequest = response && 'fetchResponse' in response && response.fetchResponse === false
+            return phase === 'request'
+                ? mock.#requestOverwrites.length > 0 || providesBeforeRequest
+                : response && !providesBeforeRequest
+        }) || matchingMocks[0] || mocks[0]
+        let complete!: () => void
+        const completion = new Promise<void>(resolve => { complete = resolve })
+        const route = { owner, matches: new Set(matchingMocks), completion, complete }
+        routes[phase] = route
+        session?.routes.set(request.request, routes)
+        if (phase === 'request' && owner) {
+            session?.pendingRequestRoutes.set(request.request.request, route)
+        }
+        return route
     }
 
     #matchesFilterOptions<T extends local.NetworkBeforeRequestSentParameters | local.NetworkResponseCompletedParameters> (request: T) {

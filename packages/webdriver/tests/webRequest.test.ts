@@ -34,4 +34,17 @@ describe('browser HTTP transport', () => {
         })).resolves.toEqual({ value: 'delayed response' })
     })
 
+    it('retries a transient GET fetch failure', async () => {
+        const send = vi.fn()
+            .mockRejectedValueOnce(new TypeError('fetch failed'))
+            .mockResolvedValue(Response.json({ value: 'recovered' }))
+        vi.stubGlobal('fetch', send)
+
+        await expect(new WebRequest('GET', '/status').makeRequest({
+            protocol: 'http', hostname: 'localhost', port: 4444,
+            connectionRetryCount: 3, connectionRetryTimeout: 1000
+        })).resolves.toEqual({ value: 'recovered' })
+        expect(send).toHaveBeenCalledTimes(2)
+    })
+
 })

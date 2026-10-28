@@ -190,20 +190,8 @@ export function wrapCommand<T>(commandName: string, fn: Function): (...args: unk
                             /**
                              * `this` is an array of WebdriverIO elements
                              */
-                            async function (this: WebdriverIOInstance, index: number) {
-                                if (this[index] || !this.parent || !this.selector || Number(index) < 0) {
-                                    return this[index]
-                                }
-                                let elements = this
-                                await this.parent.waitUntil(async () => {
-                                    // Replay the complete query, including React filters
-                                    // and custom selector arguments, not just its selector.
-                                    elements = await cmd.call(this.parent, ...args)
-                                    return Boolean(elements[index])
-                                }, {
-                                    timeoutMsg: `Index out of bounds! ${this.foundWith}(${this.selector}) did not return element ${index}.`
-                                })
-                                return elements[index]
+                            function (this: WebdriverIOInstance, index: number) {
+                                return this[index]
                             },
                             [prop],
                             { prop, args }
