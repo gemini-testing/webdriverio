@@ -107,5 +107,10 @@ export async function switchWindow (
         }
     }
 
+    if (currentWindow && tabs.includes(currentWindow)) {
+        await this.switchToWindow(currentWindow)
+        contextManager.setCurrentContext(currentWindow)
+    }
+
     throw new Error(`No window found with title, url, name or window handle matching "${matcher}"`)
 }

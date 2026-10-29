@@ -5,12 +5,12 @@ describe('reloadSession', () => {
         const sessionId = browser.sessionId
         expect(browser.capabilities.browserName).toBe('chrome')
         await browser.reloadSession({
-            browserName: 'edge',
-            'ms:edgeOptions': {
-                args: ['headless', 'disable-gpu']
+            browserName: 'firefox',
+            'moz:firefoxOptions': {
+                args: ['-headless']
             }
         })
-        expect(browser.capabilities.browserName).toContain('MicrosoftEdge')
+        expect(browser.capabilities.browserName).toBe('firefox')
         expect(browser.sessionId).not.toBe(sessionId)
     })
 })

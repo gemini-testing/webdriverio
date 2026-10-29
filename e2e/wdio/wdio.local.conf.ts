@@ -1,4 +1,3 @@
-import os from 'node:os'
 import url from 'node:url'
 import path from 'node:path'
 
@@ -39,12 +38,6 @@ export const config: WebdriverIO.Config = {
         'moz:firefoxOptions': {
             args: ['-headless']
         }
-    }, {
-        browserName: 'edge',
-        webSocketUrl: true,
-        'ms:edgeOptions': {
-            args: ['headless', 'disable-gpu']
-        }
     }],
 
     /**
@@ -60,14 +53,6 @@ export const config: WebdriverIO.Config = {
         ui: 'bdd',
         timeout: 60000
     }
-}
-
-if (os.platform() === 'darwin') {
-    config.capabilities.push({
-        // not yet supported
-        // webSocketUrl: true,
-        browserName: 'safari'
-    })
 }
 
 /**

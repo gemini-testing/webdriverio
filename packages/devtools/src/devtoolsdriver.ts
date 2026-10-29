@@ -1,16 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { EventEmitter } from 'node:events'
 
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'node:crypto'
 
 import logger from '@testplane/wdio-logger'
 import type { CommandEndpoint } from '@testplane/wdio-protocols'
 
-import type { Browser } from 'puppeteer-core/lib/esm/puppeteer/api/Browser.js'
-import type { Dialog } from 'puppeteer-core/lib/esm/puppeteer/common/Dialog.js'
-import type { Page } from 'puppeteer-core/lib/esm/puppeteer/api/Page.js'
-import type { Target } from 'puppeteer-core/lib/esm/puppeteer/common/Target.js'
-import type { Frame } from 'puppeteer-core/lib/esm/puppeteer/common/Frame.js'
+import type { Browser, Dialog, Page, Target, Frame } from 'puppeteer-core'
 
 import * as commands from './commands/index.js'
 import ElementStore from './elementstore.js'
@@ -40,7 +36,7 @@ export default class DevToolsDriver {
     }
 
     private _createWindowHandle (page: Page) {
-        const pageId = uuidv4()
+        const pageId = randomUUID()
         this.windows.set(pageId, page)
         this.currentFrame = page
         this.currentWindowHandle = pageId

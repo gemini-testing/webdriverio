@@ -48,7 +48,7 @@ export function isSupportedUrl (url: string) {
  * Either request the page list directly from the browser or if Selenium
  * or Selenoid is used connect to a target manually
  */
-export async function getLighthouseDriver (session: CDPSession, target: Target): Promise<GathererDriver> {
+export async function getLighthouseDriver (session: CDPSession, _target: Target): Promise<GathererDriver> {
     const connection = session.connection()
 
     if (!connection) {
@@ -57,6 +57,7 @@ export async function getLighthouseDriver (session: CDPSession, target: Target):
 
     const cUrl = new URL(connection.url())
     const cdpConnection = new ChromeProtocol(cUrl.port, cUrl.hostname)
+    const { targetInfo } = await session.send('Target.getTargetInfo')
 
     /**
      * only create a new DevTools session if our WebSocket url doesn't already indicate
@@ -65,18 +66,22 @@ export async function getLighthouseDriver (session: CDPSession, target: Target):
     if (!cUrl.pathname.startsWith('/devtools/browser')) {
         await cdpConnection._connectToSocket({
             webSocketDebuggerUrl: connection.url(),
-            id: (await target.asPage()).mainFrame()._id
+            id: targetInfo.targetId
         })
         const { sessionId } = await cdpConnection.sendCommand(
             'Target.attachToTarget',
             undefined,
-            { targetId: (await target.asPage()).mainFrame()._id, flatten: true }
+            { targetId: targetInfo.targetId, flatten: true }
         )
         cdpConnection.setSessionId(sessionId)
         return new Driver(cdpConnection)
     }
 
     const list = await cdpConnection._runJsonCommand('list')
-    await cdpConnection._connectToSocket(list[0])
+    const pageTarget = list.find((entry: { id: string }) => entry.id === targetInfo.targetId)
+    if (!pageTarget) {
+        throw new Error(`Could not find Lighthouse page target ${targetInfo.targetId}`)
+    }
+    await cdpConnection._connectToSocket(pageTarget)
     return new Driver(cdpConnection)
 }

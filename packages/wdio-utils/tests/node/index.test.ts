@@ -55,11 +55,11 @@ vi.mock('safaridriver', () => ({
         stderr: { pipe: vi.fn().mockReturnValue({ on: vi.fn() }) }
     })
 }))
-vi.mock('edgedriver', () => ({
+vi.mock('@testplane/edgedriver', () => ({
     start: vi.fn().mockResolvedValue('edgedriver'),
     findEdgePath: vi.fn().mockReturnValue('/foo/bar/executable')
 }))
-vi.mock('geckodriver', () => ({ start: vi.fn().mockResolvedValue('geckodriver') }))
+vi.mock('@testplane/geckodriver', () => ({ start: vi.fn().mockResolvedValue('geckodriver') }))
 vi.mock('wait-port', () => ({ default: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('get-port', () => ({ default: vi.fn().mockResolvedValue(1234) }))
 
@@ -92,10 +92,32 @@ describe('startWebDriver', () => {
         vi.mocked(cp.spawn).mockClear()
         vi.mocked(startGeckodriver).mockClear()
         vi.mocked(fs.createWriteStream).mockClear()
+        vi.mocked(split2).mockClear()
     })
 
     afterEach(() => {
         process.env.WDIO_SKIP_DRIVER_SETUP = WDIO_SKIP_DRIVER_SETUP
+    })
+
+    it('preserves Chrome arguments and nested preferences when setting up the binary', async () => {
+        const options = {
+            capabilities: {
+                browserName: 'chrome',
+                'wdio:chromedriverOptions': { binary: '/my/chromedriver' },
+                'goog:chromeOptions': {
+                    args: ['--headless', '--disable-gpu'],
+                    prefs: { download: { prompt_for_download: false } }
+                }
+            } as any
+        }
+
+        await startWebDriver(options)
+
+        expect(options.capabilities['goog:chromeOptions']).toEqual({
+            binary: '/path/to/browser',
+            args: ['--headless', '--disable-gpu'],
+            prefs: { download: { prompt_for_download: false } }
+        })
     })
 
     it('should start safari driver', async () => {

@@ -100,6 +100,11 @@ describe('WebDriver', () => {
                             unhandledPromptBehavior: 'ignore'
                         },
                         firstMatch: [{}]
+                    },
+                    desiredCapabilities: {
+                        browserName: 'firefox',
+                        webSocketUrl: true,
+                        unhandledPromptBehavior: 'ignore'
                     }
                 }) })
             )
@@ -124,6 +129,11 @@ describe('WebDriver', () => {
                             unhandledPromptBehavior: 'ignore'
                         },
                         firstMatch: [{}]
+                    },
+                    desiredCapabilities: {
+                        browserName: 'firefox',
+                        webSocketUrl: true,
+                        unhandledPromptBehavior: 'ignore'
                     }
                 }) })
             )

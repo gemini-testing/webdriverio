@@ -1,8 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { browser, expect } from '@wdio/globals'
 import type { local } from '@testplane/webdriver'
+import { readFileSync } from 'node:fs'
+import { startTestPages } from '../../__fixtures__/pages.js'
 
 describe('bidi e2e test', () => {
+    let pages: Awaited<ReturnType<typeof startTestPages>>
+    before(async () => { pages = await startTestPages() })
+    after(async () => { await pages?.close() })
+
     describe('execute', () => {
         it('generates a nice stack trace', async function () {
             /**
@@ -23,7 +29,9 @@ describe('bidi e2e test', () => {
                     }
                 }
             }).catch(err => err)
-            expect(result.stack).toContain('16 │ if(a){if(a){throw new Error("Hello Bidi")}}}')
+            const sourceLines = readFileSync(new URL(import.meta.url), 'utf8').split('\n')
+            const executeLine = sourceLines.findIndex(line => line.includes('const result = await browser.execute(async')) + 1
+            expect(result.stack).toContain(`${executeLine} │ if(a){if(a){throw new Error("Hello Bidi")}}}`)
 
             const result2 = await browser.execute(async () => {
                 const a: number = 1
@@ -34,7 +42,8 @@ describe('bidi e2e test', () => {
                     }
                 }
             }).catch(err => err)
-            expect(result2.stack).toContain('27 │ if(a){if(a){await Promise.reject(new Error("Hello Bidi"))}}}')
+            const executeAsyncLine = sourceLines.findIndex(line => line.includes('const result2 = await browser.execute(async')) + 1
+            expect(result2.stack).toContain(`${executeAsyncLine} │ if(a){if(a){await Promise.reject(new Error("Hello Bidi"))}}}`)
         })
     })
 
@@ -207,7 +216,7 @@ describe('bidi e2e test', () => {
     })
 
     it('supports execute with bidi on element scope', async () => {
-        await browser.url('https://guinea-pig.webdriver.io')
+        await browser.url(pages.url)
         const result = await browser.$('.findme').execute(function (elem, a, b, c, d) {
             return (elem as unknown as HTMLElement).innerText.length + a + b + c + d
         }, 1, 2, 3, 4)
@@ -237,7 +246,7 @@ describe('bidi e2e test', () => {
         })
 
         it('works on element scope', async () => {
-            await browser.url('https://guinea-pig.webdriver.io')
+            await browser.url(pages.url)
             const result = await browser.$('.findme').executeAsync(function (elem, a, b, c, d, done) {
                 // browser context - you may not access client or console
                 setTimeout(() => {

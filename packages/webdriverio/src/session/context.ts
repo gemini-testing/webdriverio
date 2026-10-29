@@ -24,9 +24,6 @@ export class ContextManager extends SessionManager {
     #mobileContext?: string
     #isNativeContext: boolean
     #getContextSupport = true
-    #onCommandListener: (event: { command: string, body: unknown }) => void
-    #onCommandResultMobileListener: (event: { command: string, result: unknown }) => void
-    #navigationStartedListener: (nav: local.BrowsingContextNavigationInfo) => void
 
     constructor(browser: WebdriverIO.Browser) {
         super(browser, ContextManager.name)
@@ -39,16 +36,6 @@ export class ContextManager extends SessionManager {
             isNativeContext: this.#isNativeContext
         })
 
-        this.#onCommandListener = this.#onCommand.bind(this)
-        this.#onCommandResultMobileListener = this.#onCommandResultMobile.bind(this)
-        this.#navigationStartedListener = this.#navigationStarted.bind(this)
-
-        /**
-         * Listens for the 'closeWindow' browser command to handle context changes.
-         * (classic + bidi)
-         */
-        // this.#browser.on('result', this.#onCommandResultBidiAndClassic.bind(this))
-
         // only listen to command events if we are in a bidi session or a mobile session
         // Adding the check for mobile in the `this.isEnabled()` method breaking the method and throws
         // `Test execution failed: TypeError: __privateGet(...).sessionSubscribe is not a function`
@@ -60,37 +47,29 @@ export class ContextManager extends SessionManager {
          * Listens for the 'switchToWindow' browser command to handle context changes.
          * Updates the browsingContext with the context passed in 'switchToWindow'.
          */
-        this.#browser.on('command', this.#onCommandListener)
+        this.#browser.on('command', this.#onCommand)
+        this.#browser.on('result', this.#onCommandResult)
 
-        /**
-         * Listens for the 'closeWindow' browser command to handle context changes.
-         */
-        if (this.#browser.isMobile) {
-            this.#browser.on('result', this.#onCommandResultMobileListener)
-        } else {
+        if (!this.#browser.isMobile) {
             /**
              * Listen to the 'browsingContext.navigationStarted' event to handle context changes
              * through navigation within e.g. frames.
              */
             this.#browser.sessionSubscribe({
                 events: ['browsingContext.navigationStarted']
-            })
-            this.#browser.on('browsingContext.navigationStarted', this.#navigationStartedListener)
+            }).catch((err) => log.warn('Failed to subscribe to navigation events', err))
+            this.#browser.on('browsingContext.navigationStarted', this.#onNavigationStarted)
         }
     }
 
     removeListeners(): void {
         super.removeListeners()
-        // this.#browser.off('result', this.#onCommandResultBidiAndClassic.bind(this))
-        this.#browser.off('command', this.#onCommandListener)
-        if (this.#browser.isMobile) {
-            this.#browser.off('result', this.#onCommandResultMobileListener)
-        } else {
-            this.#browser.off('browsingContext.navigationStarted', this.#navigationStartedListener)
-        }
+        this.#browser.off('command', this.#onCommand)
+        this.#browser.off('result', this.#onCommandResult)
+        this.#browser.off('browsingContext.navigationStarted', this.#onNavigationStarted)
     }
 
-    async #navigationStarted(nav: local.BrowsingContextNavigationInfo) {
+    #onNavigationStarted = async (nav: local.BrowsingContextNavigationInfo) => {
         /**
          * no need to do anything as we navigate within the same context
          */
@@ -103,34 +82,40 @@ export class ContextManager extends SessionManager {
          * current tree and see if our context is still there, if not, we need to reset
          * the context to the first context in the tree.
          */
-        const { contexts } = await this.#browser.browsingContextGetTree({})
-        /**
-         * check if the context is still in the tree, if not, switch to...
-         */
-        const hasContext = this.findContext(this.#currentContext, contexts, 'byContextId')
-        /**
-         * ...the context we are navigating to
-         */
-        const newContext = contexts.find((context) => context.context === nav.context)
-        if (!hasContext && newContext) {
-            this.setCurrentContext(newContext.context)
-            await this.#browser.switchToWindow(this.#currentContext)
-            return
+        try {
+            const { contexts } = await this.#browser.browsingContextGetTree({})
+            /**
+             * check if the context is still in the tree, if not, switch to...
+             */
+            const hasContext = this.findContext(this.#currentContext, contexts, 'byContextId')
+            /**
+             * ...the context we are navigating to
+             */
+            const newContext = contexts.find((context) => context.context === nav.context)
+            if (!hasContext && newContext) {
+                await this.#browser.switchToWindow(newContext.context)
+                this.setCurrentContext(newContext.context)
+                return
+            }
+        } catch (err) {
+            // Navigation can race with a destroyed context or a reloaded session.
+            log.warn('Failed to update context after navigation', err)
         }
     }
 
-    // #onCommandResultBidiAndClassic(event: { command: string, result: unknown }) {
-    //     /**
-    //      * the `closeWindow` command returns:
-    //      *   > the result of running the remote end steps for the Get Window Handles command, with session, URL variables and parameters.
-    //      */
-    //     if (event.command === 'closeWindow') {
-    //         this.#currentContext = (event.result as { value: string[] }).value[0]
-    //         return this.#browser.switchToWindow(this.#currentContext)
-    //     }
-    // }
+    #onCommandResult = (event: { command: string, body: unknown, result: unknown }) => {
+        if ((event.result as { error?: unknown }).error) {
+            return
+        }
+        if (event.command === 'switchToWindow') {
+            this.setCurrentContext((event.body as { handle: string }).handle)
+        }
+        if (this.#browser.isMobile) {
+            this.#onCommandResultMobile(event)
+        }
+    }
 
-    #onCommand(event: { command: string, body: unknown }) {
+    #onCommand = (event: { command: string, body: unknown }) => {
         /**
          * update frame context if user switches using 'switchToParentFrame'
          */
@@ -146,14 +131,6 @@ export class ContextManager extends SessionManager {
                 }
                 this.setCurrentContext(parentContext.context)
             })
-        }
-
-        /**
-         * update frame context if user switches using 'switchToWindow'
-         * which is WebDriver Classic only
-         */
-        if (event.command === 'switchToWindow') {
-            this.setCurrentContext((event.body as { handle: string }).handle)
         }
 
         /**

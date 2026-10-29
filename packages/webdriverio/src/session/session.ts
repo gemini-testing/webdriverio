@@ -1,6 +1,6 @@
 const sessionManager = new Map<string, Map<WebdriverIO.Browser, SessionManager>>()
 
-const listenerRegisteredSession = new Set<string>()
+const listenerRegisteredSession = new WeakMap<WebdriverIO.Browser, Map<string, SessionManager>>()
 
 export class SessionManager {
     #browser: WebdriverIO.Browser
@@ -16,28 +16,33 @@ export class SessionManager {
     constructor(browser: WebdriverIO.Browser, scope: string) {
         this.#browser = browser
         this.#scope = scope
-        const registrationId = `${this.#browser.sessionId}-${this.#scope}`
-        if (!listenerRegisteredSession.has(registrationId)) {
-            this.#browser.on('command', this.#onCommandListener)
-            listenerRegisteredSession.add(registrationId)
+        let registeredManagers = listenerRegisteredSession.get(browser)
+        if (!registeredManagers) {
+            registeredManagers = new Map()
+            listenerRegisteredSession.set(browser, registeredManagers)
+        }
+        if (!registeredManagers.has(scope)) {
+            this.#browser.on('command', this.#onCommand)
+            registeredManagers.set(scope, this)
         }
     }
 
-    #onCommandListener = this.#onCommand.bind(this)
-
-    #onCommand(ev: { command: string }) {
+    #onCommand = (ev: { command: string }) => {
         if (ev.command === 'deleteSession') {
+            this.removeListeners()
             const sessionManagerInstances = sessionManager.get(this.#scope)
-            const sessionManagerInstance = sessionManagerInstances?.get(this.#browser)
-            if (sessionManagerInstance && sessionManagerInstances) {
-                sessionManagerInstance.removeListeners()
+            if (sessionManagerInstances?.get(this.#browser) === this) {
                 sessionManagerInstances.delete(this.#browser)
             }
         }
     }
 
     removeListeners() {
-        this.#browser.off('command', this.#onCommandListener)
+        this.#browser.off('command', this.#onCommand)
+        const registeredManagers = listenerRegisteredSession.get(this.#browser)
+        if (registeredManagers?.get(this.#scope) === this) {
+            registeredManagers.delete(this.#scope)
+        }
     }
 
     initialize(): unknown {

@@ -3,9 +3,7 @@ import type { EventEmitter } from 'node:events'
 
 import type { Options, Capabilities } from '@testplane/wdio-types'
 import type { ProtocolCommands } from '@testplane/wdio-protocols'
-import type { LaunchOptions, BrowserLaunchArgumentOptions, BrowserConnectOptions, ConnectOptions } from 'puppeteer-core'
-import type { Browser } from 'puppeteer-core/lib/esm/puppeteer/api/Browser.js'
-import type { EventEmitter as PuppeteerEventEmitter } from 'puppeteer-core/lib/esm/puppeteer/common/EventEmitter.js'
+import type { LaunchOptions, Browser, EventEmitter as PuppeteerEventEmitter } from 'puppeteer-core'
 
 declare global {
     namespace WebdriverIO {
@@ -15,7 +13,9 @@ declare global {
     }
 }
 
-export interface DevToolsOptions extends LaunchOptions, BrowserLaunchArgumentOptions, BrowserConnectOptions, ConnectOptions {
+export interface DevToolsOptions extends LaunchOptions {
+    /** @deprecated Use acceptInsecureCerts instead. */
+    ignoreHTTPSErrors?: boolean
     /**
      * If you want to start Google Chrome on a custom port
      */
@@ -54,7 +54,7 @@ export interface Client extends BaseClient, ProtocolCommands {
  */
 export interface ActiveListener {
     /** Event Emitter object emitting to the handler. */
-    emitter: PuppeteerEventEmitter
+    emitter: PuppeteerEventEmitter<Record<string, any>>
     /** Name of the event the handler is attached to. */
     eventName: string
     /** Event function handler, bound to the context of its class instance. */

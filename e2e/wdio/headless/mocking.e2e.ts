@@ -1,9 +1,14 @@
 import { browser } from '@wdio/globals'
+import { startTestPages } from '../../__fixtures__/pages.js'
 
 describe('network mocking', () => {
+    let pages: Awaited<ReturnType<typeof startTestPages>>
+    before(async () => { pages = await startTestPages() })
+    after(async () => { await pages.close() })
+
     it('marks a request as mocked even without overwrites', async () => {
-        const baseUrl = 'https://guinea-pig.webdriver.io/'
-        const mock = await browser.mock(`${baseUrl}components/hammerjs/hammer.js`, {
+        const baseUrl = `${pages.url}/`
+        const mock = await browser.mock(`${baseUrl}resource.js`, {
             method: 'get',
             statusCode: 200,
         })
