@@ -103,7 +103,8 @@ describe('getCookies', () => {
             }) as any))
         })
 
-        beforeEach(() => {
+        beforeEach(async () => {
+            await browser.switchWindow('window-handle-2')
             vi.mocked(fetch).mockClear()
             storageGetCookies.mockClear()
         })
@@ -111,12 +112,49 @@ describe('getCookies', () => {
         it('should return all cookies', async () => {
             const cookies = await browser.getCookies()
             expect(storageGetCookies).toBeCalledTimes(1)
-            expect(storageGetCookies).toBeCalledWith({})
+            expect(storageGetCookies).toBeCalledWith({
+                partition: { type: 'context', context: 'window-handle-2' }
+            })
             expect(cookies).toEqual([
                 {
                     name: 'cookie',
                     value: 'hello world'
                 }
+            ])
+        })
+
+        it.each([
+            ['cookie', { name: 'cookie' }],
+            [['cookie'], { name: 'cookie' }],
+            [{ domain: 'foobar.com' }, { domain: 'foobar.com' }],
+        ])('should scope the filter %j to the current context', async (filter, expectedFilter) => {
+            await browser.getCookies(filter)
+            expect(storageGetCookies).toBeCalledWith({
+                filter: expectedFilter,
+                partition: { type: 'context', context: 'window-handle-2' }
+            })
+        })
+
+        it('should use the new partition after switching windows', async () => {
+            await browser.getCookies()
+            await browser.switchWindow('window-handle-3')
+            await browser.getCookies()
+
+            expect(storageGetCookies).toHaveBeenNthCalledWith(1, {
+                partition: { type: 'context', context: 'window-handle-2' }
+            })
+            expect(storageGetCookies).toHaveBeenNthCalledWith(2, {
+                partition: { type: 'context', context: 'window-handle-3' }
+            })
+        })
+
+        it('should preserve the Classic fallback for multiple cookie names', async () => {
+            const cookies = await browser.getCookies(['cookie1', 'cookie3'])
+
+            expect(storageGetCookies).not.toBeCalled()
+            expect(cookies).toEqual([
+                { name: 'cookie1', value: 'dummy-value-1' },
+                { name: 'cookie3', value: 'dummy-value-3' }
             ])
         })
 

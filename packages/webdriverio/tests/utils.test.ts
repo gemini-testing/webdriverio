@@ -1,4 +1,5 @@
 import path from 'node:path'
+import type http from 'node:http'
 import { ELEMENT_KEY } from '@testplane/webdriver'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
@@ -14,11 +15,13 @@ import {
     validateUrl
 } from '../src/utils/index.js'
 
-vi.mock('http', () => {
+vi.mock('http', async (importOriginal) => {
+    const actual = await importOriginal<typeof http>()
     const req = { on: vi.fn(), end: vi.fn() }
     let response = { statusCode: 200 }
     return {
         default: {
+            ...actual,
             setResponse: (data: any) => {
                 response = data
             },

@@ -24,7 +24,10 @@ export interface CommandMock {
 for (const protocol of protocols) {
     for (const [endpoint, methods] of Object.entries(protocol)) {
         for (const [method, commandData] of Object.entries(methods)) {
-            protocolFlattened.set(commandData.command, { method, endpoint, commandData })
+            // W3C definitions take precedence over legacy aliases.
+            if (!protocolFlattened.has(commandData.command)) {
+                protocolFlattened.set(commandData.command, { method, endpoint, commandData })
+            }
         }
     }
 }
@@ -82,14 +85,7 @@ export default class WebDriverMock {
                 return this.scope[reqMethod](WebDriverMock.pathMatcher(urlPath), (body: Record<string, unknown>) => {
                     for (const param of commandData.parameters) {
                         /**
-                         * check if parameter was set
-                         */
-                        if (!body[param.name]) {
-                            return false
-                        }
-
-                        /**
-                         * check if parameter has correct type
+                         * Only required parameters must be present; zero and false are valid values.
                          */
                         if (param.required && typeof body[param.name] === 'undefined') {
                             return false

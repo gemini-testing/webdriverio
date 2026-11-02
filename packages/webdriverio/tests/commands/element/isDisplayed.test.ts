@@ -38,12 +38,9 @@ describe('isDisplayed test', () => {
         fetch.customResponseFor(/\/css\/display/, { value: 'block' })
         expect(await elem.isDisplayed()).toBe(true)
 
-        /**
-         * expect fetch to be called for
-         *   - isElementDisplayed script
-         *   - getCSSProperty for display property
-         */
-        expect(fetch).toBeCalledTimes(2)
+        // This fork deliberately uses the v8 visibility script without an
+        // additional CSS/checkVisibility probe (commit 8cf366b0d).
+        expect(fetch).toBeCalledTimes(1)
 
         // @ts-expect-error mock implementation
         expect(vi.mocked(fetch).mock.calls[0][0]!.pathname)
@@ -54,11 +51,11 @@ describe('isDisplayed test', () => {
         })
     })
 
-    it('should allow to check if element is displayed within viewport', async () => {
+    it('keeps the legacy DOM script when given the v9 viewport option', async () => {
         // @ts-expect-error mock feature
         fetch.customResponseFor(/\/css\/display/, { value: 'block' })
         expect(await elem.isDisplayed({ withinViewport: true })).toBe(true)
-        expect(fetch).toBeCalledTimes(3)
+        expect(fetch).toBeCalledTimes(1)
         // @ts-expect-error mock implementation
         expect(vi.mocked(fetch).mock.calls[0][0]!.pathname)
             .toBe('/session/foobar-123/execute/sync')
@@ -66,27 +63,19 @@ describe('isDisplayed test', () => {
             ELEMENT: 'some-elem-123',
             'element-6066-11e4-a52e-4f735466cecf': 'some-elem-123',
         })
-        // @ts-expect-error mock implementation
-        expect(vi.mocked(fetch).mock.calls[2][0]!.pathname)
-            .toBe('/session/foobar-123/execute/sync')
-        expect(JSON.parse(vi.mocked(fetch).mock.calls[2][1]?.body as any).args[0]).toEqual({
-            ELEMENT: 'some-elem-123',
-            'element-6066-11e4-a52e-4f735466cecf': 'some-elem-123',
-        })
+
     })
 
     it('should use legacy script if element has display: contents set', async () => {
         // @ts-expect-error mock feature
         fetch.customResponseFor(/\/css\/display/, { value: 'contents' })
         expect(await elem.isDisplayed()).toBe(true)
-        expect(fetch).toBeCalledTimes(3)
+        expect(fetch).toBeCalledTimes(1)
 
         // @ts-expect-error mock implementation
         expect(vi.mocked(fetch).mock.calls[0][0]!.pathname)
             .toBe('/session/foobar-123/execute/sync')
-        // @ts-expect-error mock implementation
-        expect(vi.mocked(fetch).mock.calls[2][0]!.pathname)
-            .toBe('/session/foobar-123/execute/sync')
+
     })
 
     it('should allow to check if element is displayed in mobile mode without browserName', async () => {
@@ -129,7 +118,7 @@ describe('isDisplayed test', () => {
         // @ts-ignore test scenario
         delete elem.elementId
         expect(await elem.isDisplayed()).toBe(true)
-        expect(fetch).toBeCalledTimes(4)
+        expect(fetch).toBeCalledTimes(2)
         // @ts-expect-error mock implementation
         expect(vi.mocked(fetch).mock.calls[0][0]!.pathname)
             .toBe('/session/foobar-123/element')

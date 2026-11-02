@@ -98,33 +98,48 @@ describe('deleteCookies', () => {
             storageDeleteCookies.mockImplementation((() => {}) as any)
         })
 
-        beforeEach(() => {
+        beforeEach(async () => {
+            await browser.switchWindow('window-handle-2')
             storageDeleteCookies.mockClear()
         })
 
         it('should delete all cookies', async () => {
             await browser.deleteCookies()
             expect(storageDeleteCookies).toBeCalledTimes(1)
-            expect(storageDeleteCookies).toBeCalledWith({})
+            expect(storageDeleteCookies).toBeCalledWith({
+                partition: { type: 'context', context: 'window-handle-2' }
+            })
         })
 
         it('should support passing a string', async () => {
             await browser.deleteCookies('cookie1')
             expect(storageDeleteCookies).toBeCalledTimes(1)
-            expect(storageDeleteCookies).toBeCalledWith({ filter: { name: 'cookie1' } })
+            expect(storageDeleteCookies).toBeCalledWith({
+                filter: { name: 'cookie1' },
+                partition: { type: 'context', context: 'window-handle-2' }
+            })
         })
 
         it('should support passing an object', async () => {
             await browser.deleteCookies({ domain: 'foobar.com' })
             expect(storageDeleteCookies).toBeCalledTimes(1)
-            expect(storageDeleteCookies).toBeCalledWith({ filter: { domain: 'foobar.com' } })
+            expect(storageDeleteCookies).toBeCalledWith({
+                filter: { domain: 'foobar.com' },
+                partition: { type: 'context', context: 'window-handle-2' }
+            })
         })
 
         it('should support passing a array with a string', async () => {
             await browser.deleteCookies(['cookie1', 'cookie2'])
             expect(storageDeleteCookies).toBeCalledTimes(2)
-            expect(storageDeleteCookies).toBeCalledWith({ filter: { name: 'cookie1' } })
-            expect(storageDeleteCookies).toBeCalledWith({ filter: { name: 'cookie2' } })
+            expect(storageDeleteCookies).toBeCalledWith({
+                filter: { name: 'cookie1' },
+                partition: { type: 'context', context: 'window-handle-2' }
+            })
+            expect(storageDeleteCookies).toBeCalledWith({
+                filter: { name: 'cookie2' },
+                partition: { type: 'context', context: 'window-handle-2' }
+            })
         })
 
         it('should support passing an array of objects', async () => {
@@ -133,8 +148,27 @@ describe('deleteCookies', () => {
                 { domain: 'foobar2.com' }
             ])
             expect(storageDeleteCookies).toBeCalledTimes(2)
-            expect(storageDeleteCookies).toBeCalledWith({ filter: { domain: 'foobar.com' } })
-            expect(storageDeleteCookies).toBeCalledWith({ filter: { domain: 'foobar2.com' } })
+            expect(storageDeleteCookies).toBeCalledWith({
+                filter: { domain: 'foobar.com' },
+                partition: { type: 'context', context: 'window-handle-2' }
+            })
+            expect(storageDeleteCookies).toBeCalledWith({
+                filter: { domain: 'foobar2.com' },
+                partition: { type: 'context', context: 'window-handle-2' }
+            })
+        })
+
+        it.each([undefined, 'cookie1'])('should use the new partition after switching windows with filter %j', async (filter) => {
+            await browser.deleteCookies(filter)
+            await browser.switchWindow('window-handle-3')
+            await browser.deleteCookies(filter)
+
+            expect(storageDeleteCookies).toHaveBeenNthCalledWith(1, expect.objectContaining({
+                partition: { type: 'context', context: 'window-handle-2' }
+            }))
+            expect(storageDeleteCookies).toHaveBeenNthCalledWith(2, expect.objectContaining({
+                partition: { type: 'context', context: 'window-handle-3' }
+            }))
         })
 
         it('should throw error if invalid arguments are passed', async () => {

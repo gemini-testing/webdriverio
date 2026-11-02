@@ -1,14 +1,14 @@
 import os from 'node:os'
 import path from 'node:path'
 import UAParser from 'ua-parser-js'
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'node:crypto'
 
 import logger from '@testplane/wdio-logger'
 import { webdriverMonad, devtoolsEnvironmentDetector } from '@testplane/wdio-utils'
 import { validateConfig } from '@testplane/wdio-config'
 import type { CommandEndpoint } from '@testplane/wdio-protocols'
 import type { Options, Capabilities } from '@testplane/wdio-types'
-import type { Browser } from 'puppeteer-core/lib/esm/puppeteer/api/Browser.js'
+import type { Browser } from 'puppeteer-core'
 
 import DevToolsDriver from './devtoolsdriver.js'
 import launch from './launcher.js'
@@ -62,7 +62,7 @@ export default class DevTools {
         const browser = await launch(params.capabilities as WebdriverIO.Capabilities)
         const pages = await browser.pages()
         const driver = new DevToolsDriver(browser, pages)
-        const sessionId = uuidv4()
+        const sessionId = randomUUID()
         const uaParser = new UAParser(await browser.userAgent())
         const userAgent = uaParser.getResult()
 
@@ -159,7 +159,7 @@ export default class DevTools {
         const browser = await launch(options.capabilities)
         const pages = await browser.pages()
         const driver = new DevToolsDriver(browser, pages)
-        const sessionId = uuidv4()
+        const sessionId = randomUUID()
         const uaParser = new UAParser(await browser.userAgent())
         const userAgent = uaParser.getResult()
 

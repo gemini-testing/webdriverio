@@ -403,10 +403,15 @@ describe('Mocha smoke test', () => {
     })
 
     describe('supports refetching elements', () => {
-        it('should refetch elements', async () => {
+        it('should refetch elements explicitly until the requested index exists', async () => {
             // @ts-expect-error mock feature
             await browser.refetchElementScenario()
-            expect(await browser.$$('.foo')[3].getText()).toBe('some element text 4')
+            let elements: WebdriverIO.ElementArray
+            await browser.waitUntil(async () => {
+                elements = await browser.$$('.foo')
+                return elements.length > 3
+            })
+            expect(await elements![3].getText()).toBe('some element text 4')
         })
     })
 

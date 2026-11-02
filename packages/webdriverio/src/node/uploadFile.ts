@@ -1,9 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import archiver from 'archiver'
+import JSZip from 'jszip'
 
 /**
- * Command implementation of the `saveRecordingScreen` command.
+ * Command implementation of the `uploadFile` command.
  */
 export async function uploadFile (
     this: WebdriverIO.Browser,
@@ -23,18 +23,8 @@ export async function uploadFile (
         throw new Error(`The uploadFile command is not available in ${(this.capabilities as WebdriverIO.Capabilities).browserName}`)
     }
 
-    const zipData: Uint8Array[] = []
-    const source = fs.createReadStream(localPath)
-
-    return new Promise((resolve, reject) => {
-        archiver('zip')
-            .on('error', (err: Error) => reject(err))
-            .on('data', (data: Uint8Array) => zipData.push(data))
-            .on('end', () => (
-                this.file(Buffer.concat(zipData).toString('base64'))
-                    .then((localPath) => resolve(localPath), reject)
-            ))
-            .append(source, { name: path.basename(localPath) })
-            .finalize()
-    })
+    const zip = new JSZip()
+    zip.file(path.basename(localPath), fs.createReadStream(localPath))
+    const zipData = await zip.generateAsync({ type: 'base64', compression: 'DEFLATE' })
+    return this.file(zipData)
 }

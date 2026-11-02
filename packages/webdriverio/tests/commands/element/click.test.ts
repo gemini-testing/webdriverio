@@ -128,11 +128,10 @@ describe('click test', () => {
             .toBe(20)
         expect(JSON.parse(vi.mocked(fetch).mock.calls[3][1]?.body as any).actions[0].actions[0].y)
             .toBe(15)
-        expect(JSON.parse(vi.mocked(fetch).mock.calls[3][1]?.body as any).actions[0].actions[2])
-            .toStrictEqual({ type: 'pause', duration: 0 })
+        expect(JSON.parse(vi.mocked(fetch).mock.calls[3][1]?.body as any).actions[0].actions).toHaveLength(3)
         expect(JSON.parse(vi.mocked(fetch).mock.calls[3][1]?.body as any).actions[0].actions[1])
             .toMatchSnapshot()
-        expect(JSON.parse(vi.mocked(fetch).mock.calls[3][1]?.body as any).actions[0].actions[3])
+        expect(JSON.parse(vi.mocked(fetch).mock.calls[3][1]?.body as any).actions[0].actions[2])
             .toStrictEqual({ type: 'pointerUp', button: 2 })
     })
 
@@ -326,7 +325,7 @@ describe('click test', () => {
         const elem = await browser.$('#foo')
 
         // @ts-expect-error invalid param
-        expect(elem.click({ button: 'not-suppported' })).rejects.toThrow('Button type not suppported.')
+        expect(elem.click({ button: 'not-suppported' })).rejects.toThrow('Button type not supported.')
     })
 
     it('should not call releaseAction when skipRelease is true', async () => {

@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Options } from 'chrome-launcher'
 import { launch as launchChromeBrowser } from 'chrome-launcher'
-import type { PuppeteerLaunchOptions, ConnectOptions } from 'puppeteer-core'
+import type { LaunchOptions, ConnectOptions } from 'puppeteer-core'
 import puppeteer, { KnownDevices, Puppeteer } from 'puppeteer-core'
 import logger from '@testplane/wdio-logger'
-import type { Browser } from 'puppeteer-core/lib/esm/puppeteer/api/Browser.js'
+import type { Browser } from 'puppeteer-core'
 import type { Capabilities } from '@testplane/wdio-types'
 import { QueryHandler } from 'query-selector-shadow-dom/plugins/puppeteer/index.js'
 
@@ -27,6 +27,17 @@ const log = logger('devtools')
 
 const DEVICE_NAMES = Object.keys(KnownDevices)
 
+function getDevtoolsOptions(capabilities: WebdriverIO.Capabilities) {
+    const { ignoreHTTPSErrors, ...options } = capabilities['wdio:devtoolsOptions'] || {}
+    if (ignoreHTTPSErrors === undefined && capabilities.acceptInsecureCerts === undefined) {
+        return options
+    }
+    return {
+        ...options,
+        acceptInsecureCerts: options.acceptInsecureCerts ?? Boolean(ignoreHTTPSErrors || capabilities.acceptInsecureCerts)
+    }
+}
+
 /**
  * launches Chrome and returns a Puppeteer browser instance
  * @param  {object} capabilities  session capabilities
@@ -35,7 +46,7 @@ const DEVICE_NAMES = Object.keys(KnownDevices)
 async function launchChrome (capabilities: WebdriverIO.Capabilities) {
     const chromeOptions: Capabilities.ChromeOptions = capabilities[VENDOR_PREFIX.chrome] || {}
     const mobileEmulation = chromeOptions.mobileEmulation || {}
-    const devtoolsOptions = capabilities['wdio:devtoolsOptions'] || {}
+    const devtoolsOptions = getDevtoolsOptions(capabilities)
     const chromeOptionsArgs = (chromeOptions.args || []).map((arg) => (
         arg.startsWith('--') ? arg : `--${arg}`
     ))
@@ -108,7 +119,7 @@ async function launchChrome (capabilities: WebdriverIO.Capabilities) {
 
     // Honor both ignoreHTTPSErrors and acceptInsecureCerts
     // Only for WebKit/Blink engines, Firefox uses a different option
-    if (capabilities.acceptInsecureCerts || devtoolsOptions.ignoreHTTPSErrors) {
+    if (devtoolsOptions.acceptInsecureCerts) {
         chromeFlags.push('--ignore-certificate-errors')
     }
 
@@ -147,10 +158,9 @@ async function launchChrome (capabilities: WebdriverIO.Capabilities) {
     return browser
 }
 
-function launchBrowser (capabilities: WebdriverIO.Capabilities, browserType: 'edge' | 'firefox') {
-    const product = browserType === BROWSER_TYPE.firefox ? BROWSER_TYPE.firefox : BROWSER_TYPE.chrome
+function launchBrowser (capabilities: WebdriverIO.Capabilities, browserType: 'edge') {
     const vendorCapKey = VENDOR_PREFIX[browserType]
-    const devtoolsOptions = capabilities['wdio:devtoolsOptions'] || {}
+    const devtoolsOptions = getDevtoolsOptions(capabilities)
 
     /**
      * `ignoreDefaultArgs` and `headless` are currently expected to be part of the capabilities
@@ -160,12 +170,6 @@ function launchBrowser (capabilities: WebdriverIO.Capabilities, browserType: 'ed
      */
     const ignoreDefaultArgs = (capabilities as any).ignoreDefaultArgs || devtoolsOptions.ignoreDefaultArgs
     const headless = (capabilities as any).headless || devtoolsOptions.headless
-
-    // Set devtoolsOptions to honor both ignoreHTTPSErrors and acceptInsecureCerts
-    // Only necessary for Firefox, not for WebKit/Blink engines
-    devtoolsOptions.ignoreHTTPSErrors = browserType === 'firefox'
-        ? Boolean(devtoolsOptions.ignoreHTTPSErrors || capabilities.acceptInsecureCerts)
-        : devtoolsOptions.ignoreHTTPSErrors ?? false
 
     if (!capabilities[vendorCapKey]) {
         capabilities[vendorCapKey] = {}
@@ -177,8 +181,8 @@ function launchBrowser (capabilities: WebdriverIO.Capabilities, browserType: 'ed
         browserFinderMethod()[0]
     )
 
-    const puppeteerOptions: PuppeteerLaunchOptions = Object.assign(<PuppeteerLaunchOptions>{
-        product,
+    const puppeteerOptions: LaunchOptions = Object.assign(<LaunchOptions>{
+        browser: 'chrome',
         executablePath,
         ignoreDefaultArgs,
         headless: Boolean(headless),
@@ -193,7 +197,7 @@ function launchBrowser (capabilities: WebdriverIO.Capabilities, browserType: 'ed
             ...['--ignore-certificate-errors']
                 .filter(() =>
                     browserType === 'edge'
-                    && (devtoolsOptions.ignoreHTTPSErrors || capabilities.acceptInsecureCerts)                )
+                    && devtoolsOptions.acceptInsecureCerts)
         ]
     }, capabilities[vendorCapKey] || {}, devtoolsOptions || {})
 
@@ -207,7 +211,7 @@ function launchBrowser (capabilities: WebdriverIO.Capabilities, browserType: 'ed
 
 function connectBrowser (connectionUrl: string, capabilities: WebdriverIO.Capabilities) {
     const connectionProp = connectionUrl.startsWith('http') ? 'browserURL' : 'browserWSEndpoint'
-    const devtoolsOptions = capabilities['wdio:devtoolsOptions']
+    const devtoolsOptions = getDevtoolsOptions(capabilities)
     const options: ConnectOptions = {
         [connectionProp]: connectionUrl,
         ...devtoolsOptions
@@ -216,6 +220,11 @@ function connectBrowser (connectionUrl: string, capabilities: WebdriverIO.Capabi
 }
 
 export default async function launch (capabilities: WebdriverIO.Capabilities) {
+    const browserName = capabilities.browserName?.toLowerCase()
+    if (browserName && FIREFOX_NAMES.includes(browserName)) {
+        throw new Error('Firefox no longer supports the CDP backend. Use WebDriver BiDi instead of the Devtools automation protocol.')
+    }
+
     try {
         Puppeteer.unregisterCustomQueryHandler('shadow')
     } catch {
@@ -224,7 +233,6 @@ export default async function launch (capabilities: WebdriverIO.Capabilities) {
 
     // ToDo(Christian): fix types (https://github.com/Georgegriff/query-selector-shadow-dom/issues/77)
     Puppeteer.registerCustomQueryHandler('shadow', QueryHandler as any)
-    const browserName = capabilities.browserName?.toLowerCase()
 
     /**
      * check if capabilities already contains connection details and connect
@@ -255,10 +263,6 @@ export default async function launch (capabilities: WebdriverIO.Capabilities) {
 
     if (browserName && CHROME_NAMES.includes(browserName)) {
         return launchChrome(capabilities)
-    }
-
-    if (browserName && FIREFOX_NAMES.includes(browserName)) {
-        return launchBrowser(capabilities, BROWSER_TYPE.firefox)
     }
 
     /* istanbul ignore next */

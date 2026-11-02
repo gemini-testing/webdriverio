@@ -262,8 +262,10 @@ export default function WebDriver (options: object, modifier?: Function, propert
                 eventHandler.emit('_dialogListenerRemoved')
             }
 
-            eventHandler[method]?.(...args as [never, unknown])
-            return this
+            const result = eventHandler[method]?.(...args as [never, unknown])
+            // Listener introspection must return its value, not the chainable
+            // browser instance. DialogManager uses it to detect unhandled prompts.
+            return method === 'listenerCount' ? result : this
         }
     }
 

@@ -1,6 +1,20 @@
 /**
  * Always respond with same overwrite.
  *
+ * With WebDriver BiDi, Chromium fetches the real response by default, then
+ * replaces its body. Set `fetchResponse: false` to provide the response before
+ * sending the request instead.
+ *
+ * Firefox can only provide a response body before the request is sent, so its
+ * BiDi default is `fetchResponse: false`. The request does not reach the server
+ * and the mock cannot inherit the server's status or response headers; specify
+ * `statusCode` and `headers` explicitly when needed. Firefox rejects an explicit
+ * `fetchResponse: true`. Request-stage response mocking also rejects response
+ * filters (`statusCode` and `responseHeaders`) and a `statusCode` function,
+ * because the real response is unavailable. Combining request overwrites with
+ * request-stage responses is not supported either. Request method/header
+ * filters and aborts remain supported.
+ *
  * <example>
     :respond.js
     it('should demonstrate response overwrite with static data', async () => {

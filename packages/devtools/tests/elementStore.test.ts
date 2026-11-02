@@ -1,8 +1,8 @@
 import path from 'node:path'
 import { expect, test, vi } from 'vitest'
 import ElementStore from '../src/elementstore.js'
-import type { ElementHandle } from 'puppeteer-core/lib/esm/puppeteer/common/ElementHandle.js'
-import type { Frame } from 'puppeteer-core/lib/esm/puppeteer/api/Frame.js'
+import type { ElementHandle } from 'puppeteer-core'
+import type { Frame } from 'puppeteer-core'
 
 vi.mock('@testplane/wdio-logger', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-logger')))
 
@@ -13,9 +13,7 @@ const elementHandleFactory = (
     async evaluate(cb: any) {
         return cb({ isConnected })
     },
-    executionContext() {
-        return { _world: { frame: () => frame } }
-    }
+    frame
 })
 
 test('should keep a map of elements', async () => {

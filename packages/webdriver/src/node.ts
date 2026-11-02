@@ -15,10 +15,7 @@ import { environment } from './environment.js'
 environment.value = {
     Request: (
         /**
-         * Currently Nock doesn't support the mocking of undici requests, therefore for all
-         * Smoke test we use the native fetch implementation.
-         *
-         * @see https://github.com/nock/nock/issues/2183#issuecomment-2252525890
+         * Smoke tests can explicitly select the native fetch transport.
          */
         process.env.WDIO_USE_NATIVE_FETCH ||
         /**
