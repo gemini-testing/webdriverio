@@ -6,7 +6,7 @@ import getPort from 'get-port'
 import waitPort from 'wait-port'
 import logger from '../logger.js'
 import split2 from 'split2'
-import { deepmerge } from 'deepmerge-ts'
+import { deepmergeCustom } from 'deepmerge-ts'
 
 import { start as startSafaridriver, type SafaridriverOptions as SafaridriverParameters } from 'safaridriver'
 import { start as startGeckodriver, type GeckodriverParameters } from '@testplane/geckodriver'
@@ -32,6 +32,11 @@ declare global {
         interface SafaridriverOptions extends Omit<SafaridriverParameters, 'port'> {}
     }
 }
+
+// Keep the shallow Map value merging used before deepmerge-ts 8.
+const deepmerge = deepmergeCustom({
+    mergeMaps: (maps) => new Map(maps.flatMap((map) => [...map]))
+})
 
 const log = logger('@testplane/wdio-utils')
 const DRIVER_WAIT_TIMEOUT = 10 * 1000 // 10s

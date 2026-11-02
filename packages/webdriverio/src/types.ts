@@ -4,7 +4,7 @@ import type { Protocol } from 'devtools-protocol'
 import type { remote, SessionFlags, AttachOptions as WebDriverAttachOptions, BidiHandler, EventMap } from '@testplane/webdriver'
 import type { Capabilities, Options, FunctionProperties, ThenArg } from '@testplane/wdio-types'
 import type { ElementReference, ProtocolCommands } from '@testplane/wdio-protocols'
-import type { Browser as PuppeteerBrowser } from 'puppeteer-core'
+import type { CompatiblePuppeteerBrowser } from './utils/puppeteerCompatibility.js'
 
 import type { Dialog as DialogImport } from './session/dialog.js'
 import type * as BrowserCommands from './commands/browser.js'
@@ -149,7 +149,7 @@ type MultiRemoteElementCommands = {
 }
 
 export type MultiRemoteBrowserCommandsType = {
-    [K in keyof Omit<BrowserCommandsType, ElementCommandNames | 'SESSION_MOCKS' | 'SESSION_BIDI_MOCKS' | 'CDP_SESSIONS'>]: (...args: Parameters<BrowserCommandsType[K]>) => Promise<ThenArg<ReturnType<BrowserCommandsType[K]>>[]>
+    [K in keyof Omit<BrowserCommandsType, ElementCommandNames | 'SESSION_MOCKS' | 'CDP_SESSIONS'>]: (...args: Parameters<BrowserCommandsType[K]>) => Promise<ThenArg<ReturnType<BrowserCommandsType[K]>>[]>
 } & MultiRemoteElementCommands
 export type MultiRemoteElementCommandsType = {
     [K in keyof Omit<ElementCommandsType, ElementCommandNames>]: (...args: Parameters<ElementCommandsType[K]>) => Promise<ThenArg<ReturnType<ElementCommandsType[K]>>[]>
@@ -264,7 +264,7 @@ interface InstanceBase extends EventEmitter, SessionFlags {
     /**
      * Puppeteer instance
      */
-    puppeteer?: PuppeteerBrowser
+    puppeteer?: CompatiblePuppeteerBrowser
     strategies: Map<any, any>
     commandList: string[]
 

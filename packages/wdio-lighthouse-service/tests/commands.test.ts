@@ -136,8 +136,8 @@ test('startTracing', () => {
     expect(pageMock.tracing.start).toBeCalledTimes(1)
 })
 
-test('endTracing', async () => {
-    pageMock.tracing.stop.mockResolvedValue(Buffer.from('{ "traceEvents": "foobar" }'))
+test.each([Buffer.from, (value: string) => new TextEncoder().encode(value)])('endTracing decodes trace bytes', async (encode) => {
+    pageMock.tracing.stop.mockResolvedValue(encode('{ "traceEvents": "foobar" }'))
     const handler = new CommandHandler(
         sessionMock as any,
         pageMock as any,

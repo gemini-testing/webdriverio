@@ -16,26 +16,21 @@ const b = types.builders
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url))
 const jsonSpec = Object.assign(BASE_PROTOCOL_SPEC)
 
-if (!process.env.GITHUB_AUTH) {
-    console.log('Couldn\'t find "GITHUB_AUTH" environment variable, skipping')
-    process.exit(0)
-}
-
 const hasNewSpec = await downloadSpec()
 if (!hasNewSpec) {
-    console.log('No new spec, exiting!')
-    process.exit(0)
+    throw new Error('No W3C WebDriver BiDi CDDL artifact found')
 }
 
 const cddlTypes = ['local', 'remote']
-const [astLocal, astRemote] = await Promise.all(cddlTypes.map(async (type) => {
+// Parse and render the entire protocol before replacing any checked-in source.
+const sources = new Map<string, string>()
+const [astLocal, astRemote] = cddlTypes.map((type) => {
     let ast
 
     try {
         ast = parseCDDL(path.join(__dirname, 'cddl', `${type}.cddl`))
     } catch (err) {
-        console.log(util.format(CDDL_PARSE_ERROR_MESSAGE, `Failed to parse ${type}.cddl: ${(err as Error).stack}`))
-        process.exit(0)
+        throw new Error(util.format(CDDL_PARSE_ERROR_MESSAGE, `Failed to parse ${type}.cddl: ${(err as Error).message}`))
     }
 
     /**
@@ -70,12 +65,12 @@ const [astLocal, astRemote] = await Promise.all(cddlTypes.map(async (type) => {
     }
 
     const cddl = transform(ast)
-    await writeFile(
+    sources.set(
         path.resolve(__dirname, '..', '..', 'packages', 'webdriver', 'src', 'bidi', `${type}Types.ts`),
         cddl.replace(/"/g, "'").replace('export interface Event extends EventData, Extensible {}', '')
     )
     return ast
-}))
+})
 
 const code = `${GENERATED_FILE_COMMENT}
 
@@ -192,17 +187,19 @@ const bidiHandlerClass = b.classDeclaration(
 bidiHandlerClass.superClass = b.identifier('BidiCore')
 bidiCode.program.body.push(b.exportNamedDeclaration(bidiHandlerClass))
 
-await writeFile(
+sources.set(
     path.resolve(__dirname, '..', '..', 'packages', 'webdriver', 'src', 'bidi', 'handler.ts'),
     print(bidiCode, {
         tabWidth: 4,
         quote: 'single'
     }).code.replace(/;/g, '')
 )
-await writeFile(
+sources.set(
     path.resolve(__dirname, '..', '..', 'packages', 'wdio-protocols', 'src', 'protocols', 'webdriverBidi.ts'),
     (
         `const protocol = ${JSON.stringify(jsonSpec, null, 4)} as const\n` +
         'export default protocol'
     )
 )
+
+await Promise.all([...sources].map(([filename, content]) => writeFile(filename, content)))

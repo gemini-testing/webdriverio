@@ -6,6 +6,8 @@ export function getExternal(pkg: PackageJson) {
         'virtual:*',
         ...builtinModules,
         ...builtinModules.map((mod) => `node:${mod}`),
+        // Keep Node's private package imports shared across ESM and CommonJS bundles.
+        ...Object.keys(pkg.imports || {}),
         ...Object.keys(pkg.dependencies || {}),
         ...Object.keys(pkg.peerDependencies || {}),
         ...Object.keys(pkg.optionalDependencies || {}),

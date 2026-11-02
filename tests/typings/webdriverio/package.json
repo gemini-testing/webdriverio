@@ -25,6 +25,7 @@
     "@wdio/shared-store-service": "workspace:*",
     "@wdio/static-server-service": "workspace:*",
     "@wdio/sumologic-reporter": "workspace:*",
-    "@wdio/testingbot-service": "workspace:*"
+    "@wdio/testingbot-service": "workspace:*",
+    "puppeteer-core": "^25.10.0"
   }
 }

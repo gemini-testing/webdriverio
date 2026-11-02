@@ -180,7 +180,8 @@ describe('attach Puppeteer', () => {
                 }
             },
             puppeteer: {
-                connected: true
+                connected: true,
+                browserContexts: () => []
             } as any
         } as WebdriverIO.Browser)
         expect(typeof pptr).toBe('object')

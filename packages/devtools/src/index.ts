@@ -1,15 +1,16 @@
 import os from 'node:os'
 import path from 'node:path'
 import UAParser from 'ua-parser-js'
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'node:crypto'
 
 import logger from '@testplane/wdio-logger'
 import { webdriverMonad, devtoolsEnvironmentDetector } from '@testplane/wdio-utils'
 import { validateConfig } from '@testplane/wdio-config'
 import type { CommandEndpoint } from '@testplane/wdio-protocols'
 import type { Options, Capabilities } from '@testplane/wdio-types'
-import type { Browser } from 'puppeteer-core/lib/esm/puppeteer/api/Browser.js'
+import type { Browser } from 'puppeteer-core'
 
+import sharedSessions from '#session-map'
 import DevToolsDriver from './devtoolsdriver.js'
 import launch from './launcher.js'
 import { DEFAULTS, SUPPORTED_BROWSER, VENDOR_PREFIX } from './constants.js'
@@ -18,7 +19,9 @@ import type { Client, AttachOptions, DevToolsOptions as WDIODevtoolsOptionsExten
 
 const log = logger('devtools:puppeteer')
 
-export const sessionMap = new Map()
+export const sessionMap = sharedSessions
+// An attached client may be discarded without deleteSession; don't retain it in the public registry.
+const attachedDrivers = new WeakMap<Client, DevToolsDriver>()
 let isDebugPatched = false
 
 /**
@@ -62,7 +65,7 @@ export default class DevTools {
         const browser = await launch(params.capabilities as WebdriverIO.Capabilities)
         const pages = await browser.pages()
         const driver = new DevToolsDriver(browser, pages)
-        const sessionId = uuidv4()
+        const sessionId = randomUUID()
         const uaParser = new UAParser(await browser.userAgent())
         const userAgent = uaParser.getResult()
 
@@ -133,7 +136,7 @@ export default class DevTools {
     static async reloadSession (instance: Client, newCapabilities: WebdriverIO.Capabilities): Promise<string> {
         await patchDebugPkg()
 
-        const { session } = sessionMap.get(instance.sessionId)
+        const session: DevToolsDriver = attachedDrivers.get(instance) || sessionMap.get(instance.sessionId).session
         const browser = await launch({
             ...instance.requestedCapabilities as WebdriverIO.Capabilities,
             ...(newCapabilities || {})
@@ -141,7 +144,9 @@ export default class DevTools {
         const pages = await browser.pages()
         session.initBrowser.call(session, browser, pages)
         instance.puppeteer = browser
-        sessionMap.set(instance.sessionId, { browser, session })
+        if (!attachedDrivers.has(instance)) {
+            sessionMap.set(instance.sessionId, { browser, session })
+        }
         return instance.sessionId
     }
 
@@ -159,7 +164,7 @@ export default class DevTools {
         const browser = await launch(options.capabilities)
         const pages = await browser.pages()
         const driver = new DevToolsDriver(browser, pages)
-        const sessionId = uuidv4()
+        const sessionId = randomUUID()
         const uaParser = new UAParser(await browser.userAgent())
         const userAgent = uaParser.getResult()
 
@@ -186,7 +191,9 @@ export default class DevTools {
             modifier,
             prototype
         )
-        return monad(sessionId, customCommandWrapper)
+        const client: Client = monad(sessionId, customCommandWrapper)
+        attachedDrivers.set(client, driver)
+        return client
     }
 }
 

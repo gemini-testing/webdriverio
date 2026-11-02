@@ -1,7 +1,7 @@
 import type { local } from '@testplane/webdriver'
 import type { Cookie } from '@testplane/wdio-protocols'
 
-import type { CDPSession } from 'puppeteer-core/lib/esm/puppeteer/common/Connection.js'
+import type { CDPSession } from 'puppeteer-core'
 import type { JsonCompatible } from '@testplane/wdio-types'
 
 // export type MockFilterOptions = {
@@ -23,8 +23,21 @@ export interface RequestWithOptions {
     url?: Overwrite<string, local.NetworkBeforeRequestSentParameters>
 }
 
-export interface RespondWithOptions extends Omit<RequestWithOptions, 'url' | 'method'> {
-    statusCode?: Overwrite<number, local.NetworkResponseCompletedParameters>
+/** Request metadata available to a BiDi response callback without issuing another request. */
+export interface BidiResponseMetadata extends Pick<Matches, 'url' | 'method' | 'headers' | 'responseHeaders' | 'statusCode'> {
+    /** Empty before the request is sent; BiDi responseStarted does not expose a body. */
+    body?: ''
+}
+
+export interface RespondWithOptions extends Omit<RequestWithOptions, 'url' | 'method' | 'headers'> {
+    headers?: Overwrite<Record<string, string>, BidiResponseMetadata & local.NetworkBeforeRequestSentParameters>
+    statusCode?: Overwrite<number, BidiResponseMetadata & local.NetworkResponseCompletedParameters>
+    /**
+     * Fetch the real response before replacing its body. Defaults to true on
+     * Chromium and false on Firefox, which only supports bodies before the
+     * request is sent. Firefox does not support an explicit true value.
+     */
+    fetchResponse?: boolean
 }
 
 export interface MockRequestOptions {
@@ -97,9 +110,9 @@ export interface Matches extends Request {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type MockOverwriteFunction = (request: Matches, client: CDPSession) => Promise<string | Record<string, any>>
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type MockOverwrite = string | Record<string, any> | MockOverwriteFunction
+type MockBody = string | Record<string, any>
+export type MockOverwriteFunction = (request: Matches, client: CDPSession) => Promise<MockBody>
+export type MockOverwrite = MockBody | ((...args: Parameters<MockOverwriteFunction>) => MockBody | Promise<MockBody>)
 
 export type MockResponseParams = {
     statusCode?: number | ((request: Matches) => number)

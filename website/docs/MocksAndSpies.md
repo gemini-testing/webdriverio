@@ -7,13 +7,13 @@ WebdriverIO comes with built-in support for modifying network responses that all
 
 :::info
 
-Note that using the `mock` command requires support for Chrome DevTools protocol. That support is given if you run tests locally in a Chromium-based browser, via a Selenium Grid v4 or higher, or through a cloud vendor with support for the Chrome DevTools protocol (e.g. SauceLabs, BrowserStack, LambdaTest). Full cross-browser support will be available once the required primitives land in [Webdriver Bidi](https://wpt.fyi/results/webdriver/tests/bidi/network?label=experimental&label=master&aligned) and get implemented in the respective browser.
+Network mocking is available in WebDriver BiDi sessions on Chromium and Firefox, and through the Chrome DevTools Protocol (CDP) in supported Chromium sessions. The file-path and URL replacement examples below use CDP: on BiDi, a string passed to `respond` is the literal response body.
 
 :::
 
 ## Creating a mock
 
-Before you can modify any responses you have define a mock first. This mock is described by the resource url and can be filtered by the [request method](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods) or [headers](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers). The resource supports glob expressions by [minimatch](https://www.npmjs.com/package/minimatch):
+Before you can modify a response, define a mock for its URL and optional [request method](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods) or [headers](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers). BiDi matches URLs using `URLPattern`; CDP uses [minimatch](https://www.npmjs.com/package/minimatch) glob expressions:
 
 ```js
 // mock all resources ending with "/users/list"
@@ -115,7 +115,16 @@ console.log(await browser.getTitle()) // returns "WebdriverIO · Next-gen browse
 
 ### Dynamic responses
 
-If your mock response depends on the original resource response you can also dynamically modify the resource by passing in a function receives the original response as parameter and sets the mock based on the return value, e.g.:
+On BiDi, a callback can build a response from the request URL, method and headers without calling the backend. It can return text, JSON data or a Buffer, synchronously or asynchronously:
+
+```js
+const mock = await browser.mock('**/users')
+mock.respondOnce(async ({ method }) => ({ received: method }), { fetchResponse: false })
+```
+
+Chromium BiDi normally fetches the response first, so its status and headers are available to the callback. Firefox BiDi can only supply a body before the request is sent; it defaults to `fetchResponse: false` and rejects `true`. The BiDi events used by the mock do not include the original response body.
+
+On CDP you can also modify the original response body, for example:
 
 ```js
 const mock = await browser.mock('https://todo-backend-express-knex.herokuapp.com/', {
