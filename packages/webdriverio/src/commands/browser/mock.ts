@@ -6,11 +6,9 @@ import { getBrowserObject } from '@testplane/wdio-utils'
 
 import type { MockFilterOptions } from '../../utils/interception/types.js'
 import BidiInterception from '../../utils/interception/bidi.js'
-import { getContextManager } from '../../session/context.js'
-import type { CDPSession } from 'puppeteer-core/lib/esm/puppeteer/common/Connection.js'
+import type { CDPSession } from 'puppeteer-core'
 
 export const SESSION_MOCKS: Record<string, Set<Interception>> = {}
-export const SESSION_BIDI_MOCKS: Record<string, Set<BidiInterception>> = {}
 export const CDP_SESSIONS: Record<string, CDPSession> = {}
 
 /**
@@ -196,12 +194,6 @@ export async function mock(
     }
 
     const browser = getBrowserObject(this)
-    const contextManager = getContextManager(browser)
-    const context = await contextManager.getCurrentContext()
-    if (!SESSION_BIDI_MOCKS[context]) {
-        SESSION_BIDI_MOCKS[context] = new Set()
-    }
-    const networkInterception = await BidiInterception.initiate(url, filterOptions || {}, this)
-    SESSION_BIDI_MOCKS[context].add(networkInterception)
+    const networkInterception = await BidiInterception.initiate(url, filterOptions || {}, browser)
     return networkInterception as unknown as WebdriverIO.Mock
 }

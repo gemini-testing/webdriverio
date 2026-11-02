@@ -1,7 +1,7 @@
 import type { local } from '@testplane/webdriver'
 import type { Cookie } from '@testplane/wdio-protocols'
 
-import type { CDPSession } from 'puppeteer-core/lib/esm/puppeteer/common/Connection.js'
+import type { CDPSession } from 'puppeteer-core'
 import type { JsonCompatible } from '@testplane/wdio-types'
 
 // export type MockFilterOptions = {
@@ -25,6 +25,12 @@ export interface RequestWithOptions {
 
 export interface RespondWithOptions extends Omit<RequestWithOptions, 'url' | 'method'> {
     statusCode?: Overwrite<number, local.NetworkResponseCompletedParameters>
+    /**
+     * Fetch the real response before replacing its body. Defaults to true on
+     * Chromium and false on Firefox, which only supports bodies before the
+     * request is sent. Firefox does not support an explicit true value.
+     */
+    fetchResponse?: boolean
 }
 
 export interface MockRequestOptions {

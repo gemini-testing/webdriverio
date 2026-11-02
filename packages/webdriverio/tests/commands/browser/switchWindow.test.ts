@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { expect, describe, beforeEach, it, vi, beforeAll, afterAll } from 'vitest'
 import { remote } from '../../../src/index.js'
+import { getContextManager } from '../../../src/session/context.js'
 
 vi.mock('fetch')
 vi.mock('@testplane/wdio-logger', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-logger')))
@@ -84,6 +85,23 @@ describe('switchWindow', () => {
         } catch (err: any) {
             expect(err.message).toContain('No window found')
         }
+    })
+
+    it('restores the original window and context when no window matches', async () => {
+        let activeWindow = 'window-handle-1'
+        vi.spyOn(browser, 'getWindowHandle').mockImplementation(async () => activeWindow)
+        vi.spyOn(browser, 'switchToWindow').mockImplementation(async (handle) => {
+            activeWindow = handle
+            return null
+        })
+        vi.spyOn(browser, 'getUrl').mockResolvedValue('https://example.org/')
+        vi.spyOn(browser, 'getTitle').mockResolvedValue('Example')
+        vi.spyOn(browser, 'execute').mockResolvedValue('example-window')
+
+        await expect(browser.switchWindow('missing-window')).rejects.toThrow('No window found')
+
+        expect(await browser.getWindowHandle()).toBe('window-handle-1')
+        expect(await getContextManager(browser).getCurrentContext()).toBe('window-handle-1')
     })
 
     it('should fail if parameter is not valid', async () => {

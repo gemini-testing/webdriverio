@@ -1,6 +1,5 @@
-import type { KeyInput } from 'puppeteer-core/lib/esm/puppeteer/common/USKeyboardLayout.js'
-import { _keyDefinitions } from 'puppeteer-core/lib/esm/puppeteer/common/USKeyboardLayout.js'
-import type { Keyboard, Mouse } from 'puppeteer-core/lib/esm/puppeteer/api/Input.js'
+import type { KeyInput, Keyboard, Mouse } from 'puppeteer-core'
+import { _keyDefinitions } from 'puppeteer-core/internal/common/USKeyboardLayout.js'
 
 import getElementRect from './getElementRect.js'
 import getWindowRect from './getWindowRect.js'
@@ -130,7 +129,7 @@ export default async function performActions(
                     y += location.y + (location.height / 2)
                 }
 
-                await page.mouse.click(x, y, { clickCount: 2 })
+                await page.mouse.click(x, y, { count: 2 })
                 continue
             }
 

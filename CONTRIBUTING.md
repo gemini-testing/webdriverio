@@ -429,13 +429,17 @@ You can always reach out to the `webdriverio/ProjectCommitters` channel on Matri
 
 ## Release New Version
 
-Package releases are made using Lerna's release capabilities as GitHub workflow and executed by the [technical steering committee](https://github.com/webdriverio/webdriverio/blob/main/GOVERNANCE.md#the-technical-committee) only. All you need to do is go to the [`Manual NPM Publish`](https://github.com/webdriverio/webdriverio/actions/workflows/publish.yml) workflow and trigger a new run. Choose the appropriate version upgrade based on the [Semantic Versioning](https://semver.org/). To help choose the right release type, here are some general guidelines:
+Maintainers with repository write access can run the fork's [Manual NPM Publish](https://github.com/gemini-testing/webdriverio/actions/workflows/publish.yml) workflow on `master`. Protect `master` and the release tags, allow the release workflow to push its commit and tags, and configure an `NPM_TOKEN` secret authorized to publish the `@testplane` packages. The workflow refuses an unprotected `master`.
 
-- __Breaking Changes__: never do these by yourself! A major release is always a collaborative effort between all TSC members. It requires consensus from all of them.
-- __Minor Release__: minor releases are always required if a new, user focused feature was added to one of the packages. For example, if a command was added to WebdriverIO or if a service provides a new form of integration, a minor version bump would be appropriate. However if an internal package like `@wdio/local-runner` exposes a new interface that is solely used internally, we can consider that as a patch release.
-- __Patch Release__: every time a bug is fixed, documentation (this includes TypeScript definitions) gets updated or existing functionality is improved, we should do a patch release.
+- Choose `patch` for fixes or `minor` for backward-compatible additions, and the npm tag `latest` or `next`.
+- Only the nine `@testplane/*` packages listed in `lerna.json` are released. Each package's own version is incremented; `@testplane/devtools` stays on its current major version. Upstream `@wdio/*` packages are not published.
+- A fresh release checks all proposed versions against the public npm registry before Lerna versions and tags them. An occupied version is an error, not a reason to skip a package.
+- After the build, pnpm packs each candidate once, resolving workspace dependencies. Two clean npm consumers install the actual tarballs: one requests only `@testplane/webdriverio` (no DevTools), the other all nine packages. The workflow checks the installed tarball integrities and the production audit, saves the verified tarballs as a workflow artifact, and checks the versions again before pushing the commit and tags. It publishes those same files with `npm publish`, dependencies first.
+- If publication fails **after the Git push**, choose `from-package`, the original npm tag and the full release commit SHA. A read-only job checks reachability from `master`, all nine release tags, and the original run ID before any code from that commit executes. Recovery restores the original tarballs, verifies them again, and skips an existing version only if its registry integrity and dist-tag match. An expired/missing artifact, conflicting bytes, or a newer dist-tag stops recovery; do not rebuild or overwrite those versions.
 
-If you are unsure about which release type to pick, reach out in the `webdriverio/TSC` Matrix channel. By setting an NPM tag you can also release a current version with e.g. a `next` tag to test changes before we roll them out to all users.
+To check the packages without publishing, run `pnpm run build && pnpm run test:installation`. A read-only loopback registry serves only the candidates; external dependencies and the audit use the configured npm registry. The consumers use no overrides. The single-package test also checks proxy downloads and ZIP extraction without system tools.
+
+The upstream `docs:deploy` command is not exposed by this fork: publishing Testplane packages does not deploy the webdriver.io website.
 
 ## Workshop
 

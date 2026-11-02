@@ -38,8 +38,11 @@ export class PolyfillManager extends SessionManager {
     #initialize: Promise<boolean>
     #browser: WebdriverIO.Browser
     #scriptsRegisteredInContexts: Set<string> = new Set()
-
-    #registerScriptsListener = this.#registerScripts.bind(this)
+    #onContextCreated = (context: Pick<local.BrowsingContextInfo, 'context' | 'parent'>) => (
+        this.#registerScripts(context)?.catch((error: Error) => {
+            log.warn(`Unable to register polyfill in context ${context.context}: ${error.message}`)
+        })
+    )
 
     constructor(browser: WebdriverIO.Browser) {
         super(browser, PolyfillManager.name)
@@ -53,8 +56,7 @@ export class PolyfillManager extends SessionManager {
             return
         }
 
-        // start listening for browsingContext.contextCreated
-        this.#browser.on('browsingContext.contextCreated', this.#registerScriptsListener)
+        this.#browser.on('browsingContext.contextCreated', this.#onContextCreated)
 
         /**
          * apply polyfill script for upcoming as well as current execution context
@@ -71,11 +73,10 @@ export class PolyfillManager extends SessionManager {
 
     removeListeners() {
         super.removeListeners()
-        // stop listening for browsingContext.contextCreated
-        this.#browser.off('browsingContext.contextCreated', this.#registerScriptsListener)
+        this.#browser.off('browsingContext.contextCreated', this.#onContextCreated)
     }
 
-    #registerScripts (context: Pick<local.BrowsingContextInfo, 'context' | 'parent'>) {
+    #registerScripts = (context: Pick<local.BrowsingContextInfo, 'context' | 'parent'>) => {
         if (this.#scriptsRegisteredInContexts.has(context.context)) {
             return
         }
@@ -94,12 +95,17 @@ export class PolyfillManager extends SessionManager {
                 functionDeclaration,
                 target: context,
                 awaitPromise: false
-            }).catch(() => {
-                /**
-                 * this may fail if the context is already destroyed
-                 */
             })
-        ])
+        ]).catch((error: Error) => {
+            this.#scriptsRegisteredInContexts.delete(context.context)
+            if (/no such frame|no such browsing context/.test(error.message)) {
+                // A contextCreated event can race with closing that tab. Both
+                // preload registration and immediate injection can then fail.
+                log.debug(`Context ${context.context} was destroyed before polyfill registration`)
+                return
+            }
+            throw error
+        })
     }
 
     async initialize () {
