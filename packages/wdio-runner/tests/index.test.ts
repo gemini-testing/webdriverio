@@ -24,7 +24,7 @@ vi.mock('expect-webdriverio', () => ({
         })
     }
 }))
-vi.mock('webdriverio', () => import(path.join(process.cwd(), '__mocks__', 'webdriverio')))
+vi.mock('@testplane/webdriverio', () => import(path.join(process.cwd(), '__mocks__', 'webdriverio')))
 vi.mock('@testplane/wdio-utils', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-utils')))
 vi.mock('@testplane/wdio-logger', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-logger')))
 vi.mock('@wdio/globals', () => ({

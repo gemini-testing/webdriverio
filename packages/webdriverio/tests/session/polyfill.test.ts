@@ -2,6 +2,7 @@
 import path from 'node:path'
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 
+import { logMock } from '../../../../__mocks__/@testplane/wdio-logger.js'
 import { PolyfillManager, polyfillFn } from '../../src/session/polyfill.js'
 import {
     // @ts-expect-error mock
@@ -85,4 +86,21 @@ describe('PolyfillManager', () => {
         expect(browser.scriptCallFunction).toBeCalledTimes(2)
         expect(await manager.initialize()).toBe(true)
     })
+    it('tolerates a context destroyed before its preload registration completes', async () => {
+        const manager = new PolyfillManager(browser)
+        await manager.initialize()
+        vi.mocked(browser.scriptAddPreloadScript).mockRejectedValueOnce(new Error(
+            'WebDriver Bidi command "script.addPreloadScript" failed with error: no such frame - context destroyed'
+        ))
+        await expect(browser.on.mock.calls[0][1]({ context: 'closed-tab' })).resolves.toBeUndefined()
+    })
+
+    it('reports an unexpected event-driven registration error without rejecting the event handler', async () => {
+        const manager = new PolyfillManager(browser)
+        await manager.initialize()
+        vi.mocked(browser.scriptAddPreloadScript).mockRejectedValueOnce(new Error('connection lost'))
+        await expect(browser.on.mock.calls[0][1]({ context: 'new-tab' })).resolves.toBeUndefined()
+        expect(logMock.warn).toHaveBeenCalledWith(expect.stringContaining('connection lost'))
+    })
+
 })

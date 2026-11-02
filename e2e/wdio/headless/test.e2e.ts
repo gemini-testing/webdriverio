@@ -6,20 +6,32 @@ import path from 'node:path'
 import { browser, $, expect } from '@wdio/globals'
 
 import { imageSize } from 'image-size'
+import { startTestPages } from '../../__fixtures__/pages.js'
+import { startPWAPages } from '../../__fixtures__/pwa.js'
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
 
 describe('main suite 1', () => {
+    let pages: Awaited<ReturnType<typeof startTestPages>>
+    let pwa: Awaited<ReturnType<typeof startPWAPages>>
+    before(async () => {
+        pages = await startTestPages()
+        pwa = await startPWAPages()
+    })
+    after(async () => {
+        await pages?.close()
+        await pwa?.close()
+    })
+
     it('supports snapshot testing', async () => {
-        await browser.url('https://guinea-pig.webdriver.io/')
+        await browser.url(`${pages.url}/`)
         await expect($('.findme')).toMatchSnapshot()
         await expect($('.findme')).toMatchInlineSnapshot('"<h1 class="findme">Test CSS Attributes</h1>"')
     })
 
     it('should allow to check for PWA', async () => {
-        await browser.url('https://webdriver.io')
-        // eslint-disable-next-line wdio/no-pause
-        await browser.pause(100)
+        await browser.url(pwa.url)
+        await browser.waitUntil(() => browser.execute(() => Boolean(navigator.serviceWorker.controller)))
         expect((await browser.checkPWA([
             'isInstallable',
             'splashScreen',
@@ -32,12 +44,12 @@ describe('main suite 1', () => {
     })
 
     it('should also detect non PWAs', async () => {
-        await browser.url('https://json.org')
+        await browser.url(`${pwa.url}/plain`)
         expect((await browser.checkPWA()).passed).toBe(false)
     })
 
     it('can query shadow elements', async () => {
-        await browser.url('https://the-internet.herokuapp.com/shadowdom')
+        await browser.url(`${pages.url}/shadow.html`)
         await $('h1').waitForDisplayed()
         await expect($('ul[slot="my-text"] li:last-child')).toHaveText('In a list!')
     })
@@ -54,7 +66,7 @@ describe('main suite 1', () => {
         })
 
         it('should be able to use async-iterators', async () => {
-            await browser.url('https://webdriver.io')
+            await browser.url(pages.url)
             await browser.$('aria/Toggle navigation bar').click()
             const contributeLink = await browser.waitUntil(async () => {
                 const contributeLink = await browser.$$('.navbar-sidebar a.menu__link').find<WebdriverIO.Element>(
@@ -79,7 +91,7 @@ describe('main suite 1', () => {
         before(() => browser.enablePerformanceAudits())
 
         it('should allow to do performance tests', async () => {
-            await browser.url('http://json.org')
+            await browser.url(`${pwa.url}/plain`)
             const metrics = await browser.getMetrics()
             expect(typeof metrics.serverResponseTime).toBe('number')
             expect(typeof metrics.domContentLoaded).toBe('number')
@@ -108,7 +120,7 @@ describe('main suite 1', () => {
             return
         }
 
-        await browser.url('https://webdriver.io/')
+        await browser.url(pages.url)
         const currentScrollPosition = await browser.execute(() => [
             window.scrollX, window.scrollY
         ])
@@ -127,10 +139,13 @@ describe('main suite 1', () => {
         expect(sameScrollPosition).toEqual([x, y])
 
         await browser.scroll(0, Math.floor(-y))
-        const oldScrollPosition = await browser.execute(() => [
+        await browser.waitUntil(async () => (
+            await browser.execute(() => window.scrollY)
+        ) === 0, { timeoutMsg: 'Expected the upward wheel action to reach the top of the page' })
+        const topScrollPosition = await browser.execute(() => [
             window.scrollX, window.scrollY
         ])
-        expect(oldScrollPosition).toEqual([x, y])
+        expect(topScrollPosition).toEqual([x, 0])
     })
 
     describe('moveTo tests', () => {
@@ -142,7 +157,7 @@ describe('main suite 1', () => {
         ]
 
         before(async () => {
-            await browser.url('https://guinea-pig.webdriver.io/pointer.html')
+            await browser.url(`${pages.url}/pointer.html`)
             await browser.$('#parent').waitForExist()
         })
 
@@ -182,10 +197,7 @@ describe('main suite 1', () => {
             })
         })
 
-        /**
-         * test started to fail for unclear reason and block release
-         */
-        it.skip('moveTo in iframe', async () => {
+        it('moveTo in iframe', async () => {
             const iframe = await browser.$('iframe.code-tabs__result')
             await browser.switchFrame(iframe)
             await browser.$('#parent').moveTo()
@@ -271,7 +283,7 @@ describe('main suite 1', () => {
         })
 
         beforeEach(async () => {
-            await browser.url('https://guinea-pig.webdriver.io')
+            await browser.url(pages.url)
             await browser.setWindowSize(500, 500)
         })
 
@@ -333,7 +345,7 @@ describe('main suite 1', () => {
 
     describe('url command', () => {
         it('supports basic auth', async () => {
-            await browser.url('https://the-internet.herokuapp.com/basic_auth', {
+            await browser.url(`${pages.url}/basic_auth`, {
                 auth: {
                     user: 'admin',
                     pass: 'admin'
@@ -344,41 +356,48 @@ describe('main suite 1', () => {
         })
 
         it('should return a request object', async () => {
-            const request = await browser.url('https://guinea-pig.webdriver.io/')
+            const request = await browser.url(`${pages.url}/`)
             if (!request) {
                 throw new Error('Request object is not defined')
             }
+            // Network events may arrive just after the navigation result; the
+            // returned request stays live as its subresources finish.
+            await browser.waitUntil(() => request.children!.some(child => child.url === `${pages.url}/resource.js`))
             expect(request.children!.length > 0).toBe(true)
-            expect(Object.keys(request.response?.headers || {})).toContain('x-amz-version-id')
+            expect(Object.keys(request.response?.headers || {}).map(name => name.toLowerCase())).toContain('content-type')
         })
 
         it('should not contain any children due to "none" wait property', async () => {
-            const request = await browser.url('https://guinea-pig.webdriver.io/', {
-                wait: 'none'
-            })
-
-            if (!request) {
-                throw new Error('Request object is not defined')
+            try {
+                const request = await browser.url(`${pages.url}/deferred.html`, {
+                    wait: 'none'
+                })
+                if (!request) {
+                    throw new Error('Request object is not defined')
+                }
+                expect(request.children!.length).toBe(0)
+            } finally {
+                pages.finishDeferredPage()
             }
-            expect(request.children!.length).toBe(0)
+            await browser.waitUntil(async () => await browser.execute(() => document.readyState) === 'complete')
         })
 
         it('should allow to load a script before loading the page', async () => {
-            await browser.url('https://webdriver.io', {
+            await browser.url(pages.url, {
                 onBeforeLoad: () => {
                     Math.random = () => 42
                 }
             })
             expect(await browser.execute(() => Math.random())).toBe(42)
 
-            await browser.url('https://webdriver.io')
+            await browser.url(pages.url)
             expect(await browser.execute(() => Math.random())).not.toBe(42)
         })
     })
 
     describe('dialog handling', () => {
         it('should automatically accept alerts', async () => {
-            await browser.url('https://guinea-pig.webdriver.io')
+            await browser.url(pages.url)
 
             await browser.execute(() => alert('123'))
 
@@ -393,13 +412,20 @@ describe('main suite 1', () => {
          * fails due to https://github.com/GoogleChromeLabs/chromium-bidi/issues/2556
          */
         it('should be able to handle dialogs', async () => {
-            await browser.url('https://guinea-pig.webdriver.io')
-            browser.execute(() => alert('123'))
-            const dialog = await new Promise<WebdriverIO.Dialog>((resolve) => browser.on('dialog', resolve))
+            await browser.url(pages.url)
+            let onDialog: (dialog: WebdriverIO.Dialog) => void
+            const opened = new Promise<WebdriverIO.Dialog>((resolve) => {
+                onDialog = resolve
+                browser.on('dialog', onDialog)
+            })
+            const alert = browser.execute(() => window.alert('123'))
+            const dialog = await opened
 
             expect(dialog.type()).toBe('alert')
             expect(dialog.message()).toBe('123')
             await dialog.dismiss()
+            browser.off('dialog', onDialog!)
+            await alert
         })
     })
 
@@ -409,11 +435,11 @@ describe('main suite 1', () => {
                 Math.random = () => seed
             }, 42)
 
-            await browser.url('https://webdriver.io')
+            await browser.url(pages.url)
             expect(await browser.execute(() => Math.random())).toBe(42)
 
             await script.remove()
-            await browser.url('https://webdriver.io')
+            await browser.url(pages.url)
             expect(await browser.execute(() => Math.random())).not.toBe(42)
         })
 
@@ -421,11 +447,12 @@ describe('main suite 1', () => {
             const script = await browser.addInitScript((num, str, bool, emit) => {
                 setTimeout(() => emit(JSON.stringify([num, str, bool])), 500)
             }, 1, '2', true)
-            browser.url('https://webdriver.io')
-            const data = await new Promise<string[]>((resolve) => {
-                script.on('data', (data) => resolve(data as string[]))
+            const emitted = new Promise<string>((resolve) => {
+                script.on('data', (data) => resolve(data as string))
             })
-            expect(data).toBe('[1,"2",true]')
+            await browser.url(pages.url)
+            expect(await emitted).toBe('[1,"2",true]')
+            await script.remove()
         })
     })
 
@@ -438,7 +465,7 @@ describe('main suite 1', () => {
             await browser.emulate('clock', { now })
             expect((await browser.execute(getDateString)).toLocaleString('en-GB', { timeZone: 'UTC' }))
                 .toBe(mockedDateString)
-            await browser.url('https://guinea-pig.webdriver.io')
+            await browser.url(pages.url)
             expect((await browser.execute(getDateString)).toLocaleString('en-GB', { timeZone: 'UTC' }))
                 .toBe(mockedDateString)
         })
@@ -447,7 +474,7 @@ describe('main suite 1', () => {
             await browser.restore('clock')
             expect((await browser.execute(getDateString)).toLocaleString('en-GB', { timeZone: 'UTC' }))
                 .not.toBe(mockedDateString)
-            await browser.url('https://guinea-pig.webdriver.io/pointer.html')
+            await browser.url(`${pages.url}/pointer.html`)
             expect((await browser.execute(getDateString)).toLocaleString('en-GB', { timeZone: 'UTC' }))
                 .not.toBe(mockedDateString)
         })
@@ -455,7 +482,7 @@ describe('main suite 1', () => {
 
     describe('shadow root piercing', () => {
         it('recognises new shadow root ids when page refreshes', async () => {
-            await browser.url('https://todomvc.com/examples/lit/dist/')
+            await browser.url(`${pages.url}/shadow.html`)
             await expect($('.new-todo')).toBePresent()
             await browser.refresh()
             await expect($('.new-todo')).toBePresent()
@@ -475,29 +502,29 @@ describe('main suite 1', () => {
         }
 
         it('should allow user to switch between contexts', async () => {
-            await browser.url('https://guinea-pig.webdriver.io/')
+            await browser.url(`${pages.url}/`)
 
-            await browser.newWindow('https://webdriver.io')
+            await browser.newWindow(`${pages.url}/other.html`)
             await expect($('.hero__subtitle')).toBePresent()
             await expect($('.red')).not.toBePresent()
 
-            await browser.switchWindow('guinea-pig.webdriver.io')
+            await browser.switchWindow(new RegExp(`${pages.url}/$`))
             await expect($('.red')).toBePresent()
             await expect($('.hero__subtitle')).not.toBePresent()
 
-            await browser.switchWindow('Next-gen browser and mobile automation test framework for Node.js')
+            await browser.switchWindow('Another test page')
             await expect($('.hero__subtitle')).toBePresent()
             await expect($('.red')).not.toBePresent()
         })
 
         it('should not switch window if requested window was not found', async () => {
             await closeAllWindowsButFirst()
-            await browser.navigateTo('https://guinea-pig.webdriver.io/')
+            await browser.navigateTo(`${pages.url}/`)
             const firstWindowHandle = await browser.getWindowHandle()
 
-            await browser.newWindow('https://webdriver.io')
+            await browser.newWindow(`${pages.url}/other.html`)
 
-            await browser.switchWindow('guinea-pig.webdriver.io')
+            await browser.switchWindow(new RegExp(`${pages.url}/$`))
             expect(await browser.getWindowHandle()).toBe(firstWindowHandle)
 
             const err = await browser.switchWindow('not-existing-window').catch((err) => err)
@@ -508,7 +535,7 @@ describe('main suite 1', () => {
 
         it('Should update BiDi browsingContext when performing switchToWindow in WebDriver Classic', async () => {
             await closeAllWindowsButFirst()
-            await browser.url('https://guinea-pig.webdriver.io/')
+            await browser.url(`${pages.url}/`)
             await $('#newWindow').click()
 
             const handles = await browser.getWindowHandles()
@@ -519,17 +546,17 @@ describe('main suite 1', () => {
         })
 
         it('should see that content is no longer displayed when window is closed', async () => {
-            await browser.url('https://the-internet.herokuapp.com/iframe')
-            const elementalSeleniumLink = await $('/html/body/div[3]/div/div/a')
-            await elementalSeleniumLink.waitForDisplayed()
-            await elementalSeleniumLink.click()
-            await browser.waitUntil(async () => (await browser.getWindowHandles()).length === 3)
-            await browser.switchWindow('https://elementalselenium.com/')
-            await $('#__docusaurus_skipToContent_fallback').waitForDisplayed()
-            await browser.closeWindow()
-            await $('#__docusaurus_skipToContent_fallback').waitForDisplayed({ reverse: true })
+            await closeAllWindowsButFirst()
+            await browser.url(pages.url)
+            const original = await browser.getWindowHandle()
+            await $('#newWindow').click()
             await browser.waitUntil(async () => (await browser.getWindowHandles()).length === 2)
-            await browser.switchWindow('https://the-internet.herokuapp.com/iframe')
+            await browser.switchWindow(`${pages.url}/two.html`)
+            await $('#second-window').waitForDisplayed()
+            await browser.closeWindow()
+            await browser.switchToWindow(original)
+            await $('#second-window').waitForDisplayed({ reverse: true })
+            await browser.waitUntil(async () => (await browser.getWindowHandles()).length === 1)
         })
     })
 
@@ -539,28 +566,28 @@ describe('main suite 1', () => {
         })
 
         it('can switch to a frame via url', async () => {
-            await browser.url('https://guinea-pig.webdriver.io/iframe.html')
-            await browser.switchFrame('https://guinea-pig.webdriver.io/iframeA2.html')
+            await browser.url(`${pages.url}/iframe.html`)
+            await browser.switchFrame(`${pages.url}/iframeA2.html`)
             expect(await browser.execute(() => [document.title, document.URL]))
-                .toEqual(['IFrame A2', 'https://guinea-pig.webdriver.io/iframeA2.html'])
+                .toEqual(['IFrame A2', `${pages.url}/iframeA2.html`])
         })
 
         it('can switch to a frame via element', async () => {
-            await browser.url('https://the-internet.herokuapp.com/nested_frames')
+            await browser.url(`${pages.url}/nested_frames`)
             await browser.switchFrame($('frame'))
             expect(await browser.execute(() => document.URL))
-                .toBe('https://the-internet.herokuapp.com/frame_top')
+                .toBe(`${pages.url}/frame_top`)
         })
 
         it('can switch to a frame via function', async () => {
-            await browser.url('https://the-internet.herokuapp.com/nested_frames')
+            await browser.url(`${pages.url}/nested_frames`)
             await browser.switchFrame(() => document.URL.includes('frame_right'))
             expect(await browser.execute(() => document.URL))
-                .toBe('https://the-internet.herokuapp.com/frame_right')
+                .toBe(`${pages.url}/frame_right`)
         })
 
         it('should reset the frame when the page is reloaded', async () => {
-            await browser.url('https://the-internet.herokuapp.com/iframe')
+            await browser.url(`${pages.url}/iframe`)
             await expect($('#tinymce')).not.toBePresent()
             await browser.switchFrame($('iframe'))
             await expect($('#tinymce')).toBePresent()
@@ -571,24 +598,24 @@ describe('main suite 1', () => {
         })
 
         it('allows expect after switching to non-children', async () => {
-            await browser.url('https://guinea-pig.webdriver.io/iframe.html')
+            await browser.url(`${pages.url}/iframe.html`)
             await expect($('h1,h2,h3')).toHaveText('Frame Demo')
 
             await browser.switchFrame($('#A')) // child
             await expect($('h1,h2,h3')).toHaveText('IFrame A')
 
             // child, we use this to proof switch frame with a function works
-            await browser.switchFrame(() => window.location.href === 'https://guinea-pig.webdriver.io/iframeA1.html')
+            await browser.switchFrame(() => window.location.pathname === '/iframeA1.html')
             await expect($('h1,h2,h3')).toHaveText('IFrame A1')
 
             // sibling
-            await browser.switchFrame(() => window.location.href === 'https://guinea-pig.webdriver.io/iframeA2.html')
+            await browser.switchFrame(() => window.location.pathname === '/iframeA2.html')
             await expect($('h1,h2,h3')).toHaveText('IFrame A2') // FAILS "no such element"
         })
 
         describe('switchToParentFrame', () => {
             it('switches to parent (not top-level)', async () => {
-                await browser.url('https://guinea-pig.webdriver.io/iframe.html')
+                await browser.url(`${pages.url}/iframe.html`)
                 await expect($('h1')).toHaveText('Frame Demo')
                 await expect($('h2')).not.toExist()
                 await expect($('h3')).not.toExist()
@@ -614,7 +641,7 @@ describe('main suite 1', () => {
 
         describe('taking screenshots', () => {
             it('should take a screenshot of the iframe', async () => {
-                await browser.url('https://guinea-pig.webdriver.io/iframe.html')
+                await browser.url(`${pages.url}/iframe.html`)
                 await browser.switchFrame($('#A'))
                 await browser.switchFrame($('#A2'))
 
@@ -634,7 +661,7 @@ describe('main suite 1', () => {
 
         describe('iframe navigations', () => {
             beforeEach(async () => {
-                await browser.url('https://guinea-pig.webdriver.io/iframeNavigation.html')
+                await browser.url(`${pages.url}/iframeNavigation.html`)
             })
 
             describe('ability to catch navigation event within iframe', () => {
@@ -655,13 +682,13 @@ describe('main suite 1', () => {
 
     describe('open resources with different protocols', () => {
         it('http', async () => {
-            browser.url('https://guinea-pig.webdriver.io/')
-            await expect(browser).toHaveUrl('https://guinea-pig.webdriver.io/')
+            await browser.url(`${pages.url}/`)
+            await expect(browser).toHaveUrl(`${pages.url}/`)
         })
 
         it('https', async () => {
-            await browser.url('https://webdriver.io/')
-            await expect(browser).toHaveUrl('https://webdriver.io/')
+            await browser.url('https://example.com/')
+            await expect(browser).toHaveUrl('https://example.com/')
         })
 
         it('data', async () => {
@@ -677,7 +704,7 @@ describe('main suite 1', () => {
 
         it('chrome', async () => {
             await browser.url('chrome://about/')
-            await expect($('li=chrome://accessibility')).toExist()
+            await expect($('chrome-urls-app').shadow$('a[href="chrome://accessibility"]')).toExist()
         })
     })
 
@@ -689,7 +716,7 @@ describe('main suite 1', () => {
         }
         for (const [name, [value, expected]] of Object.entries(scenarions)) {
             it(`reloads with ${name}`, async () => {
-                const url = `https://guinea-pig.webdriver.io/reloadCounter.html${value}`
+                const url = `${pages.url}/reloadCounter.html${value}`
                 await browser.url(url)
                 await $('#reset').click()
                 await expect($('#counter')).toHaveValue('0')
@@ -701,7 +728,7 @@ describe('main suite 1', () => {
         }
     })
 
-    describe.only('selectBy*', () => {
+    describe('selectBy*', () => {
         const scenarios = [
             ['selectByVisibleText', ['Option 2']],
             ['selectByIndex', [1]],
@@ -711,7 +738,7 @@ describe('main suite 1', () => {
         for (const [command, args] of scenarios) {
             it(`${command}: should wait for the option to be present`, async () => {
                 const newOption = 'Option 2'
-                await browser.url('https://guinea-pig.webdriver.io/two.html')
+                await browser.url(`${pages.url}/two.html`)
 
                 await browser.execute((newOption) => {
                     const select = document.createElement('select')

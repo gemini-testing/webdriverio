@@ -4,7 +4,7 @@ import path from 'node:path'
 import assert from 'node:assert'
 import { expect } from 'expect-webdriverio'
 
-import { SevereServiceError } from 'webdriverio'
+import { SevereServiceError } from '@testplane/webdriverio'
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
 const baseConfig = path.resolve(__dirname, 'helpers', 'config.js')

@@ -7,6 +7,7 @@ exports[`launch Edge with custom arguments 1`] = `
       "args": [
         "foobar",
       ],
+      "browser": "chrome",
       "defaultViewport": {
         "height": 456,
         "width": 123,
@@ -14,9 +15,7 @@ exports[`launch Edge with custom arguments 1`] = `
       "executablePath": "/path/to/edge",
       "headless": true,
       "ignoreDefaultArgs": undefined,
-      "ignoreHTTPSErrors": false,
       "prefs": undefined,
-      "product": "chrome",
     },
   ],
 ]
@@ -27,6 +26,7 @@ exports[`launch Edge with default values 1`] = `
   [
     {
       "args": [],
+      "browser": "chrome",
       "defaultViewport": {
         "height": 900,
         "width": 1200,
@@ -34,9 +34,7 @@ exports[`launch Edge with default values 1`] = `
       "executablePath": "/path/to/edge",
       "headless": false,
       "ignoreDefaultArgs": undefined,
-      "ignoreHTTPSErrors": false,
       "prefs": undefined,
-      "product": "chrome",
     },
   ],
 ]
@@ -47,6 +45,7 @@ exports[`launch Edge without Puppeteer default args (backwards compat) 1`] = `
   [
     {
       "args": [],
+      "browser": "chrome",
       "defaultViewport": {
         "height": 900,
         "width": 1200,
@@ -54,11 +53,9 @@ exports[`launch Edge without Puppeteer default args (backwards compat) 1`] = `
       "executablePath": "/path/to/edge",
       "headless": true,
       "ignoreDefaultArgs": true,
-      "ignoreHTTPSErrors": false,
       "prefs": {
         "foo": "bar",
       },
-      "product": "chrome",
     },
   ],
 ]
@@ -69,6 +66,7 @@ exports[`launch Edge without Puppeteer default args 1`] = `
   [
     {
       "args": [],
+      "browser": "chrome",
       "defaultViewport": {
         "height": 900,
         "width": 1200,
@@ -76,73 +74,7 @@ exports[`launch Edge without Puppeteer default args 1`] = `
       "executablePath": "/path/to/edge",
       "headless": true,
       "ignoreDefaultArgs": true,
-      "ignoreHTTPSErrors": false,
       "prefs": undefined,
-      "product": "chrome",
-    },
-  ],
-]
-`;
-
-exports[`launch Firefox Nightly binary without Puppeteer default args 1`] = `
-[
-  [
-    {
-      "args": [],
-      "binary": "firefox",
-      "defaultViewport": {
-        "height": 900,
-        "width": 1200,
-      },
-      "executablePath": "firefox",
-      "headless": true,
-      "ignoreDefaultArgs": true,
-      "ignoreHTTPSErrors": false,
-      "prefs": {
-        "foo": "bar",
-      },
-      "product": "firefox",
-    },
-  ],
-]
-`;
-
-exports[`launch Firefox Nightly without Puppeteer default args 1`] = `
-[
-  [
-    {
-      "args": [],
-      "binary": "/foo/firefox-nightly",
-      "defaultViewport": {
-        "height": 900,
-        "width": 1200,
-      },
-      "executablePath": "/foo/firefox-nightly",
-      "headless": true,
-      "ignoreDefaultArgs": true,
-      "ignoreHTTPSErrors": false,
-      "prefs": undefined,
-      "product": "firefox",
-    },
-  ],
-]
-`;
-
-exports[`launch Firefox with custom arguments 1`] = `
-[
-  [
-    {
-      "args": [],
-      "defaultViewport": {
-        "height": 456,
-        "width": 123,
-      },
-      "executablePath": "/path/to/firefox",
-      "headless": true,
-      "ignoreDefaultArgs": undefined,
-      "ignoreHTTPSErrors": false,
-      "prefs": undefined,
-      "product": "firefox",
     },
   ],
 ]

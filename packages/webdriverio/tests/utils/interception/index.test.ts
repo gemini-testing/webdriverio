@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events'
 import { describe, it, expect, vi } from 'vitest'
-import WebDriverInterception from '../../../src/utils/interception/index.js'
+import WebDriverInterception from '../../../src/utils/interception/bidi.js'
 
 describe('WebDriverInterception', () => {
     it('initiate', async () => {

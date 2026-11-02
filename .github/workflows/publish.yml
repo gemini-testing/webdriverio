@@ -4,66 +4,100 @@ on:
   workflow_dispatch:
     inputs:
       releaseType:
-        description: "Release Type"
+        description: 'Version bump (from-package resumes an interrupted publication)'
         required: true
         type: choice
-        default: "patch"
+        default: patch
         options:
           - patch
           - minor
-          - major
-          - premajor
+          - from-package
       distTag:
-        description: 'NPM tag (e.g. use "next --canary" to release a test version, add "--force-publish" to release all packages)'
+        description: 'NPM distribution tag'
         required: true
-        default: 'latest'
+        type: choice
+        default: latest
+        options:
+          - latest
+          - next
+      releaseCommit:
+        description: 'Original release commit SHA (required only for from-package)'
+        required: false
+        type: string
 
-env:
-  NPM_TOKEN: ${{secrets.NPM_TOKEN}}
-  # disable provenance check as it stopped working with Lerna:
-  #   > lerna ERR! E422 Error verifying sigstore provenance bundle: Failed to validate the provenance
-  #   > subject against the package name, version and tarball integrity. Please try re-publishing with
-  #   > the latest stable version of npm
-  # NPM_CONFIG_PROVENANCE: true
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-release
+  cancel-in-progress: false
 
 jobs:
   authorize:
     name: Authorize Actor
-    uses: ./.github/workflows/authorize.yml
-    secrets: inherit
+    if: github.repository == 'gemini-testing/webdriverio' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        with:
+          script: |
+            for (const username of new Set([context.actor, process.env.TRIGGERING_ACTOR])) {
+              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({ ...context.repo, username });
+              if (!['write', 'admin'].includes(data.permission)) {
+                throw new Error(`${username} does not have permission to release this repository`);
+              }
+            }
   release:
     permissions:
       contents: write
-      id-token: write
     needs: [authorize]
     runs-on: ubuntu-latest
     steps:
+      - name: Validate Recovery Commit
+        if: inputs.releaseType == 'from-package'
+        run: '[[ "$RELEASE_COMMIT" =~ ^[[:xdigit:]]{40}$ ]]'
+        env:
+          RELEASE_COMMIT: ${{ inputs.releaseCommit }}
       - uses: actions/checkout@v4
         with:
-          ref: 'main'
+          ref: ${{ inputs.releaseType == 'from-package' && inputs.releaseCommit || 'master' }}
           fetch-depth: 0
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
-          cache: 'pnpm'
-      - name: NPM Setup
-        run: |
-          npm set registry "https://registry.npmjs.org/"
-          npm set //registry.npmjs.org/:_authToken $NPM_TOKEN
-          npm whoami
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
       - name: Git Setup
         run: |
-          git config --global user.email "bot@webdriver.io"
-          git config --global user.name "WebdriverIO Release Bot"
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.name 'github-actions[bot]'
       - name: Install Dependencies
-        run: pnpm install
-      - name: Release
-        run: |
-          pnpm run setup
-          pnpm -r --filter=@wdio/lerna-patch run patch
-          pnpm lerna publish ${{github.event.inputs.releaseType}} --exact --yes --dist-tag ${{github.event.inputs.distTag}}
-          pnpm run pushReleaseTag
+        run: pnpm install --frozen-lockfile
+      - name: Version Testplane Packages
+        if: inputs.releaseType != 'from-package'
+        run: pnpm exec lerna version "$RELEASE_TYPE" --exact --force-publish --yes --no-push
         env:
-          NODE_ENV: production
-          GITHUB_AUTH: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TYPE: ${{ inputs.releaseType }}
+      - name: Verify Release Tags
+        run: node scripts/check-release.mjs
+      - name: Build and Verify
+        run: |
+          pnpm run build
+          pnpm run test:eslint
+          pnpm run test:typings
+          pnpm run test:unit:run
+          pnpm run test:smoke
+          pnpm run test:interop
+          pnpm run test:release
+          pnpm run test:installation
+      - name: Push Release Commit and Tags
+        if: inputs.releaseType != 'from-package'
+        run: git push --atomic --follow-tags origin HEAD:master
+      - name: Publish Testplane Packages
+        run: pnpm exec lerna publish from-package --yes --dist-tag "$DIST_TAG" --registry https://registry.npmjs.org
+        env:
+          DIST_TAG: ${{ inputs.distTag }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

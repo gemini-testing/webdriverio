@@ -429,13 +429,16 @@ You can always reach out to the `webdriverio/ProjectCommitters` channel on Matri
 
 ## Release New Version
 
-Package releases are made using Lerna's release capabilities as GitHub workflow and executed by the [technical steering committee](https://github.com/webdriverio/webdriverio/blob/main/GOVERNANCE.md#the-technical-committee) only. All you need to do is go to the [`Manual NPM Publish`](https://github.com/webdriverio/webdriverio/actions/workflows/publish.yml) workflow and trigger a new run. Choose the appropriate version upgrade based on the [Semantic Versioning](https://semver.org/). To help choose the right release type, here are some general guidelines:
+Maintainers with repository write access can run the fork's [Manual NPM Publish](https://github.com/gemini-testing/webdriverio/actions/workflows/publish.yml) workflow on `master`. The repository must have an `NPM_TOKEN` secret authorized to publish the `@testplane` packages and allow GitHub Actions to push release commits and tags.
 
-- __Breaking Changes__: never do these by yourself! A major release is always a collaborative effort between all TSC members. It requires consensus from all of them.
-- __Minor Release__: minor releases are always required if a new, user focused feature was added to one of the packages. For example, if a command was added to WebdriverIO or if a service provides a new form of integration, a minor version bump would be appropriate. However if an internal package like `@wdio/local-runner` exposes a new interface that is solely used internally, we can consider that as a patch release.
-- __Patch Release__: every time a bug is fixed, documentation (this includes TypeScript definitions) gets updated or existing functionality is improved, we should do a patch release.
+- Choose `patch` for fixes or `minor` for backward-compatible additions, and the npm tag `latest` or `next`.
+- Only the nine `@testplane/*` packages listed in `lerna.json` are released. Each package's own version is incremented; `@testplane/devtools` stays on its current major version. Upstream `@wdio/*` packages are not published.
+- The workflow builds and tests the packages, checks a clean npm installation and its production audit, then pushes the release commit and package tags before publishing dependencies ahead of their consumers. Lerna replaces `workspace:*` references with the new package versions in the published manifests.
+- If publication fails after the release commit was pushed, rerun with `from-package`, the same npm tag, and the full SHA of that release commit in `releaseCommit`. The workflow verifies that all package tags point to this commit, then publishes only versions still missing from npm, without another version bump or changes merged into `master` since the release.
 
-If you are unsure about which release type to pick, reach out in the `webdriverio/TSC` Matrix channel. By setting an NPM tag you can also release a current version with e.g. a `next` tag to test changes before we roll them out to all users.
+To check the packages without publishing, run `pnpm run build && pnpm run test:installation`. This packs and installs the release packages in a temporary consumer with no overrides and checks browser downloads through a proxy and ZIP extraction without system tools.
+
+The upstream `docs:deploy` command is not exposed by this fork: publishing Testplane packages does not deploy the webdriver.io website.
 
 ## Workshop
 

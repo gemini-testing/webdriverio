@@ -83,6 +83,7 @@ const log = logger('webdriver')
  * @param {string= | number=} options.button can be one of [0, "left", 1, "middle", 2, "right"] (optional)
  * @param {number=}           options.x      Number (optional)
  * @param {number=}           options.y      Number (optional)
+ * @param {number=}            options.duration            Milliseconds to hold the pointer down (default: 0)
  * @param {boolean=}           options.skipRelease         Boolean (optional)
  */
 export async function click(
@@ -101,7 +102,8 @@ export async function click(
     const {
         x: xOffset = 0,
         y: yOffset = 0,
-        skipRelease = false
+        skipRelease = false,
+        duration = 0
     } = options || {}
 
     if (
@@ -137,8 +139,8 @@ export async function click(
             }
         }
         const clickNested = async () => {
-            await browser.action('pointer', {
-                parameters: { pointerType: 'mouse' }
+            const action = browser.action('pointer', {
+                parameters: { pointerType: browser.isMobile && duration > 0 ? 'touch' : 'mouse' }
             })
                 .move({
                     origin: this,
@@ -146,8 +148,10 @@ export async function click(
                     y: yOffset
                 })
                 .down({ button })
-                .up({ button })
-                .perform(skipRelease)
+            if (duration > 0) {
+                action.pause(duration)
+            }
+            await action.up({ button }).perform(skipRelease)
         }
         try {
             await clickNested()

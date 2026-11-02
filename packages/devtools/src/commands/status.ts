@@ -1,6 +1,5 @@
 import fs from 'node:fs/promises'
 import url from 'node:url'
-import path from 'node:path'
 import { resolve } from 'import-meta-resolve'
 
 let puppeteerVersion: string
@@ -16,9 +15,8 @@ let puppeteerVersion: string
  */
 export default async function status () {
     if (!puppeteerVersion) {
-        const puppeteerPath = await resolve('puppeteer-core', import.meta.url)
         try {
-            const pkgJsonPath = path.resolve(url.fileURLToPath(puppeteerPath), '..', '..', '..', '..', 'package.json')
+            const pkgJsonPath = url.fileURLToPath(resolve('puppeteer-core/package.json', import.meta.url))
             const pkgJson = JSON.parse((await fs.readFile(pkgJsonPath, 'utf-8')).toString())
             puppeteerVersion = pkgJson.version
         // eslint-disable-next-line @typescript-eslint/no-unused-vars

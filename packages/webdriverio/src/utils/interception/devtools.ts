@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import logger from '@testplane/wdio-logger'
-import type { CDPSession } from 'puppeteer-core/lib/esm/puppeteer/common/Connection.js'
+import type { CDPSession } from 'puppeteer-core'
 import type { Protocol } from 'devtools-protocol'
 
 import Interception from './index.js'
@@ -22,20 +22,12 @@ interface HeaderEntry {
     value: string;
 }
 
-type Event = {
-    requestId: string
-    request: Matches & { mockedResponse: string | Buffer }
-    responseStatusCode?: number
-    responseHeaders: HeaderEntry[]
-    responseErrorReason?: string
-}
-
 type ExpectParameter<T> = ((param: T) => boolean) | T;
 
 export default class DevtoolsInterception extends Interception {
     private restored = false
 
-    static handleRequestInterception (client: CDPSession, mocks: Set<Interception>): (event: Event) => Promise<void | ClientResponse> {
+    static handleRequestInterception (client: CDPSession, mocks: Set<Interception>): (event: Protocol.Fetch.RequestPausedEvent) => Promise<void | ClientResponse> {
         return async (event) => {
             // Race condition: if mock was already restored on client side
             // But browser managed to send "Fetch.requestPaused" event before it received "Fetch.disable"
@@ -83,8 +75,11 @@ export default class DevtoolsInterception extends Interception {
                 /**
                  * Add statusCode and responseHeaders to request to be used in expect-webdriverio
                  */
-                event.request.statusCode = event.responseStatusCode
-                event.request.responseHeaders = { ...responseHeaders }
+                // Enrich the original CDP request in place, preserving its identity for listeners.
+                // The body is populated below before exposing the request in mock.matches.
+                const request = event.request as Matches & { mockedResponse?: string | Buffer }
+                request.statusCode = event.responseStatusCode
+                request.responseHeaders = { ...responseHeaders }
 
                 /**
                  * match filter options
@@ -101,7 +96,7 @@ export default class DevtoolsInterception extends Interception {
 
                 mock.emit('request', event)
 
-                const { requestId, request, responseStatusCode } = event
+                const { requestId, responseStatusCode } = event
                 const { body, base64Encoded = undefined } = isRequest ? { body: '' } : await client.send(
                     'Fetch.getResponseBody',
                     { requestId }

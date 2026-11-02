@@ -1,8 +1,15 @@
 import path from 'node:path'
+import { randomUUID } from 'node:crypto'
+import type * as crypto from 'node:crypto'
 import { expect, test, vi, beforeEach } from 'vitest'
 import type { Capabilities } from '@testplane/wdio-types'
 import launch from '../src/launcher.js'
 import DevTools from '../src/index.js'
+
+vi.mock('node:crypto', async (importOriginal) => ({
+    ...await importOriginal<typeof crypto>(),
+    randomUUID: vi.fn().mockReturnValue('12345678-1234-4234-9234-123456789abc')
+}))
 
 vi.mock('@testplane/wdio-logger', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-logger')))
 vi.mock('../src/launcher', () => ({
@@ -45,6 +52,8 @@ test('newSession', async () => {
     expect(client.isDevTools).toBe(true)
     expect(client.isChrome).toBe(true)
     expect(client.isW3C).toBe(true)
+    expect(randomUUID).toHaveBeenCalledWith()
+    expect(client.sessionId).toBe('12345678-1234-4234-9234-123456789abc')
     expect(launch).toBeCalledTimes(1)
 })
 
