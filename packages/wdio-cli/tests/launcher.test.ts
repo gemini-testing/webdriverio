@@ -2,6 +2,7 @@ import path from 'node:path'
 import { vi, describe, it, expect, afterEach, beforeEach } from 'vitest'
 import logger from '@testplane/wdio-logger'
 import { sleep, enableFileLogging } from '@testplane/wdio-utils'
+import { setupBrowser, setupDriver } from '@testplane/wdio-utils/node'
 import Launcher from '../src/launcher.js'
 
 const caps: WebdriverIO.Capabilities = {
@@ -16,6 +17,10 @@ vi.mock('node:fs/promises', () => ({
     }
 }))
 vi.mock('@testplane/wdio-utils', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-utils')))
+vi.mock('@testplane/wdio-utils/node', () => ({
+    setupBrowser: vi.fn(),
+    setupDriver: vi.fn()
+}))
 vi.mock('@testplane/wdio-config', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-config')))
 vi.mock('@testplane/wdio-config/node', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-config/node')))
 vi.mock('@testplane/wdio-logger', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-logger')))
@@ -760,6 +765,8 @@ describe('launcher', () => {
 
         beforeEach(() => {
             global.console.error = vi.fn()
+            vi.mocked(setupBrowser).mockReset()
+            vi.mocked(setupDriver).mockReset()
 
             config = {
                 // ConfigParser.addFileConfig() will return onPrepare and onComplete as arrays of functions
@@ -774,6 +781,7 @@ describe('launcher', () => {
             launcher.configParser = {
                 getCapabilities: vi.fn().mockReturnValue({}),
                 getConfig: vi.fn().mockReturnValue(config),
+                getSpecs: vi.fn().mockReturnValue(['/test.e2e.ts']),
                 initialize: vi.fn()
             } as any
             launcher.runner = { initialize: vi.fn(), shutdown: vi.fn() } as any
@@ -801,6 +809,45 @@ describe('launcher', () => {
             launcher['_hasTriggeredExitRoutine'] = true
             expect(await launcher.run()).toEqual(0)
             expect(launcher.runner!.shutdown).not.toBeCalled()
+        })
+
+        it.each([
+            [{ browserName: 'chrome', browserVersion: 'stable' }],
+            [{
+                browserA: { capabilities: { browserName: 'chrome', browserVersion: 'stable' } },
+                browserB: { capabilities: { browserName: 'chrome', browserVersion: 'stable' } }
+            }]
+        ])('prepares the configured browsers and drivers before starting workers: %j', async (cap) => {
+            const capabilities = [cap]
+            config.cacheDir = '/custom/browser-cache'
+            vi.mocked(launcher.configParser.getCapabilities).mockReturnValue(capabilities)
+            const ready: string[] = []
+            vi.mocked(setupBrowser).mockImplementationOnce(async (options, caps) => {
+                expect(options).toBe(config)
+                expect(caps).toBe(capabilities)
+                await Promise.resolve()
+                ready.push('browser')
+            })
+            vi.mocked(setupDriver).mockImplementationOnce(async (options, caps) => {
+                expect(options).toBe(config)
+                expect(caps).toBe(capabilities)
+                await Promise.resolve()
+                ready.push('driver')
+            })
+            vi.mocked(launcher['_runMode']).mockImplementationOnce(async () => {
+                expect(ready.sort()).toEqual(['browser', 'driver'])
+                return 0
+            })
+
+            expect(await launcher.run()).toBe(0)
+        })
+
+        it('does not start workers when browser preparation fails', async () => {
+            vi.mocked(setupBrowser).mockRejectedValueOnce(new Error('browser download failed'))
+
+            await expect(launcher.run()).rejects.toThrow('browser download failed')
+            expect(launcher['_runMode']).not.toHaveBeenCalled()
+            expect(launcher.runner!.shutdown).toHaveBeenCalled()
         })
 
         it('onComplete error', async () => {

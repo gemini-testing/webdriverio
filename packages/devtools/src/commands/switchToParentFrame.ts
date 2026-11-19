@@ -1,5 +1,4 @@
-import type { Page } from 'puppeteer-core/lib/esm/puppeteer/api/Page.js'
-import type { Frame } from 'puppeteer-core/lib/esm/puppeteer/api/Frame.js'
+import type { Page, Frame } from 'puppeteer-core'
 import type DevToolsDriver from '../devtoolsdriver.js'
 
 /**

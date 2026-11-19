@@ -3,12 +3,13 @@ import puppeteer, { type Browser as PuppeteerBrowser } from 'puppeteer-core'
 import type { Capabilities } from '@testplane/wdio-types'
 
 import { FF_REMOTE_DEBUG_ARG } from '../../constants.js'
+import { addPuppeteerCompatibility, type CompatiblePuppeteerBrowser } from '../../utils/puppeteerCompatibility.js'
 
 const log = logger('webdriverio')
 const DEBUG_PIPE_FLAG = 'remote-debugging-pipe'
 
 /**
- * Get the [Puppeteer Browser instance](https://pptr.dev/#?product=Puppeteer&version=v5.1.0&show=api-class-browser)
+ * Get the [Puppeteer Browser instance](https://pptr.dev/api/puppeteer.browser)
  * to run commands with Puppeteer. Note that all Puppeteer commands are
  * asynchronous by default so in order to interchange between sync and async
  * execution make sure to wrap your Puppeteer calls within a `browser.call`
@@ -16,10 +17,12 @@ const DEBUG_PIPE_FLAG = 'remote-debugging-pipe'
  *
  * :::info
  *
- * Note that using Puppeteer requires support for Chrome DevTools protocol and e.g.
- * can not be used when running automated tests in the cloud. Chrome DevTools protocol is not installed by default,
- * use `npm install puppeteer-core` to install it.
- * Find out more in the [Automation Protocols](/docs/automationProtocols) section.
+ * The driver must expose a reachable Chrome DevTools Protocol endpoint (for example Selenium's `se:cdp`).
+ * The returned object uses Puppeteer 25. Testplane retains `browser.isConnected()`,
+ * `browser.createIncognitoBrowserContext()` and `context.isIncognito()` for older tests.
+ * For Puppeteer 20's `page.$x()` and `page.waitForXPath()`, use `page.$$()` or `page.waitForSelector()`
+ * with an [XPath selector](https://pptr.dev/guides/page-interactions#xpath-selectors);
+ * replace `page.waitForTimeout()` with a wait for the expected page state.
  *
  * :::
  *
@@ -49,7 +52,7 @@ const DEBUG_PIPE_FLAG = 'remote-debugging-pipe'
  *
  * @return {PuppeteerBrowser}  initiated puppeteer instance connected to the browser
  */
-export async function getPuppeteer (this: WebdriverIO.Browser): Promise<PuppeteerBrowser> {
+export async function getPuppeteer (this: WebdriverIO.Browser): Promise<CompatiblePuppeteerBrowser> {
     /**
      * Tell user that Puppeteer is not supported in browser runner
      */
@@ -61,9 +64,9 @@ export async function getPuppeteer (this: WebdriverIO.Browser): Promise<Puppetee
      * check if we already connected Puppeteer and if so return
      * that instance
      */
-    if (this.puppeteer?.isConnected()) {
+    if (this.puppeteer?.connected) {
         log.debug('Reusing existing puppeteer session')
-        return this.puppeteer
+        return addPuppeteerCompatibility(this.puppeteer)
     }
 
     const { headers } = this.options
@@ -77,7 +80,7 @@ export async function getPuppeteer (this: WebdriverIO.Browser): Promise<Puppetee
             defaultViewport: null,
             headers
         }) as unknown as PuppeteerBrowser
-        return this.puppeteer
+        return addPuppeteerCompatibility(this.puppeteer)
     }
     /**
      * attach to a Selenoid\Moon CDP Session if there are Aerokube vendor capabilities
@@ -91,7 +94,7 @@ export async function getPuppeteer (this: WebdriverIO.Browser): Promise<Puppetee
             defaultViewport: null,
             headers
         }) as unknown as PuppeteerBrowser
-        return this.puppeteer
+        return addPuppeteerCompatibility(this.puppeteer)
     }
     /**
      * attach to Chromium debugger session
@@ -102,7 +105,7 @@ export async function getPuppeteer (this: WebdriverIO.Browser): Promise<Puppetee
             browserURL: `http://${chromiumOptions.debuggerAddress.replace('localhost', '0.0.0.0')}`,
             defaultViewport: null
         }) as unknown as PuppeteerBrowser
-        return this.puppeteer
+        return addPuppeteerCompatibility(this.puppeteer)
     } else if (
         /**
          * if --remote-debugging-pipe is set as Chrome flag, we can't attach to the session
@@ -156,7 +159,7 @@ export async function getPuppeteer (this: WebdriverIO.Browser): Promise<Puppetee
                 browserURL,
                 defaultViewport: null
             }) as unknown as PuppeteerBrowser
-            return this.puppeteer as unknown as PuppeteerBrowser
+            return addPuppeteerCompatibility(this.puppeteer)
         }
     }
 

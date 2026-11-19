@@ -1,6 +1,15 @@
 import { expectType } from 'tsd'
 
 async function bar() {
+    const pptr = await browser.getPuppeteer()
+    const page = await pptr.newPage()
+    expectType<boolean>(page.browser().isConnected())
+    expectType<boolean>(page.browserContext().isIncognito())
+    const target = await pptr.waitForTarget(target => target.browserContext().isIncognito())
+    expectType<boolean>(target.browser().isConnected())
+    expectType<boolean>((await target.page())!.browserContext().isIncognito())
+    expectType<boolean>((await pptr.defaultBrowserContext().pages())[0].target().browserContext().isIncognito())
+
     browser.enablePerformanceAudits()
     browser.enablePerformanceAudits({
         networkThrottling: 'online',

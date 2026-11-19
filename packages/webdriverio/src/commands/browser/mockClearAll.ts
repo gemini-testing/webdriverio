@@ -1,6 +1,8 @@
 import logger from '@testplane/wdio-logger'
 
-import { SESSION_MOCKS, SESSION_BIDI_MOCKS } from './mock.js'
+import { getBrowserObject } from '@testplane/wdio-utils'
+import BidiInterception from '../../utils/interception/bidi.js'
+import { SESSION_MOCKS } from './mock.js'
 
 const log = logger('webdriverio:mockClearAll')
 
@@ -31,7 +33,9 @@ const log = logger('webdriverio:mockClearAll')
  * @alias browser.mockClearAll
  */
 export async function mockClearAll (this: WebdriverIO.Browser) {
-    const sessionMocks = this.isBidi ? SESSION_BIDI_MOCKS : SESSION_MOCKS
+    const sessionMocks = this.isBidi
+        ? { [this.sessionId]: BidiInterception.getSessionMocks(getBrowserObject(this)) }
+        : SESSION_MOCKS
 
     for (const [handle, mocks] of Object.entries(sessionMocks)) {
         log.trace(`Clearing mocks for ${handle}`)

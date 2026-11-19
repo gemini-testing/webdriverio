@@ -3,16 +3,24 @@ name: Continuous Releases
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   build:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
 
     steps:
       - name: ⬇️ Checkout Code
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: 🧑‍🔧 Get Core Dependencies
         uses: ./.github/workflows/actions/get-core-dependencies
@@ -31,5 +39,9 @@ jobs:
           NODE_ENV: production
           GITHUB_AUTH: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish
-        run: pnpx pkg-pr-new publish --pnpm './packages/*'
+      - name: Publish Preview Packages
+        run: >-
+          pnpm exec pkg-pr-new publish --pnpm --no-compact --commentWithSha
+          './packages/wdio-types' './packages/wdio-logger' './packages/wdio-protocols'
+          './packages/wdio-repl' './packages/wdio-utils' './packages/wdio-config'
+          './packages/webdriver' './packages/webdriverio' './packages/devtools'

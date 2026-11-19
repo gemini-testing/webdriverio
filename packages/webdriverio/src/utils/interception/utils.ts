@@ -15,7 +15,7 @@ export function parseOverwrite<
     request: local.NetworkBeforeRequestSentParameters | local.NetworkResponseCompletedParameters
 ): Overwrite<T> {
     const result: Overwrite<T> = {} as unknown as Overwrite<T>
-    if ('body' in overwrite && overwrite.body) {
+    if ('body' in overwrite && (overwrite.body || overwrite.body === '')) {
         const bodyOverwrite = typeof overwrite.body === 'function'
             ? overwrite.body(request as local.NetworkBeforeRequestSentParameters)
             : overwrite.body
@@ -91,7 +91,9 @@ export function parseOverwrite<
 }
 
 export function getPatternParam (pattern: URLPattern, key: keyof Omit<remote.NetworkUrlPatternPattern, 'type'>) {
-    if (key !== 'pathname' && pattern[key] === '*') {
+    // BiDi compares URL components for equality; it does not evaluate URLPattern syntax.
+    // Omit dynamic components and let BidiInterception apply the complete pattern.
+    if (/[*():{}+?]/.test(pattern[key])) {
         return
     }
 

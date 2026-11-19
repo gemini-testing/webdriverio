@@ -1,458 +1,190 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { WebRequest } from '../src/request/web.js'
+import type { RequestLibOptions } from '../src/request/types.js'
 
-import path from 'node:path'
-
-import logger from '@testplane/wdio-logger'
-import type { Options } from '@testplane/wdio-types'
-
-import '../src/browser.js'
-import { FetchRequest } from '../src/request/web.js'
-
-vi.mock('@testplane/wdio-logger', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-logger')))
-vi.mock('fetch')
-const { warn, error } = logger('test')
-
-const webdriverPath = '/session'
-const defaultOptions = {
-    protocol: 'http',
-    hostname: 'localhost',
-    port: 4444
+const options = {
+    protocol: 'http', hostname: 'localhost', port: 4444,
+    connectionRetryCount: 0, connectionRetryTimeout: 1000
 }
-const baseUrl = `${defaultOptions.protocol}://${defaultOptions.hostname}:${defaultOptions.port}`
+const originalFetch = globalThis.fetch
 
-describe('webdriver request', () => {
-    beforeEach(() => {
-        vi.mocked(fetch).mockClear()
-    })
+afterEach(() => {
+    vi.useRealTimers()
+    vi.stubGlobal('fetch', originalFetch)
+})
 
-    it('should have some default options', () => {
-        const req = new FetchRequest('POST', '/foo/bar', { foo: 'bar' })
-        expect(req.method).toBe('POST')
-        expect(req.endpoint).toBe('/foo/bar')
-    })
+async function capture (method: string, body?: Record<string, unknown>, extra = {}, endpoint = '/session/:sessionId/element') {
+    let wire: Request | undefined
+    vi.stubGlobal('fetch', vi.fn(async (request: Request) => {
+        wire = request
+        return Response.json({ value: 'ok' })
+    }))
+    const request = new WebRequest(method, endpoint, body)
+    await request.makeRequest({ ...options, ...extra }, 'abc')
+    return wire!
+}
 
-    it('should be able to make request', async () => {
-        const req = new FetchRequest('POST', '/foo/bar', { foo: 'bar' })
-        const url =  new URL('/foo/bar', baseUrl)
-        req.createOptions = vi.fn().mockImplementation((opts, sessionId) => ({
-            url,
-            requestOptions:{
-                foo: 'bar',
-                sessionId
-            }
+describe('webdriver request public API', () => {
+    it('preserves method and endpoint and sends a request for the supplied session', async () => {
+        const request = new WebRequest('POST', '/session/:sessionId/element', { using: 'css selector', value: '#foo' })
+        const agent = { request: vi.fn().mockResolvedValue({ statusCode: 200, body: { value: 42 } }) }
+        expect(request.method).toBe('POST')
+        expect(request.endpoint).toBe('/session/:sessionId/element')
+        await expect(request.makeRequest({ ...options, customWdRequestAgent: agent }, 'abc')).resolves.toEqual({ value: 42 })
+        expect(agent.request).toHaveBeenCalledWith(new URL('http://localhost:4444/session/abc/element'), expect.objectContaining({
+            method: 'POST', json: { using: 'css selector', value: '#foo' }
         }))
-        req['_request'] = vi.fn()
-
-        await req.makeRequest({ connectionRetryCount: 43, logLevel: 'warn' }, 'some_id')
-        expect(req['_request']).toHaveBeenCalledWith(
-            url,
-            expect.objectContaining({ foo: 'bar', sessionId: 'some_id' }),
-            undefined,
-            43,
-            0
-        )
     })
 
-    it('should pick up the fullRequestOptions returned by transformRequest', async () => {
-        const req = new FetchRequest('POST', '/foo/bar', { foo: 'bar' })
-        const transformRequest = vi.fn().mockImplementation((requestOptions) => ({
-            ...requestOptions,
-            body: { foo: 'baz' }
-        }))
-
-        await req.makeRequest({
-            transformRequest,
-            protocol: 'https',
-            hostname: 'localhost',
-            port: 4445,
-            path: '/wd/hub/',
-            logLevel: 'warn'
-        }, 'some_id')
-        expect(vi.mocked(fetch)).toHaveBeenCalledWith(
-            expect.any(Object),
-            expect.objectContaining({ body: JSON.stringify( { foo: 'baz' }) })
-        )
+    it('rejects a missing session ID before sending the request', async () => {
+        const send = vi.fn()
+        vi.stubGlobal('fetch', send)
+        await expect(new WebRequest('POST', '/session/:sessionId/element', {}).makeRequest(options)).rejects.toThrow('A sessionId is required')
+        expect(send).not.toHaveBeenCalled()
     })
 
-    it('should resolve with the body returned by transformResponse', async () => {
-        const req = new FetchRequest('POST', 'session/:sessionId/element', { foo: 'requestBody' })
-
-        const transformResponse = vi.fn().mockImplementation((response) => ({
-            ...response,
-            body: { value: { foo: 'transformedResponse' } },
-        }))
-
-        vi.mocked(fetch).mockClear()
-        const responseBody = await req.makeRequest({
-            transformResponse,
-            protocol: 'https',
-            hostname: 'localhost',
-            port: 4445,
-            path: '/wd/hub/',
-            logLevel: 'warn'
-        }, 'foobar-123')
-
-        expect(transformResponse.mock.calls[0][0]).toHaveProperty('body')
-        expect(transformResponse.mock.calls[0][1].body).toEqual({ foo: 'requestBody' })
-        await expect(responseBody).toEqual({ value: { foo: 'transformedResponse' } })
-        vi.mocked(fetch).mockClear()
+    it('creates the URL and default/custom headers', async () => {
+        const request = await capture('POST', {}, { protocol: 'https', port: 4445, path: '/wd/hub', headers: { foo: 'bar' } })
+        expect(request.url).toBe('https://localhost:4445/wd/hub/session/abc/element')
+        expect([...request.headers.keys()]).toEqual(['accept', 'connection', 'content-length', 'content-type', 'foo', 'user-agent'])
+        expect(request.headers.get('foo')).toBe('bar')
+        expect(request.signal.aborted).toBe(false)
     })
 
-    describe('createOptions', () => {
-        it('fails if command requires sessionId but none given', async () => {
-            const req = new FetchRequest('POST', `${webdriverPath}/:sessionId/element`, {})
-            await expect(() => req.createOptions({ logLevel: 'warn' })).rejects.toThrow('A sessionId is required')
-        })
-
-        it('creates proper options set', async () => {
-            const req = new FetchRequest('POST', `${webdriverPath}/:sessionId/element`, {})
-            const { url, requestOptions } = await req.createOptions({
-                protocol: 'https',
-                hostname: 'localhost',
-                port: 4445,
-                path: '/',
-                headers: { foo: 'bar' },
-                connectionRetryTimeout: 10 * 1000,
-                logLevel: 'warn'
-            }, 'foobar12345')
-
-            expect((url! as URL).href)
-                .toBe('https://localhost:4445/session/foobar12345/element')
-            expect([...(requestOptions.headers as unknown as Map<string, string>).keys()])
-                .toEqual(['accept', 'connection', 'content-length', 'content-type', 'foo', 'user-agent'])
-            expect(requestOptions.signal?.aborted).toBeFalsy()
-        })
-
-        it('ignors path when command is a hub command', async () => {
-            const req = new FetchRequest('POST', '/grid/api/hub', {}, undefined, true)
-            const options = await req.createOptions({
-                protocol: 'https',
-                hostname: 'localhost',
-                port: 4445,
-                path: '/',
-                logLevel: 'warn'
-            }, 'foobar12345')
-            expect((options.url as URL).href).toBe('https://localhost:4445/grid/api/hub')
-        })
-
-        it('should add authorization header if user and key is given', async () => {
-            const req = new FetchRequest('POST', webdriverPath, { some: 'body' })
-            const user = 'foo'
-            const key = 'bar'
-            const { requestOptions } = await req.createOptions({
-                ...defaultOptions,
-                user,
-                key,
-                path: '/',
-                logLevel: 'warn'
-            })
-            expect((requestOptions.headers as unknown as Map<string, string>).get('Authorization')).toEqual('Basic ' + btoa(user + ':' + key))
-            expect(requestOptions.body).toEqual({ some: 'body' })
-        })
-
-        it('sets request body to "undefined" when request object is empty and DELETE is used', async () => {
-            const req = new FetchRequest('DELETE', webdriverPath, {})
-            const { requestOptions } = await req.createOptions({
-                ...defaultOptions,
-                path: '/',
-                logLevel: 'warn'
-            })
-            expect(Boolean(requestOptions.body)).toEqual(false)
-        })
-
-        it('sets request body to "undefined" when request object is empty and GET is used', async () => {
-            const req = new FetchRequest('GET', `${webdriverPath}/title`, {})
-            const { requestOptions } = await req.createOptions({
-                ...defaultOptions,
-                path: '/',
-                logLevel: 'warn'
-            })
-            expect(Boolean(requestOptions.body)).toEqual(false)
-        })
-
-        it('should attach an empty object body when POST is used', async () => {
-            const req = new FetchRequest('POST', '/status', {})
-            const { requestOptions } = await req.createOptions({
-                ...defaultOptions,
-                path: '/',
-                logLevel: 'warn'
-            })
-            expect(requestOptions.body).toEqual({})
-        })
-
-        it('should add the Content-Length header when a request object has a body', async () => {
-            const req = new FetchRequest('POST', webdriverPath, { foo: 'bar' })
-            const { requestOptions } = await req.createOptions({
-                ...defaultOptions,
-                path: '/',
-                logLevel: 'warn'
-            })
-            expect([...(requestOptions.headers as unknown as Map<string, string>).keys()])
-                .toEqual(['accept', 'connection', 'content-length', 'content-type', 'user-agent'])
-            expect((requestOptions.headers as unknown as Map<string, string>).get('Content-Length')).toBe('13')
-        })
-
-        it('should add Content-Length as well any other header provided in the request options if there is body in the request object', async () => {
-            const req = new FetchRequest('POST', webdriverPath, { foo: 'bar' })
-            const { requestOptions } = await req.createOptions({
-                ...defaultOptions, path: '/',
-                headers: { foo: 'bar' },
-                logLevel: 'warn'
-            })
-            expect((requestOptions.headers as unknown as Map<string, string>).get('foo')).toContain('bar')
-            expect((requestOptions.headers as unknown as Map<string, string>).get('Content-Length')).toBe('13')
-        })
-
-        it('should add only the headers provided if the request body is empty', async () => {
-            const req = new FetchRequest('POST', webdriverPath)
-            const { requestOptions } = await req.createOptions({
-                ...defaultOptions,
-                path: '/',
-                headers: { foo: 'bar' },
-                logLevel: 'warn'
-            })
-            expect([...(requestOptions.headers as unknown as Map<string, string>).keys()]).not.toContain('content-length')
-            expect((requestOptions.headers as unknown as Map<string, string>).get('foo')).toContain('bar')
-        })
+    it('adds Basic authorization for user and key', async () => {
+        const request = await capture('POST', { some: 'body' }, { user: 'foo', key: 'bar' }, '/session')
+        expect(request.headers.get('authorization')).toBe('Basic ' + btoa('foo:bar'))
+        expect(await request.json()).toEqual({ some: 'body' })
     })
 
-    describe('_request', () => {
-        it('should make a request', async () => {
-            const expectedResponse = { value: { 'element-6066-11e4-a52e-4f735466cecf': 'some-elem-123' } }
-            const onResponse = vi.fn()
-            const onPerformance = vi.fn()
-            const req = new FetchRequest('POST', webdriverPath, {}, undefined, false, {
-                onResponse, onPerformance
-            })
-
-            const url = new URL('/session/foobar-123/element', baseUrl)
-            const opts = {}
-            const res = await req['_request'](url, opts)
-
-            expect(res).toEqual(expectedResponse)
-            expect(onResponse).toHaveBeenNthCalledWith(1, { result: expectedResponse })
-            expect(onPerformance).toHaveBeenNthCalledWith(1, expect.objectContaining({
-                request: opts,
-                durationMillisecond: expect.any(Number),
-                retryCount: 0,
-                success: true,
-            }))
-        })
-
-        it('should short circuit if request throws a stale element exception', async () => {
-            const onResponse = vi.fn()
-            const onPerformance = vi.fn()
-            const req = new FetchRequest('POST', 'session/:sessionId/element', {}, undefined, false, {
-                onResponse, onPerformance
-            })
-
-            const url = new URL('/session/foobar-123/element/some-sub-sub-elem-231/click', baseUrl)
-            const opts = Object.assign({
-                body: JSON.stringify({ foo: 'bar' })
-            })
-
-            const error = await req['_request'](url, opts).catch(err => err)
-            expect(error.message).toContain('element is not attached to the page document')
-            expect(onResponse).toHaveBeenNthCalledWith(1, expect.anything())
-            expect(onPerformance).toHaveBeenNthCalledWith(1, expect.objectContaining({ success: false }))
-            expect(vi.mocked(warn).mock.calls).toHaveLength(1)
-            expect(vi.mocked(warn).mock.calls).toEqual([['Request encountered a stale element - terminating request']])
-        })
-
-        it('should not fail code due to an empty server response', async () => {
-            const onResponse = vi.fn()
-            const onPerformance = vi.fn()
-            const req = new FetchRequest('POST', webdriverPath, {}, undefined, false, {
-                onResponse, onPerformance
-            })
-
-            const url = new URL('/empty', baseUrl)
-            const opts = {}
-            await expect(req['_request'](url, opts)).rejects.toEqual(expect.objectContaining({
-                message: expect.stringContaining('Response has empty body')
-            }))
-            expect(onResponse).toHaveBeenNthCalledWith(1, expect.anything())
-            expect(onPerformance).toHaveBeenNthCalledWith(1, expect.objectContaining({ success: false }))
-            expect(vi.mocked(warn).mock.calls).toHaveLength(0)
-            expect(vi.mocked(error).mock.calls).toHaveLength(1)
-        })
-
-        it('should retry requests but still fail', async () => {
-            const onRetry = vi.fn()
-            const onResponse = vi.fn()
-            const onPerformance = vi.fn()
-            const req = new FetchRequest('POST', webdriverPath, {}, undefined, false, {
-                onResponse, onPerformance, onRetry
-            })
-
-            const url = new URL('/failing', baseUrl)
-            const opts = {}
-            await expect(req['_request'](url, opts, undefined, 2)).rejects.toEqual(expect.objectContaining({
-                message: expect.stringContaining('unknown error')
-            }))
-            expect(onRetry).toHaveBeenNthCalledWith(1, expect.anything())
-            expect(onPerformance).toHaveBeenNthCalledWith(1, expect.objectContaining({ success: false }))
-            expect(onRetry).toHaveBeenNthCalledWith(2, expect.anything())
-            expect(onPerformance).toHaveBeenNthCalledWith(2, expect.objectContaining({ success: false }))
-            expect(onResponse).toHaveBeenNthCalledWith(1, expect.anything())
-            expect(onPerformance).toHaveBeenNthCalledWith(3, expect.objectContaining({ success: false }))
-            expect(vi.mocked(warn).mock.calls).toHaveLength(2)
-            expect(vi.mocked(error).mock.calls).toHaveLength(1)
-        })
-
-        it('should retry and eventually respond', async () => {
-            const onRetry = vi.fn()
-            const onResponse = vi.fn()
-            const onPerformance = vi.fn()
-            const req = new FetchRequest('POST', webdriverPath, {}, undefined, false, {
-                onResponse, onPerformance, onRetry
-            })
-
-            const url = new URL('/failing', baseUrl)
-            const opts = Object.assign({ body: { foo: 'bar' } })
-            expect(await req['_request'](url, opts, undefined, 3)).toEqual({ value: 'caught' })
-            expect(onRetry).toHaveBeenNthCalledWith(1, expect.anything())
-            expect(onPerformance).toHaveBeenNthCalledWith(1, expect.objectContaining({ success: false }))
-            expect(onRetry).toHaveBeenNthCalledWith(2, expect.anything())
-            expect(onPerformance).toHaveBeenNthCalledWith(2, expect.objectContaining({ success: false }))
-            expect(onRetry).toHaveBeenNthCalledWith(3, expect.anything())
-            expect(onPerformance).toHaveBeenNthCalledWith(3, expect.objectContaining({ success: false }))
-            expect(onResponse).toHaveBeenNthCalledWith(1, expect.anything())
-            expect(onPerformance).toHaveBeenNthCalledWith(4, expect.objectContaining({ success: true }))
-            expect(vi.mocked(warn).mock.calls).toHaveLength(3)
-            expect(vi.mocked(error).mock.calls).toHaveLength(0)
-        })
-
-        it('should manage hub commands', async () => {
-            const req = new FetchRequest('POST', '/grid/api/hub', {}, undefined, true)
-            expect(await req.makeRequest({
-                protocol: 'https',
-                hostname: 'localhost',
-                port: 4445,
-                path: '/',
-                logLevel: 'warn'
-            }, 'foobar')).toEqual({ value: { some: 'config' } })
-        })
-
-        it('should fail if hub command is called on node', async () => {
-            const req = new FetchRequest('POST', '/grid/api/testsession', {}, undefined, true)
-            const result = await req.makeRequest({
-                protocol: 'https',
-                hostname: 'localhost',
-                port: 4445,
-                path: '/',
-                logLevel: 'warn'
-            }, 'foobar').then(
-                (res) => res,
-                (e) => e
-            )
-            expect(result.message).toBe('Command can only be called to a Selenium Hub')
-        })
-
-        describe('"ETIMEDOUT" error', () => {
-            it('should throw if timeout happens too often', async () => {
-                const retryCnt = 3
-                const onRetry = vi.fn()
-                const req = new FetchRequest('POST', '/timeout', {}, undefined, true, { onRetry })
-                const result = await req.makeRequest({
-                    protocol: 'https',
-                    hostname: 'localhost',
-                    port: 4445,
-                    path: '/',
-                    connectionRetryCount: retryCnt,
-                    logLevel: 'warn'
-                }, 'foobar').then(
-                    (res) => res,
-                    (e) => e
-                )
-                expect(result.code).toBe('ETIMEDOUT')
-                expect(onRetry).toBeCalledTimes(retryCnt)
-            })
-
-            it('should use error from "getRequestError" helper', async () => {
-                const onRetry = vi.fn()
-                const onRequest = vi.fn()
-                const onResponse = vi.fn()
-                const onPerformance = vi.fn()
-                const req = new FetchRequest('GET', '/timeout', {}, undefined, true, { onRetry, onRequest, onResponse, onPerformance })
-                const reqOpts = {
-                    protocol: 'https',
-                    hostname: 'localhost',
-                    port: 4445,
-                    path: '/',
-                } as Options.WebDriver
-                await req.makeRequest(reqOpts, 'foobar')
-                    // ignore error
-                    .catch((e) => e)
-
-                expect(vi.mocked(onRetry).mock.calls).toHaveLength(0)
-                expect(onRequest).toHaveBeenNthCalledWith(1, expect.anything())
-                expect(onResponse).toHaveBeenNthCalledWith(1, { error: expect.objectContaining({ code: 'ETIMEDOUT' }) })
-                expect(onPerformance).toHaveBeenNthCalledWith(1, expect.objectContaining({ success: false }))
-            })
-        })
-
-        it('should return proper response if retry passes', async () => {
-            const retryCnt = 7
-            const onRetry = vi.fn()
-            const req = new FetchRequest('POST', '/timeout', {}, undefined, true, { onRetry })
-            const result = await req.makeRequest({
-                protocol: 'https',
-                hostname: 'localhost',
-                port: 4445,
-                path: '/timeout',
-                connectionRetryCount: retryCnt,
-                logLevel: 'warn'
-            }, 'foobar').then(
-                (res) => res,
-                (e) => e
-            )
-            expect(result).toEqual({ value: {} })
-            expect(onRetry).toBeCalledTimes(5)
-        }, 20_000)
-
-        it('should retry on connection refused error', async () => {
-            const retryCnt = 7
-            const onRetry = vi.fn()
-            const req = new FetchRequest('POST', '/connectionRefused', {}, undefined, false, { onRetry })
-            const result = await req.makeRequest({
-                protocol: 'https',
-                hostname: 'localhost',
-                port: 4445,
-                connectionRetryCount: retryCnt,
-                logLevel: 'warn'
-            }, 'foobar').then(
-                (res) => res,
-                (e) => e
-            )
-            expect(result).toEqual({ value: { foo: 'bar' } })
-            expect(onRetry).toBeCalledTimes(5)
-        }, 20_000)
-
-        it('should throw if request error is unknown', async () => {
-            console.log('TESTING', AbortSignal)
-            const req = new FetchRequest('POST', '/sumoerror', {}, undefined, true)
-            const result = await req.makeRequest({
-                protocol: 'https',
-                hostname: 'localhost',
-                port: 4445,
-                path: '/sumoerror',
-                connectionRetryCount: 0,
-                logLevel: 'warn'
-            }, 'foobar').then(
-                (res) => res,
-                (e) => e
-            )
-            expect(result.message).toEqual(expect.stringContaining('ups'))
-        })
+    it.each(['GET', 'DELETE'])('does not send an empty object for %s', async method => {
+        const request = await capture(method, {})
+        expect(request.body).toBeNull()
+        expect(request.headers.has('content-length')).toBe(false)
     })
 
-    afterEach(() => {
-        // @ts-ignore
-        vi.mocked(fetch).retryCnt = 0
+    it('sends an empty JSON object for POST', async () => {
+        const request = await capture('POST', {})
+        expect(await request.json()).toEqual({})
+        expect(request.headers.get('content-length')).toBe('2')
+    })
 
-        vi.mocked(fetch).mockClear()
-        vi.mocked(warn).mockClear()
-        vi.mocked(error).mockClear()
+    it('calculates Content-Length in bytes and preserves custom headers', async () => {
+        const body = { foo: 'тест' }
+        const request = await capture('POST', body, { headers: { foo: 'bar' } })
+        expect(request.headers.get('content-length')).toBe(String(Buffer.byteLength(JSON.stringify(body))))
+        expect(request.headers.get('foo')).toBe('bar')
+    })
+
+    it('does not add Content-Length when no body was supplied', async () => {
+        const request = await capture('POST', undefined, { headers: { foo: 'bar' } })
+        expect(request.headers.has('content-length')).toBe(false)
+        expect(request.headers.get('foo')).toBe('bar')
+    })
+
+    it('uses the options returned by transformRequest', async () => {
+        const transformRequest = vi.fn((request: RequestLibOptions) => ({ ...request, json: { foo: 'baz' } }))
+        expect(await (await capture('POST', { foo: 'bar' }, { transformRequest })).json()).toEqual({ foo: 'baz' })
+        expect(transformRequest).toHaveBeenCalledTimes(1)
+    })
+
+    it('passes response and request options to transformResponse', async () => {
+        const transformResponse = vi.fn((response, request) => ({ ...response, body: { value: request.json } }))
+        const request = new WebRequest('POST', '/status', { foo: 'requestBody' })
+        const agent = { request: vi.fn().mockResolvedValue({ statusCode: 200, body: { value: 'original' } }) }
+        await expect(request.makeRequest({ ...options, transformResponse, customWdRequestAgent: agent })).resolves.toEqual({ value: { foo: 'requestBody' } })
+        expect(transformResponse).toHaveBeenCalledWith({ statusCode: 200, body: { value: 'original' } }, expect.objectContaining({ json: { foo: 'requestBody' } }))
+    })
+
+    it.each([
+        [200, { value: 'ok' }, true],
+        [404, { value: { error: 'stale element reference', message: 'element is not attached to the page document' } }, false],
+        [500, '', false]
+    ])('emits request, response and performance events (status %s, success %s)', async (statusCode, body, success) => {
+        const request = new WebRequest('POST', '/status', {})
+        const onRequest = vi.fn(), onResponse = vi.fn(), onPerformance = vi.fn()
+        request.on('request', onRequest).on('response', onResponse).on('performance', onPerformance)
+        const agent = { request: vi.fn().mockResolvedValue({ statusCode, body }) }
+        const promise = request.makeRequest({ ...options, customWdRequestAgent: agent })
+        if (success) {
+            await expect(promise).resolves.toEqual(body)
+            expect(onResponse).toHaveBeenCalledWith({ result: body })
+        } else {
+            await expect(promise).rejects.toThrow(body ? 'element is not attached' : 'Response has empty body')
+            expect(onResponse).toHaveBeenCalledWith({ error: expect.any(Error) })
+        }
+        expect(onRequest).toHaveBeenCalledWith(expect.objectContaining({ method: 'POST' }))
+        expect(onPerformance).toHaveBeenCalledWith(expect.objectContaining({ success, retryCount: 0, durationMillisecond: expect.any(Number) }))
+        expect(agent.request).toHaveBeenCalledTimes(1)
+    })
+
+    it.each([false, true])('retries failures and reports each attempt (eventual success: %s)', async succeeds => {
+        const request = new WebRequest('POST', '/status', {})
+        const onRetry = vi.fn(), onPerformance = vi.fn(), onResponse = vi.fn()
+        request.on('retry', onRetry).on('performance', onPerformance).on('response', onResponse)
+        const send = vi.fn().mockResolvedValue({ statusCode: 500, body: { value: { error: 'unknown error', message: 'failure' } } })
+        if (succeeds) {
+            send.mockResolvedValueOnce({ statusCode: 500, body: {} }).mockResolvedValueOnce({ statusCode: 200, body: { value: 'caught' } })
+        }
+        const promise = request.makeRequest({ ...options, connectionRetryCount: 2, customWdRequestAgent: { request: send } })
+        await (succeeds ? expect(promise).resolves.toEqual({ value: 'caught' }) : expect(promise).rejects.toThrow('failure'))
+        expect(send).toHaveBeenCalledTimes(succeeds ? 2 : 3)
+        expect(onRetry).toHaveBeenCalledTimes(succeeds ? 1 : 2)
+        expect(onResponse).toHaveBeenCalledTimes(1)
+        expect(onPerformance).toHaveBeenCalledTimes(succeeds ? 2 : 3)
+        expect(onPerformance).toHaveBeenLastCalledWith(expect.objectContaining({ success: succeeds }))
+    })
+
+    it.each([
+        [{ some: 'config' }, { value: { some: 'config' } }],
+        ['', { value: null }]
+    ])('handles non-WebDriver hub responses', async (body, expected) => {
+        const request = new WebRequest('POST', '/grid/api/hub', {}, true)
+        const send = vi.fn().mockResolvedValue({ statusCode: 200, body })
+        await expect(request.makeRequest({ ...options, path: '/ignored', customWdRequestAgent: { request: send } })).resolves.toEqual(expected)
+        expect(send.mock.calls[0][0].href).toBe('http://localhost:4444/grid/api/hub')
+    })
+
+    it('rejects a hub command sent directly to a node', async () => {
+        const request = new WebRequest('POST', '/grid/api/hub', {}, true)
+        const send = vi.fn().mockResolvedValue({ statusCode: 200, body: '<!DOCTYPE html>not a hub' })
+        await expect(request.makeRequest({ ...options, customWdRequestAgent: { request: send } })).rejects.toThrow('Command can only be called to a Selenium Hub')
+    })
+
+    it.each(['connect', 'response'])('handles %s timeouts without duplicating response-timeout commands', async event => {
+        const error = Object.assign(new Error('timeout'), { code: 'ETIMEDOUT', event })
+        const send = vi.fn().mockRejectedValue(error)
+        const request = new WebRequest('POST', '/status', {})
+        const onRetry = vi.fn(), onResponse = vi.fn()
+        request.on('retry', onRetry).on('response', onResponse)
+        await expect(request.makeRequest({ ...options, connectionRetryCount: 2, customWdRequestAgent: { request: send } })).rejects.toMatchObject({ code: 'ETIMEDOUT' })
+        expect(send).toHaveBeenCalledTimes(event === 'response' ? 1 : 3)
+        expect(onRetry).toHaveBeenCalledTimes(event === 'response' ? 0 : 2)
+        expect(onResponse).toHaveBeenCalledWith({ error: expect.objectContaining({ code: 'ETIMEDOUT' }) })
+    })
+
+    it.each(['timeout', 'connection refused'])('can succeed after a transient %s error', async reason => {
+        const send = vi.fn().mockResolvedValue({ statusCode: 200, body: { value: 'recovered' } })
+        if (reason === 'timeout') {send.mockRejectedValueOnce(Object.assign(new Error('timeout'), { code: 'ETIMEDOUT' }))} else {send.mockResolvedValueOnce({ statusCode: 500, body: { value: { message: 'java.net.ConnectException: Connection refused: connect' } } })}
+        await expect(new WebRequest('POST', '/status', {}).makeRequest({ ...options, connectionRetryCount: 2, customWdRequestAgent: { request: send } })).resolves.toEqual({ value: 'recovered' })
+        expect(send).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not swallow or retry an unknown transport error', async () => {
+        const error = new Error('ups')
+        const send = vi.fn().mockRejectedValue(error)
+        await expect(new WebRequest('POST', '/status', {}).makeRequest({ ...options, connectionRetryCount: 2, customWdRequestAgent: { request: send } })).rejects.toBe(error)
+        expect(send).toHaveBeenCalledTimes(1)
+    })
+
+    it('retries a rate-limited request only after the 429 backoff', async () => {
+        vi.useFakeTimers()
+        const send = vi.fn().mockResolvedValueOnce({ statusCode: 429, body: {} }).mockResolvedValue({ statusCode: 200, body: { value: 'ok' } })
+        const promise = new WebRequest('POST', '/status', {}).makeRequest({ ...options, connectionRetryCount: 1, customWdRequestAgent: { request: send } })
+        await vi.advanceTimersByTimeAsync(4999)
+        expect(send).toHaveBeenCalledTimes(1)
+        await vi.advanceTimersByTimeAsync(1001)
+        await expect(promise).resolves.toEqual({ value: 'ok' })
+        expect(send).toHaveBeenCalledTimes(2)
     })
 })

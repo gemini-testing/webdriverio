@@ -4,66 +4,152 @@ on:
   workflow_dispatch:
     inputs:
       releaseType:
-        description: "Release Type"
+        description: 'Version bump (from-package resumes an interrupted publication)'
         required: true
         type: choice
-        default: "patch"
+        default: patch
         options:
           - patch
           - minor
-          - major
-          - premajor
+          - from-package
       distTag:
-        description: 'NPM tag (e.g. use "next --canary" to release a test version, add "--force-publish" to release all packages)'
+        description: 'NPM distribution tag'
         required: true
-        default: 'latest'
+        type: choice
+        default: latest
+        options:
+          - latest
+          - next
+      releaseCommit:
+        description: 'Original release commit SHA (required only for from-package)'
+        required: false
+        type: string
 
-env:
-  NPM_TOKEN: ${{secrets.NPM_TOKEN}}
-  # disable provenance check as it stopped working with Lerna:
-  #   > lerna ERR! E422 Error verifying sigstore provenance bundle: Failed to validate the provenance
-  #   > subject against the package name, version and tarball integrity. Please try re-publishing with
-  #   > the latest stable version of npm
-  # NPM_CONFIG_PROVENANCE: true
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-release
+  cancel-in-progress: false
 
 jobs:
   authorize:
-    name: Authorize Actor
-    uses: ./.github/workflows/authorize.yml
-    secrets: inherit
+    name: Authorize Actor and Release Commit
+    if: github.repository == 'gemini-testing/webdriverio' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+      artifact_run: ${{ steps.source.outputs.artifact_run }}
+    steps:
+      - name: Require Protected Master
+        if: ${{ !github.ref_protected }}
+        run: |
+          echo '::error::npm releases require protected master'
+          exit 1
+      - uses: actions/github-script@v7
+        env:
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        with:
+          script: |
+            for (const username of new Set([context.actor, process.env.TRIGGERING_ACTOR])) {
+              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({ ...context.repo, username });
+              if (!['write', 'admin'].includes(data.permission)) {
+                throw new Error(`${username} does not have permission to release this repository`);
+              }
+            }
+      - uses: actions/checkout@v4
+        if: inputs.releaseType == 'from-package'
+        with:
+          # Run the verifier from the trusted dispatch on master, never from the input.
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Select Trusted Release Source
+        id: source
+        env:
+          RELEASE_TYPE: ${{ inputs.releaseType }}
+          RELEASE_COMMIT: ${{ inputs.releaseCommit }}
+          DIST_TAG: ${{ inputs.distTag }}
+        run: |
+          if [[ "$RELEASE_TYPE" == from-package ]]; then
+            artifact_run=$(node scripts/check-release.mjs "$RELEASE_COMMIT" "$DIST_TAG")
+            echo "artifact_run=$artifact_run" >> "$GITHUB_OUTPUT"
+            echo "sha=$RELEASE_COMMIT" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          fi
   release:
     permissions:
+      actions: read
       contents: write
-      id-token: write
     needs: [authorize]
     runs-on: ubuntu-latest
+    env:
+      RELEASE_TYPE: ${{ inputs.releaseType }}
+      DIST_TAG: ${{ inputs.distTag }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 'main'
+          ref: ${{ needs.authorize.outputs.sha }}
           fetch-depth: 0
+          persist-credentials: ${{ inputs.releaseType != 'from-package' }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
-          cache: 'pnpm'
-      - name: NPM Setup
-        run: |
-          npm set registry "https://registry.npmjs.org/"
-          npm set //registry.npmjs.org/:_authToken $NPM_TOKEN
-          npm whoami
-      - name: Git Setup
-        run: |
-          git config --global user.email "bot@webdriver.io"
-          git config --global user.name "WebdriverIO Release Bot"
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
       - name: Install Dependencies
-        run: pnpm install
-      - name: Release
+        run: pnpm install --frozen-lockfile
+      - name: Check Available Versions and Create Release
+        if: inputs.releaseType != 'from-package'
         run: |
-          pnpm run setup
-          pnpm -r --filter=@wdio/lerna-patch run patch
-          pnpm lerna publish ${{github.event.inputs.releaseType}} --exact --yes --dist-tag ${{github.event.inputs.distTag}}
-          pnpm run pushReleaseTag
+          node scripts/release-packages.mjs preflight "$RELEASE_TYPE" "$DIST_TAG"
+          git switch -C master
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.name 'github-actions[bot]'
+          pnpm exec lerna version "$RELEASE_TYPE" --exact --force-publish --yes --no-push --message "Publish to npm ($DIST_TAG) from run $GITHUB_RUN_ID"
+      - name: Verify Release Tags
+        id: release
+        run: |
+          node scripts/check-release.mjs
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Build and Verify
+        run: |
+          pnpm run build
+          pnpm run test:eslint
+          pnpm run test:typings
+          pnpm run test:unit:run
+          pnpm run test:smoke
+          pnpm run test:interop
+          pnpm run test:release
+      - name: Pack Release Tarballs
+        if: inputs.releaseType != 'from-package'
+        run: node scripts/release-packages.mjs pack "$RUNNER_TEMP/npm-tarballs"
+      - name: Restore Original Release Tarballs
+        if: inputs.releaseType == 'from-package'
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ needs.authorize.outputs.artifact_run }}
+          name: npm-tarballs-${{ steps.release.outputs.sha }}
+          path: ${{ runner.temp }}/npm-tarballs
+      - name: Verify Final Tarballs in Clean Consumers
+        run: node scripts/test-installation.mjs "$RUNNER_TEMP/npm-tarballs"
+      - name: Preserve Verified Tarballs for Recovery
+        if: inputs.releaseType != 'from-package'
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-tarballs-${{ steps.release.outputs.sha }}
+          path: ${{ runner.temp }}/npm-tarballs/*.tgz
+          if-no-files-found: error
+          compression-level: 0
+      - name: Push Release Commit and Tags
+        if: inputs.releaseType != 'from-package'
+        run: |
+          node scripts/release-packages.mjs check "$RUNNER_TEMP/npm-tarballs" "$RELEASE_TYPE" "$DIST_TAG"
+          git push --atomic --follow-tags origin HEAD:master
+      - name: Publish Verified Tarballs
+        run: node scripts/release-packages.mjs publish "$RUNNER_TEMP/npm-tarballs" "$RELEASE_TYPE" "$DIST_TAG"
         env:
-          NODE_ENV: production
-          GITHUB_AUTH: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
