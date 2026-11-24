@@ -26,7 +26,11 @@ export class NodeJSRequest extends WebDriverRequest {
 
     protected async _libRequest (url: URL, opts: Options.RequestLibOptions) {
         try {
-            return (await got(url, opts as OptionsOfJSONResponseBody)) as unknown as Options.RequestLibResponse
+            // WebDriver handles retries at the request layer.
+            return (await got(url, {
+                ...opts,
+                retry: { limit: 0 }
+            } as OptionsOfJSONResponseBody)) as unknown as Options.RequestLibResponse
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             if (!(err instanceof Error)) {
