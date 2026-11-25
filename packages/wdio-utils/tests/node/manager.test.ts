@@ -18,11 +18,103 @@ vi.mock('../../src/node/utils.js', async (orig) => {
 })
 vi.mock('@testplane/wdio-logger', () => import(path.join(process.cwd(), '__mocks__', '@testplane/wdio-logger')))
 
+describe('remote session preparation', () => {
+    beforeEach(() => {
+        vi.mocked(setupChromedriver).mockClear()
+        vi.mocked(setupPuppeteerBrowser).mockClear()
+    })
+
+    test('skips remote connection overrides in regular capabilities', async () => {
+        const caps = [{
+            hostname: 'selenium.example.test',
+            port: 4444,
+            browserName: 'chrome',
+            browserVersion: '114'
+        }]
+
+        await setupDriver({}, caps)
+        await setupBrowser({}, caps)
+
+        expect(setupChromedriver).not.toHaveBeenCalled()
+        expect(setupPuppeteerBrowser).not.toHaveBeenCalled()
+    })
+
+    test.each([false, true])('skips per-instance remote connections (parallel: %s)', async (parallel) => {
+        const caps = {
+            grid: {
+                hostname: 'selenium.example.test',
+                port: 4444,
+                capabilities: { browserName: 'chrome', browserVersion: '114' }
+            },
+            cloud: {
+                user: 'user',
+                key: 'key',
+                capabilities: { browserName: 'chrome', browserVersion: '113' }
+            }
+        }
+        const capabilities = parallel ? [caps] : caps
+
+        await setupDriver({}, capabilities)
+        await setupBrowser({}, capabilities)
+
+        expect(setupChromedriver).not.toHaveBeenCalled()
+        expect(setupPuppeteerBrowser).not.toHaveBeenCalled()
+
+        const mixed = { ...caps, local: { capabilities: { browserName: 'chrome', browserVersion: 'stable' } } }
+        await setupDriver({}, parallel ? [mixed] : mixed)
+        await setupBrowser({}, parallel ? [mixed] : mixed)
+
+        expect(setupChromedriver).toHaveBeenCalledTimes(1)
+        expect(setupChromedriver).toHaveBeenCalledWith('/foo/bar', 'stable')
+        expect(setupPuppeteerBrowser).toHaveBeenCalledTimes(1)
+        expect(setupPuppeteerBrowser).toHaveBeenCalledWith('/foo/bar', {
+            browserName: 'chrome', browserVersion: 'stable'
+        })
+    })
+})
+
 describe('setupDriver', () => {
     beforeEach(() => {
         vi.mocked(setupChromedriver).mockClear()
         vi.mocked(setupEdgedriver).mockClear()
         vi.mocked(setupGeckodriver).mockClear()
+    })
+
+    test('selects GeckoDriver independently from the requested Firefox version', async () => {
+        await setupDriver({}, [{ browserName: 'firefox', browserVersion: '128.0' }])
+        await setupDriver({}, [{
+            browserName: 'firefox',
+            browserVersion: '128.0',
+            'wdio:geckodriverOptions': { geckoDriverVersion: '0.35.0' }
+        }])
+        expect(vi.mocked(setupGeckodriver).mock.calls).toEqual([
+            ['/foo/bar', undefined],
+            ['/foo/bar', '0.35.0']
+        ])
+    })
+
+    test('skips GeckoDriver downloads when the worker has a custom driver', async () => {
+        await setupDriver({}, [{
+            browserName: 'firefox',
+            'wdio:geckodriverOptions': { customGeckoDriverPath: '/custom/geckodriver' }
+        }])
+        vi.stubEnv('GECKODRIVER_PATH', '/custom/geckodriver')
+        try {
+            await setupDriver({}, [{ browserName: 'firefox', browserVersion: '128.0' }])
+        } finally {
+            vi.unstubAllEnvs()
+        }
+        expect(setupGeckodriver).not.toHaveBeenCalled()
+    })
+
+    test('does not download ChromeDriver when the worker will use CHROMEDRIVER_PATH', async () => {
+        vi.stubEnv('CHROMEDRIVER_PATH', '/opt/drivers/chromedriver')
+        try {
+            await setupDriver({}, [{ browserName: 'chrome', 'goog:chromeOptions': { binary: '/opt/chrome' } }])
+            expect(setupChromedriver).not.toHaveBeenCalled()
+        } finally {
+            vi.unstubAllEnvs()
+        }
     })
 
     test('with testrunner capabilities', async () => {
@@ -86,8 +178,7 @@ describe('setupDriver', () => {
         expect(setupEdgedriver).toBeCalledWith('/foo/bar', '3')
         expect(setupEdgedriver).toBeCalledWith('/foo/bar', '4')
         expect(setupGeckodriver).toBeCalledTimes(2)
-        expect(setupGeckodriver).toBeCalledWith('/foo/bar', '5')
-        expect(setupGeckodriver).toBeCalledWith('/foo/bar', '6')
+        expect(setupGeckodriver).toBeCalledWith('/foo/bar', undefined)
     })
 
     test('no setup with testrunner capabilities when automation protocol is set to devtools', async () => {
@@ -199,8 +290,7 @@ describe('setupDriver', () => {
         expect(setupEdgedriver).toBeCalledWith('/foo/bar', '3')
         expect(setupEdgedriver).toBeCalledWith('/foo/bar', '4')
         expect(setupGeckodriver).toBeCalledTimes(2)
-        expect(setupGeckodriver).toBeCalledWith('/foo/bar', '5')
-        expect(setupGeckodriver).toBeCalledWith('/foo/bar', '7')
+        expect(setupGeckodriver).toBeCalledWith('/foo/bar', undefined)
     })
 
     test('no setup with multiremote capabilities when automation protocol is set to devtools', async () => {
@@ -310,8 +400,7 @@ describe('setupDriver', () => {
         expect(setupEdgedriver).toBeCalledWith('/foo/bar', '3')
         expect(setupEdgedriver).toBeCalledWith('/foo/bar', '4')
         expect(setupGeckodriver).toBeCalledTimes(2)
-        expect(setupGeckodriver).toBeCalledWith('/foo/bar', '5')
-        expect(setupGeckodriver).toBeCalledWith('/foo/bar', '6')
+        expect(setupGeckodriver).toBeCalledWith('/foo/bar', undefined)
     })
 
     test('no setup with multiremote capabilities series when automation protocol is set to devtools', async () => {

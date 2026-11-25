@@ -90,7 +90,7 @@ function isEdge(capabilities?: WebdriverIO.Capabilities) {
  * @param  {Object}  capabilities  caps of session response
  * @return {Boolean}               true if run by Geckodriver
  */
-function isFirefox(capabilities?: WebdriverIO.Capabilities) {
+export function isFirefox(capabilities?: WebdriverIO.Capabilities) {
     if (!capabilities) {
         return false
     }

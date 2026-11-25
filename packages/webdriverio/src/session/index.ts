@@ -1,3 +1,4 @@
+import { addPuppeteerCompatibility } from '../utils/puppeteerCompatibility.js'
 import { getPolyfillManager } from './polyfill.js'
 import { getShadowRootManager } from './shadowRoot.js'
 import { getNetworkManager } from './networkManager.js'
@@ -8,6 +9,11 @@ import { getContextManager } from './context.js'
  * register all session relevant singletons on the instance
  */
 export function registerSessionManager(instance: WebdriverIO.Browser) {
+    // DevTools supplies the connection itself during attach and reload.
+    if (instance.puppeteer && instance.options.automationProtocol === 'devtools') {
+        addPuppeteerCompatibility(instance.puppeteer)
+    }
+
     /**
      * only register session manager for sessions that appear to support
      * WebDriver Bidi

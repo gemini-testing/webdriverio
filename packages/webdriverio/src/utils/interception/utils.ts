@@ -1,21 +1,19 @@
 import type { local, remote } from '@testplane/webdriver'
-import type { RequestWithOptions, RespondWithOptions } from './types.js'
+import type { BidiResponseMetadata, RequestWithOptions, RespondWithOptions } from './types.js'
 
-type Overwrite<T> = Omit<T extends RequestWithOptions ? remote.NetworkContinueRequestParameters : remote.NetworkContinueResponseParameters, 'request'>
+type Overwrite = Omit<remote.NetworkContinueRequestParameters & remote.NetworkProvideResponseParameters, 'request'>
 
 /**
  * parse request or response overwrites to make it compatible with Bidis protocol
  * @param overwrite request or response overwrite
  * @returns object to pass to the protocol
  */
-export function parseOverwrite<
-    T extends RequestWithOptions | RespondWithOptions
->(
-    overwrite: T,
+export function parseOverwrite(
+    overwrite: RequestWithOptions | RespondWithOptions,
     request: local.NetworkBeforeRequestSentParameters | local.NetworkResponseCompletedParameters
-): Overwrite<T> {
-    const result: Overwrite<T> = {} as unknown as Overwrite<T>
-    if ('body' in overwrite && overwrite.body) {
+): Overwrite {
+    const result: Overwrite = {}
+    if ('body' in overwrite && (overwrite.body || overwrite.body === '')) {
         const bodyOverwrite = typeof overwrite.body === 'function'
             ? overwrite.body(request as local.NetworkBeforeRequestSentParameters)
             : overwrite.body
@@ -41,7 +39,7 @@ export function parseOverwrite<
 
     if ('headers' in overwrite) {
         const headersOverwrite = typeof overwrite.headers === 'function'
-            ? overwrite.headers(request as local.NetworkBeforeRequestSentParameters)
+            ? overwrite.headers(request as local.NetworkBeforeRequestSentParameters & BidiResponseMetadata)
             : overwrite.headers
         result.headers = Object.entries(headersOverwrite || {}).map(([name, value]) => ({
             name,
@@ -70,9 +68,9 @@ export function parseOverwrite<
 
     if ('statusCode' in overwrite && overwrite.statusCode) {
         const statusCodeOverwrite = typeof overwrite.statusCode === 'function'
-            ? overwrite.statusCode(request as local.NetworkResponseCompletedParameters)
+            ? overwrite.statusCode(request as local.NetworkResponseCompletedParameters & BidiResponseMetadata)
             : overwrite.statusCode
-        ;(result as RespondWithOptions).statusCode = statusCodeOverwrite
+        result.statusCode = statusCodeOverwrite
     }
 
     if ('method' in overwrite) {
@@ -91,7 +89,9 @@ export function parseOverwrite<
 }
 
 export function getPatternParam (pattern: URLPattern, key: keyof Omit<remote.NetworkUrlPatternPattern, 'type'>) {
-    if (key !== 'pathname' && pattern[key] === '*') {
+    // BiDi compares URL components for equality; it does not evaluate URLPattern syntax.
+    // Omit dynamic components and let BidiInterception apply the complete pattern.
+    if (/[*():{}+?]/.test(pattern[key])) {
         return
     }
 

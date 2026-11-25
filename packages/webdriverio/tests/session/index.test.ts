@@ -24,6 +24,17 @@ vi.mock('../../src/session/context.js', () => ({
 }))
 
 describe('webdriverio session manager', () => {
+    it('exposes a compatible existing DevTools connection before getPuppeteer is called', () => {
+        const context = {}
+        const connection = { connected: true, browserContexts: () => [context], defaultBrowserContext: () => context }
+        const browser = {
+            capabilities: {}, options: { automationProtocol: 'devtools' }, puppeteer: connection
+        } as unknown as WebdriverIO.Browser
+        registerSessionManager(browser)
+        expect(browser.puppeteer).toBe(connection)
+        expect(browser.puppeteer!.defaultBrowserContext().isIncognito()).toBe(false)
+    })
+
     it('registers all session manager', async () => {
         const browser = {
             capabilities: {

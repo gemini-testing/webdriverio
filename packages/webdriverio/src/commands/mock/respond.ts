@@ -1,6 +1,28 @@
 /**
  * Always respond with same overwrite.
  *
+ * With WebDriver BiDi, Chromium fetches the real response by default, then
+ * replaces its body. Set `fetchResponse: false` to provide the response before
+ * sending the request instead.
+ *
+ * Firefox can only provide a response body before the request is sent, so its
+ * BiDi default is `fetchResponse: false`. The request does not reach the server
+ * and the mock cannot inherit the server's status or response headers; specify
+ * `statusCode` and `headers` explicitly when needed. Firefox rejects an explicit
+ * `fetchResponse: true`. Request-stage response mocking also rejects response
+ * filters (`statusCode` and `responseHeaders`) and a `statusCode` function,
+ * because the real response is unavailable. Combining request overwrites with
+ * request-stage responses is not supported either. Request method/header
+ * filters and aborts remain supported.
+ *
+ * A BiDi body callback can return a string, JSON data or a Buffer, directly
+ * or in a promise. Its argument has `url`, `method`, and `headers` from the
+ * request. Before the request is sent, `statusCode` defaults to 200,
+ * `responseHeaders` is empty and `body` is an empty string. When the real
+ * response is fetched, its status and headers are available, but the BiDi
+ * response event does not expose its body (`body` is undefined). A CDP session
+ * is only passed as a second argument when using the DevTools backend.
+ *
  * <example>
     :respond.js
     it('should demonstrate response overwrite with static data', async () => {
@@ -18,7 +40,7 @@
             completed: true
         }], {
             statusCode: 200,
-            fetchResponse: true // default
+            fetchResponse: true // Chromium BiDi default; not supported on Firefox
         })
 
         await browser.url('https://todobackend.com/client/index.html?https://todo-backend-express-knex.herokuapp.com/')
@@ -31,14 +53,11 @@
     it('should demonstrate response overwrite with dynamic data', async () => {
         const mock = await browser.mock('https://todo-backend-express-knex.herokuapp.com/')
 
-        mock.respond((request) => {
-            if (request.body.username === 'test') {
-                return { ...request.body, foo: 'bar' }
-            }
-            return request.body
+        mock.respond(async (request) => {
+            return { method: request.method, path: new URL(request.url).pathname }
         }, {
-            statusCode: () => 200,
-            headers: () => ({ foo: 'bar }),
+            statusCode: 200,
+            headers: { 'Content-Type': 'application/json' },
             fetchResponse: false // do not fetch real response
         })
     })
@@ -47,7 +66,7 @@
  * @alias mock.respond
  * @param {MockOverwrite}       overwrites              payload to overwrite the response
  * @param {MockResponseParams=} params                  additional respond parameters to overwrite
- * @param {Object=}             params.header           overwrite specific headers
+ * @param {Object=}             params.headers          overwrite specific headers
  * @param {Number=}             params.statusCode       overwrite response status code
  * @param {Boolean=}            params.fetchResponse    fetch real response before responding with mocked data
  */

@@ -1,8 +1,10 @@
 /**
  * Only respond once with given overwrite. You can call `respondOnce` multiple
- * consecutive times and it will start with the respond you defined last. If you
+ * consecutive times and the responses are used in the order you define them. If you
  * only use `respondOnce` and the resource is called more times a mock has been
  * defined than it defaults back to the original resource.
+ * Body callbacks (including async functions), binary bodies and `fetchResponse`
+ * follow the same rules as `mock.respond`.
  *
  * <example>
     :respondOnce.js
@@ -48,7 +50,7 @@
  * @alias mock.respondOnce
  * @param {MockOverwrite}       overwrites              payload to overwrite the response
  * @param {MockResponseParams=} params                  additional respond parameters to overwrite
- * @param {Object=}             params.header           overwrite specific headers
+ * @param {Object=}             params.headers          overwrite specific headers
  * @param {Number=}             params.statusCode       overwrite response status code
  * @param {Boolean=}            params.fetchResponse    fetch real response before responding with mocked data
  */
